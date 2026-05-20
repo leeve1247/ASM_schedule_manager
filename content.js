@@ -563,12 +563,6 @@
           dot.className = `asm-dot ${pastEv || ev.isClosed ? "asm-dot-gray" : "asm-dot-" + ev.category}`;
           dotsEl.appendChild(dot);
         });
-        if (dayEvents.length > maxDots) {
-          const more = document.createElement("span");
-          more.className = "asm-dot-more";
-          more.textContent = `+${dayEvents.length - maxDots}`;
-          dotsEl.appendChild(more);
-        }
         cell.appendChild(dotsEl);
 
         cell.addEventListener("click", () => {
