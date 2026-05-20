@@ -39,8 +39,31 @@
     return normalized;
   }
 
+  function extractApplicantCount(doc) {
+    const summaryText = doc.querySelector('.total-normal')?.textContent?.replace(/\s+/g, ' ').trim() || '';
+    const summaryMatch = summaryText.match(/\[\s*(\d+)\s*명\s*\]/);
+    if (summaryMatch) return summaryMatch[1];
+
+    const scriptText = Array.from(doc.scripts).map(script => script.textContent || '').join('\n');
+    const appCountMatch = scriptText.match(/appCnt\s*:\s*"(\d+)"/);
+    if (appCountMatch) return appCountMatch[1];
+
+    const activeApplicants = Array.from(doc.querySelectorAll('.boardlist table tbody tr'))
+      .filter(row => !row.querySelector('.color-red') && row.textContent.includes('[신청완료]'))
+      .length;
+
+    return activeApplicants > 0 ? String(activeApplicants) : '';
+  }
+
   function formatDeadlineStatus(rawStatus, approval, isEnded) {
     if (isEnded) return '마감';
+
+    const normalizedStatus = (rawStatus || '').replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim();
+    if (normalizedStatus && normalizedStatus !== '정보 없음' && normalizedStatus !== '로딩 중...') {
+      if (/접수중|모집중/.test(normalizedStatus)) return '접수중';
+      if (/마감|종료|불가|완료/.test(normalizedStatus)) return '마감';
+      return normalizedStatus;
+    }
 
     const combined = [rawStatus, approval]
       .filter(Boolean)
@@ -57,9 +80,32 @@
     return combined;
   }
 
+  function formatApprovalStatus(rawApproval) {
+    const normalized = (rawApproval || '').replace(/\s+/g, ' ').trim();
+    if (!normalized || normalized === '정보 없음' || normalized === '로딩 중...') {
+      return '정보 없음';
+    }
+
+    if (/승인|개설/.test(normalized) && !/미승인|승인대기|대기/.test(normalized)) {
+      return '승인';
+    }
+
+    if (/대기/.test(normalized)) return '대기';
+    if (/미승인|반려|취소/.test(normalized)) return '미승인';
+    return normalized;
+  }
+
   // Fetch SOMA lecture details (Location & Enrollment) with cache support
   async function fetchLectureDetails(qustnrSn, url, dateTimeText) {
-    if (!url) return { location: '정보 없음', people: '정보 없음', deadlineStatus: '정보 없음' };
+    if (!url) {
+      return {
+        mentorName: '정보 없음',
+        location: '정보 없음',
+        people: '정보 없음',
+        approvalStatus: '정보 없음',
+        deadlineStatus: '정보 없음'
+      };
+    }
 
     const cacheKey = `soma_lecture_detail_${qustnrSn}`;
     const cached = await new Promise(resolve => {
@@ -71,13 +117,15 @@
     const isPast = isLectureEnded(dateTimeText);
     const now = Date.now();
 
-    const hasDetailCacheShape = cached && Object.prototype.hasOwnProperty.call(cached, 'deadlineStatus');
+    const hasDetailCacheShape = cached && Object.prototype.hasOwnProperty.call(cached, 'approvalStatus');
 
     if (cached && hasDetailCacheShape) {
       if (isPast || (cached.timestamp && now - cached.timestamp < CACHE_TTL_MS)) {
         return {
+          mentorName: cached.mentorName || '정보 없음',
           location: cached.location,
           people: cached.people,
+          approvalStatus: cached.approvalStatus || '정보 없음',
           deadlineStatus: cached.deadlineStatus || '정보 없음'
         };
       }
@@ -91,13 +139,20 @@
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
 
+      let mentorName = '';
       let location = '';
       let people = '';
+      let approvalStatus = '';
       let deadlineStatus = '';
 
       const captureDetailField = (label, value) => {
         const normalizedLabel = label.replace(/\s+/g, '');
         const normalizedValue = value.replace(/\s+/g, ' ').trim();
+
+        if (!mentorName && /작성자|멘토명|멘토/.test(normalizedLabel) && !/멘토링/.test(normalizedLabel)) {
+          mentorName = normalizedValue;
+          return;
+        }
 
         if (!location && /장소|위치/.test(normalizedLabel)) {
           location = normalizedValue;
@@ -113,9 +168,15 @@
           return;
         }
 
+        if (!approvalStatus && /개설승인여부|개설승인|승인여부|개설여부/.test(normalizedLabel)) {
+          approvalStatus = normalizedValue;
+          return;
+        }
+
         if (
           !deadlineStatus &&
-          /마감여부|접수상태|신청상태|모집상태|진행상태|상태/.test(normalizedLabel)
+          /마감여부|접수상태|신청상태|모집상태|진행상태|상태/.test(normalizedLabel) &&
+          !/승인/.test(normalizedLabel)
         ) {
           deadlineStatus = normalizedValue;
         }
@@ -133,7 +194,7 @@
       });
 
       // Attempt 2: th/td table structure
-      if (!location || !people || !deadlineStatus) {
+      if (!mentorName || !location || !people || !approvalStatus || !deadlineStatus) {
         const ths = doc.querySelectorAll('th');
         ths.forEach(th => {
           const label = th.textContent.trim();
@@ -145,7 +206,7 @@
       }
 
       // Attempt 3: dt/dd structure
-      if (!location || !people || !deadlineStatus) {
+      if (!mentorName || !location || !people || !approvalStatus || !deadlineStatus) {
         const dts = doc.querySelectorAll('dt');
         dts.forEach(dt => {
           const label = dt.textContent.trim();
@@ -168,14 +229,26 @@
         }
       }
 
+      const applicantCount = extractApplicantCount(doc);
+      if (people && applicantCount) {
+        const capacityMatch = people.match(/(\d+)/);
+        if (capacityMatch) {
+          people = `${applicantCount} / ${capacityMatch[1]}`;
+        }
+      }
+
+      const finalMentorName = mentorName || '정보 없음';
       const finalLocation = location || '정보 없음';
       const finalPeople = people || '정보 없음';
+      const finalApprovalStatus = approvalStatus || '정보 없음';
       const finalDeadlineStatus = deadlineStatus || '정보 없음';
 
       // Save to cache
       const detailsToCache = {
+        mentorName: finalMentorName,
         location: finalLocation,
         people: finalPeople,
+        approvalStatus: finalApprovalStatus,
         deadlineStatus: finalDeadlineStatus,
         dateTimeText: dateTimeText,
         timestamp: Date.now()
@@ -187,10 +260,22 @@
         chrome.storage.local.set(cacheObj, resolve);
       });
 
-      return { location: finalLocation, people: finalPeople, deadlineStatus: finalDeadlineStatus };
+      return {
+        mentorName: finalMentorName,
+        location: finalLocation,
+        people: finalPeople,
+        approvalStatus: finalApprovalStatus,
+        deadlineStatus: finalDeadlineStatus
+      };
     } catch (e) {
       console.error(`Failed to fetch details for lecture ${qustnrSn}:`, e);
-      return { location: '정보 없음', people: '정보 없음', deadlineStatus: '정보 없음' };
+      return {
+        mentorName: '정보 없음',
+        location: '정보 없음',
+        people: '정보 없음',
+        approvalStatus: '정보 없음',
+        deadlineStatus: '정보 없음'
+      };
     }
   }
 
@@ -230,7 +315,13 @@
       
       const hasCancelButton = !!row.querySelector('[onclick*="delDate"]');
 
-      let details = { location: '로딩 중...', people: '로딩 중...', deadlineStatus: '로딩 중...' };
+      let details = {
+        mentorName: '로딩 중...',
+        location: '로딩 중...',
+        people: '로딩 중...',
+        approvalStatus: '로딩 중...',
+        deadlineStatus: '로딩 중...'
+      };
       if (qustnrSn && url) {
         details = await fetchLectureDetails(qustnrSn, url, dateTimeText);
       }
@@ -250,8 +341,10 @@
         status,
         approval,
         hasCancelButton,
+        mentorName: details.mentorName === '정보 없음' ? author : details.mentorName,
         location: details.location,
         people: formatPeopleSummary(details.people),
+        approvalStatus: formatApprovalStatus(details.approvalStatus === '정보 없음' ? approval : details.approvalStatus),
         deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${status} ${approval}`, ended)
       });
     }
@@ -724,13 +817,12 @@
           infoLink.innerHTML = `
             <div class="text-title" data-role="title">${lec.title}</div>
             <div class="text-type-badge">${lec.type}</div>
-            <div class="info-row" data-role="author">👤 ${lec.author}</div>
-            <div class="info-row" data-role="time">⏰ ${timeStr}</div>
-            <div class="info-row" data-role="location">📍 ${lec.location}</div>
-            <div class="info-row info-footer" data-role="meta">
-              <span class="info-meta">인원 ${lec.people}</span>
-              <span class="info-meta">마감 ${lec.deadlineStatus}</span>
-            </div>
+            <div class="info-row" data-role="mentor">🧑‍🏫 멘토 ${lec.mentorName}</div>
+            <div class="info-row" data-role="time">⏰ 시간 ${timeStr}</div>
+            <div class="info-row" data-role="location">📍 장소 ${lec.location}</div>
+            <div class="info-row" data-role="people">👥 신청인원 ${lec.people}</div>
+            <div class="info-row" data-role="approval">✅ 개설승인 ${lec.approvalStatus}</div>
+            <div class="info-row" data-role="status">📌 상태 ${lec.deadlineStatus}</div>
           `;
           card.appendChild(infoLink);
 
