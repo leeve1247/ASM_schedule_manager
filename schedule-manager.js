@@ -6,6 +6,19 @@
 
   // 10 minutes cache TTL for future SOMA lectures
   const CACHE_TTL_MS = 10 * 60 * 1000;
+  const CALENDAR_DAY_COUNT = 30;
+  const CALENDAR_SHIFT_WEEKS = 2;
+  const FIXED_SHARED_SCHEDULES = [
+    {
+      id: 'shared_orientation_2026_06_30',
+      title: '발대식',
+      dateStr: '2026-06-30',
+      startTime: '00:00',
+      endTime: '23:59',
+      description: '모든 연수생 공통 일정',
+      isFixedShared: true
+    }
+  ];
 
   // Extension State
   let startOffsetWeeks = 0; // 0 means starting from the Sunday of current week
@@ -637,6 +650,8 @@
       });
     });
 
+    const mergedPersonalSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
+
     const calendarWrapper = document.createElement('div');
     calendarWrapper.id = 'history-calendar';
 
@@ -673,7 +688,7 @@
 
     const dayKorean = ['일', '월', '화', '수', '목', '금', '토'];
 
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < CALENDAR_DAY_COUNT; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
 
@@ -689,7 +704,7 @@
       const dayLectures = lectures.filter(l => l.dateStr === dateStr);
 
       // Gather Personal schedules for this day
-      const dayPersonal = personalSchedules.filter(ps => ps.dateStr === dateStr);
+      const dayPersonal = mergedPersonalSchedules.filter(ps => ps.dateStr === dateStr);
 
       // Construct events array
       const allEvents = [];
@@ -761,14 +776,20 @@
           card.className = `calendar-lecture ${evt.ended ? 'ended' : ''} event-personal`;
           card.title = ps.title;
 
+          const badgeText = ps.isFixedShared ? '📌 공통 일정' : '👤 개인 일정';
           card.innerHTML = `
             <div class="info-group">
               <div class="text-title" data-role="title">${ps.title}</div>
-              <div class="text-type-badge personal-badge">👤 개인 일정</div>
+              <div class="text-type-badge personal-badge">${badgeText}</div>
               <div class="info-row" data-role="time">⏰ ${ps.startTime} ~ ${ps.endTime}</div>
               ${ps.description ? `<div class="info-row desc-row" data-role="desc">📝 ${ps.description}</div>` : ''}
             </div>
           `;
+
+          if (ps.isFixedShared) {
+            cell.appendChild(card);
+            return;
+          }
 
           const buttonGroup = document.createElement('div');
           buttonGroup.className = 'button-group';
@@ -875,7 +896,7 @@
 
     // Event hooks
     document.getElementById('btn-prev-weeks').addEventListener('click', () => {
-      startOffsetWeeks -= 2;
+      startOffsetWeeks -= CALENDAR_SHIFT_WEEKS;
       renderCalendar(lectures);
     });
 
