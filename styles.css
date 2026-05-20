@@ -526,7 +526,26 @@
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+#soma-conflict-debug-banner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: #fffaf0;
+  border: 1.5px solid #f6ad55;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  color: #9c4221;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 4px 12px rgba(237, 137, 54, 0.08);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 #soma-conflict-banner .conflict-icon {
+  font-size: 24px;
+}
+
+#soma-conflict-debug-banner .conflict-icon {
   font-size: 24px;
 }
 
@@ -536,7 +555,18 @@
   gap: 4px;
 }
 
+#soma-conflict-debug-banner .conflict-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 #soma-conflict-banner .conflict-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+#soma-conflict-debug-banner .conflict-title {
   font-weight: 700;
   font-size: 14px;
 }
@@ -551,6 +581,19 @@
   font-size: 11px;
   color: #9b2c2c;
   line-height: 1.4;
+}
+
+#soma-conflict-debug-banner .conflict-debug-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#soma-conflict-debug-banner .conflict-meta {
+  font-size: 11px;
+  color: #9c4221;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 #soma-conflict-banner .conflict-desc strong {

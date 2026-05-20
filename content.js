@@ -1013,6 +1013,32 @@
     }
   }
 
+  function injectConflictDebugBanner(anchorElement, debugLines = [], conflictingSchedule = null) {
+    const existing = document.getElementById('soma-conflict-debug-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'soma-conflict-debug-banner';
+    banner.innerHTML = `
+      <div class="conflict-icon">${conflictingSchedule ? '⚠️' : '🛠️'}</div>
+      <div class="conflict-content">
+        <div class="conflict-title">${conflictingSchedule ? '개인 일정이랑 겹치는 멘토링입니다' : '개인 일정 비교 디버그'}</div>
+        <div class="conflict-debug-lines">
+          ${debugLines.map(line => `<div class="conflict-meta">${line}</div>`).join('')}
+        </div>
+      </div>
+    `;
+
+    if (anchorElement && anchorElement.parentNode) {
+      anchorElement.parentNode.insertBefore(banner, anchorElement);
+    } else {
+      const contentList = document.getElementById('contentsList') || document.getElementById('pageStart');
+      if (contentList) {
+        contentList.insertBefore(banner, contentList.firstChild);
+      }
+    }
+  }
+
   function blockApplication(conflictingSchedule, detailText = '') {
     console.log('SOMA Schedule Manager: blockApplication started.');
     // Collect possible apply triggers
@@ -1083,10 +1109,22 @@
       });
     });
     console.log('SOMA Schedule Manager: Loaded personal schedules:', personalSchedules);
+
+    const debugLines = [
+      `멘토링 시간: ${dateTimeText}`,
+      `멘토링 시작: ${lectureStart.toLocaleString('ko-KR')}`,
+      `멘토링 종료: ${lectureEnd.toLocaleString('ko-KR')}`,
+      `개인 일정 수: ${personalSchedules.length}`
+    ];
     
     // Evaluate overlaps
     let conflictingSchedule = null;
     for (const ps of personalSchedules) {
+      if (!ps?.dateStr || !ps?.startTime || !ps?.endTime) {
+        debugLines.push(`일정 "${ps?.title || '제목 없음'}" -> 비교 불가 (${JSON.stringify(ps)})`);
+        continue;
+      }
+
       const [py, pm, pd] = ps.dateStr.split('-');
       const [psh, psm] = ps.startTime.split(':');
       const [peh, pem] = ps.endTime.split(':');
@@ -1096,12 +1134,18 @@
       
       const isOverlap = lectureStart < personalEnd && personalStart < lectureEnd;
       console.log(`SOMA Schedule Manager: Comparing with "${ps.title}" (${personalStart} ~ ${personalEnd}) -> Overlap: ${isOverlap}`);
+      debugLines.push(
+        `일정 "${ps.title}" -> ${ps.dateStr} ${ps.startTime}~${ps.endTime} / overlap=${isOverlap}`
+      );
       
       if (isOverlap) {
         conflictingSchedule = ps;
         break;
       }
     }
+
+    const anchor = document.querySelector('.btn-area') || document.querySelector('.btn_w-st1') || document.getElementById('applyLec')?.parentNode || null;
+    injectConflictDebugBanner(anchor, debugLines, conflictingSchedule);
     
     if (conflictingSchedule) {
       console.warn(`SOMA Schedule Manager: Overlap detected with personal schedule "${conflictingSchedule.title}"`);
