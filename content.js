@@ -505,15 +505,17 @@
       cell.textContent = wd;
       wdRow.appendChild(cell);
     });
-    body.appendChild(wdRow);
-
     // 날짜 그리드
     const grid = document.createElement("div");
     grid.className = "asm-cal-grid";
 
     const eventPanel = document.createElement("div");
     eventPanel.className = "asm-event-panel";
-    eventPanel.style.display = "none";
+
+    function showPlaceholder() {
+      eventPanel.innerHTML = '<div class="asm-event-panel-placeholder"><span>날짜를 선택하면<br>일정이 표시됩니다</span></div>';
+    }
+    showPlaceholder();
 
     let selectedDate = null;
 
@@ -573,7 +575,7 @@
           if (selectedDate === dateStr) {
             selectedDate = null;
             cell.classList.remove("asm-cal-selected");
-            eventPanel.style.display = "none";
+            showPlaceholder();
             return;
           }
           grid.querySelectorAll(".asm-cal-day.asm-cal-selected").forEach((c) =>
@@ -582,15 +584,17 @@
           selectedDate = dateStr;
           cell.classList.add("asm-cal-selected");
           renderEventPanel(eventPanel, dayEvents, dateStr, todayStr);
-          eventPanel.style.display = "";
-          setTimeout(() => eventPanel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
         });
       }
 
       grid.appendChild(cell);
     });
 
-    body.appendChild(grid);
+    const calSection = document.createElement("div");
+    calSection.className = "asm-cal-section";
+    calSection.appendChild(wdRow);
+    calSection.appendChild(grid);
+    body.appendChild(calSection);
     body.appendChild(eventPanel);
     panel.appendChild(body);
 

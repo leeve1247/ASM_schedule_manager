@@ -2,7 +2,6 @@
 
 #asm-2week-panel {
   margin-bottom: 16px;
-  border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #fff;
   overflow: hidden;
@@ -77,10 +76,16 @@
 .asm-panel-toggle:hover { background: #f1f5f9; }
 
 /* 본문 */
+.asm-cal-section {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
 .asm-panel-body {
   padding: 12px 14px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 0;
 }
 
@@ -217,11 +222,26 @@
   line-height: 6px;
 }
 
-/* ── 이벤트 패널 (날짜 클릭 시) ── */
+/* ── 이벤트 패널 (오른쪽 고정 컬럼) ── */
 .asm-event-panel {
-  margin-top: 10px;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 10px;
+  flex: 7 1 0;
+  min-width: 0;
+  border-left: 1px solid #e2e8f0;
+  padding-left: 14px;
+  min-height: 200px;
+}
+
+.asm-event-panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+  gap: 8px;
+  padding: 20px 0;
 }
 
 .asm-event-panel-header {
