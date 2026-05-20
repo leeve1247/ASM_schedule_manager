@@ -666,7 +666,7 @@
             });
           } else {
             btnCancel.className = 'cancel-btn unavailable';
-            btnCancel.innerHTML = '❌ 취소';
+            btnCancel.innerHTML = evt.ended ? '🚫 취소 불가' : '🔒 취소 불가';
             btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : '하루 전날부터는 취소 불가';
             btnCancel.disabled = true;
           }
