@@ -6,27 +6,31 @@
 ## 주요 기능 (Features)
 
 1. **캘린더 대시보드 시각화**:
-   <img width="3130" height="1734" alt="image" src="https://github.com/user-attachments/assets/3871d457-c2b5-4204-a221-e4a256bad7d8" />
+   <img width="3348" height="3425" alt="screencapture-swmaestro-ai-busan-sw-mypage-mentoLec-list-do-2026-05-21-00_40_49" src="https://github.com/user-attachments/assets/3ccf4cc2-7f97-4fca-9208-2fefdd004bd0" />
    - 기존의 길고 불편한 표 형태의 신청 내역 데이터를 한눈에 파악할 수 있는 **4주형 달력 카드** 형태로 변환하여 화면 상단에 자동으로 렌더링합니다.
    - 각 일정 카드는 **멘토링**, **특강** 구분별로 고유 테마 컬러를 제공합니다.
+<br/>
 
 2. **개인 일정 관리 (로컬 저장)**:
-   <img width="3330" height="1792" alt="image" src="https://github.com/user-attachments/assets/f32aacfe-fd15-4f70-9cbd-2287222f3f81" />
+   <img width="3152" height="4116" alt="screencapture-swmaestro-ai-busan-sw-mypage-userAnswer-history-do-2026-05-21-00_43_44" src="https://github.com/user-attachments/assets/b3f52c81-c467-4e7c-af0c-293035fb9980" />
    - 외부 서버나 데이터베이스(DB)를 사용하지 않고, 브라우저 로컬 저장소(`chrome.storage.local`)를 이용해 안전하게 개인 일정을 등록, 조회, 삭제할 수 있습니다.
    - 달력 우측 상단의 `➕ 개인 일정 추가` 버튼을 눌러 직관적으로 일정을 생성하고 관리할 수 있습니다.
-
+<br/>
 
 3. **신청 중복 감지 및 자동 차단**:
    <img width="1560" height="413" alt="image" src="https://github.com/user-attachments/assets/54b576d7-6e8a-47be-9434-9b9967c3c749" />
    - 멘토링/특강 상세 신청 페이지에 접속했을 때, 해당 강의 시간이 사용자가 등록한 개인 일정과 **조금이라도 겹치면** 즉시 감지합니다.
    - 중복 감지 시 화면에 경고 배너가 표시되며, **신청/접수 버튼이 비활성화(disabled)**되어 이중 예약(Double-booking) 실수를 철저히 방지합니다.
+<br/>
 
 5. **외부 캘린더 연동 및 다운로드**:
    - 각 일정 카드에서 한 번의 클릭으로 해당 일정을 **ICS 파일로 내보내거나(💾 ICS)**, **구글 캘린더에 바로 등록(📅 구글)**할 수 있습니다.
    - iCalendar 표준 표준 및 아시아/서울 타임존이 자동 지정되어 구글, 애플, 아웃룩 캘린더 등에서 정확하게 연동됩니다.
+<br/>
 
 6. **종료된 일정 필터링**:
    - `👁️ 종료된 일정 숨기기` 기능을 제공하여 지난 일정은 화면에서 가리고 앞으로 예정된 활동에만 집중할 수 있게 해줍니다.
+<br/>
 
 ---
 
