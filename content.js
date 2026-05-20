@@ -22,9 +22,44 @@
   }
 
 
+  function formatPeopleSummary(peopleText) {
+    const normalized = (peopleText || '').replace(/\s+/g, ' ').trim();
+    if (!normalized || normalized === '정보 없음' || normalized === '로딩 중...') return '정보 없음';
+
+    const slashMatch = normalized.match(/(\d+)\s*\/\s*(\d+)/);
+    if (slashMatch) {
+      return `${slashMatch[1]} / ${slashMatch[2]}`;
+    }
+
+    const numberMatches = normalized.match(/\d+/g);
+    if (numberMatches && numberMatches.length >= 2) {
+      return `${numberMatches[0]} / ${numberMatches[1]}`;
+    }
+
+    return normalized;
+  }
+
+  function formatDeadlineStatus(rawStatus, approval, isEnded) {
+    if (isEnded) return '마감';
+
+    const combined = [rawStatus, approval]
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!combined || combined === '정보 없음' || combined === '로딩 중...') {
+      return '정보 없음';
+    }
+
+    if (/마감|종료|불가|완료/.test(combined)) return '마감';
+    if (/진행|가능|접수중|모집중|승인/.test(combined)) return '진행중';
+    return combined;
+  }
+
   // Fetch SOMA lecture details (Location & Enrollment) with cache support
   async function fetchLectureDetails(qustnrSn, url, dateTimeText) {
-    if (!url) return { location: '정보 없음', people: '정보 없음', deadline: '정보 없음' };
+    if (!url) return { location: '정보 없음', people: '정보 없음', deadlineStatus: '정보 없음' };
 
     const cacheKey = `soma_lecture_detail_${qustnrSn}`;
     const cached = await new Promise(resolve => {
@@ -36,14 +71,14 @@
     const isPast = isLectureEnded(dateTimeText);
     const now = Date.now();
 
-    const hasDetailCacheShape = cached && Object.prototype.hasOwnProperty.call(cached, 'deadline');
+    const hasDetailCacheShape = cached && Object.prototype.hasOwnProperty.call(cached, 'deadlineStatus');
 
     if (cached && hasDetailCacheShape) {
       if (isPast || (cached.timestamp && now - cached.timestamp < CACHE_TTL_MS)) {
         return {
           location: cached.location,
           people: cached.people,
-          deadline: cached.deadline || '정보 없음'
+          deadlineStatus: cached.deadlineStatus || '정보 없음'
         };
       }
     }
@@ -58,7 +93,7 @@
 
       let location = '';
       let people = '';
-      let deadline = '';
+      let deadlineStatus = '';
 
       const captureDetailField = (label, value) => {
         const normalizedLabel = label.replace(/\s+/g, '');
@@ -79,10 +114,10 @@
         }
 
         if (
-          !deadline &&
-          /마감|신청기간|접수기간|모집기간|접수일시|신청일시/.test(normalizedLabel)
+          !deadlineStatus &&
+          /마감여부|접수상태|신청상태|모집상태|진행상태|상태/.test(normalizedLabel)
         ) {
-          deadline = normalizedValue;
+          deadlineStatus = normalizedValue;
         }
       };
 
@@ -98,7 +133,7 @@
       });
 
       // Attempt 2: th/td table structure
-      if (!location || !people || !deadline) {
+      if (!location || !people || !deadlineStatus) {
         const ths = doc.querySelectorAll('th');
         ths.forEach(th => {
           const label = th.textContent.trim();
@@ -110,7 +145,7 @@
       }
 
       // Attempt 3: dt/dd structure
-      if (!location || !people || !deadline) {
+      if (!location || !people || !deadlineStatus) {
         const dts = doc.querySelectorAll('dt');
         dts.forEach(dt => {
           const label = dt.textContent.trim();
@@ -135,13 +170,13 @@
 
       const finalLocation = location || '정보 없음';
       const finalPeople = people || '정보 없음';
-      const finalDeadline = deadline || '정보 없음';
+      const finalDeadlineStatus = deadlineStatus || '정보 없음';
 
       // Save to cache
       const detailsToCache = {
         location: finalLocation,
         people: finalPeople,
-        deadline: finalDeadline,
+        deadlineStatus: finalDeadlineStatus,
         dateTimeText: dateTimeText,
         timestamp: Date.now()
       };
@@ -152,10 +187,10 @@
         chrome.storage.local.set(cacheObj, resolve);
       });
 
-      return { location: finalLocation, people: finalPeople, deadline: finalDeadline };
+      return { location: finalLocation, people: finalPeople, deadlineStatus: finalDeadlineStatus };
     } catch (e) {
       console.error(`Failed to fetch details for lecture ${qustnrSn}:`, e);
-      return { location: '정보 없음', people: '정보 없음', deadline: '정보 없음' };
+      return { location: '정보 없음', people: '정보 없음', deadlineStatus: '정보 없음' };
     }
   }
 
@@ -195,10 +230,12 @@
       
       const hasCancelButton = !!row.querySelector('[onclick*="delDate"]');
 
-      let details = { location: '로딩 중...', people: '로딩 중...', deadline: '로딩 중...' };
+      let details = { location: '로딩 중...', people: '로딩 중...', deadlineStatus: '로딩 중...' };
       if (qustnrSn && url) {
         details = await fetchLectureDetails(qustnrSn, url, dateTimeText);
       }
+
+      const ended = isLectureEnded(dateTimeText);
 
       lectures.push({
         no,
@@ -214,8 +251,8 @@
         approval,
         hasCancelButton,
         location: details.location,
-        people: details.people,
-        deadline: details.deadline === '정보 없음' ? (status || approval || '정보 없음') : details.deadline
+        people: formatPeopleSummary(details.people),
+        deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${status} ${approval}`, ended)
       });
     }
 
@@ -691,8 +728,8 @@
             <div class="info-row" data-role="time">⏰ ${timeStr}</div>
             <div class="info-row" data-role="location">📍 ${lec.location}</div>
             <div class="info-row info-footer" data-role="meta">
-              <span class="info-meta">👥 ${lec.people}</span>
-              <span class="info-meta">⌛ ${lec.deadline}</span>
+              <span class="info-meta">인원 ${lec.people}</span>
+              <span class="info-meta">마감 ${lec.deadlineStatus}</span>
             </div>
           `;
           card.appendChild(infoLink);
