@@ -310,17 +310,23 @@
           <div class="form-row">
             <div class="form-group">
               <label for="schedule-date">날짜 *</label>
-              <input type="date" id="schedule-date" required>
+              <div class="date-input-row">
+                <input type="date" id="schedule-date" required>
+                <div class="date-presets">
+                  <button type="button" class="preset-btn" data-preset="today">오늘</button>
+                  <button type="button" class="preset-btn" data-preset="tomorrow">내일</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="form-row flex-row">
             <div class="form-group half">
               <label for="schedule-start-time">시작 시간 *</label>
-              <input type="time" id="schedule-start-time" required>
+              <select id="schedule-start-time" required></select>
             </div>
             <div class="form-group half">
               <label for="schedule-end-time">종료 시간 *</label>
-              <input type="time" id="schedule-end-time" required>
+              <select id="schedule-end-time" required></select>
             </div>
           </div>
           <div class="form-group">
@@ -336,6 +342,59 @@
     `;
 
     document.body.appendChild(modal);
+
+    // Populate Time Dropdowns (30-minute intervals)
+    const startSelect = modal.querySelector('#schedule-start-time');
+    const endSelect = modal.querySelector('#schedule-end-time');
+    for (let h = 0; h < 24; h++) {
+      for (const m of ['00', '30']) {
+        const hh = String(h).padStart(2, '0');
+        const timeVal = `${hh}:${m}`;
+
+        const optStart = document.createElement('option');
+        optStart.value = timeVal;
+        optStart.textContent = timeVal;
+        startSelect.appendChild(optStart);
+
+        const optEnd = document.createElement('option');
+        optEnd.value = timeVal;
+        optEnd.textContent = timeVal;
+        endSelect.appendChild(optEnd);
+      }
+    }
+    startSelect.value = '09:00';
+    endSelect.value = '10:00';
+
+    // Auto set end time to start time + 1 hour
+    startSelect.addEventListener('change', () => {
+      const [h, m] = startSelect.value.split(':').map(Number);
+      let endH = h + 1;
+      let endM = m;
+      if (endH >= 24) {
+        endH = 23;
+        endM = 30;
+      }
+      const endVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      endSelect.value = endVal;
+    });
+
+    // Date presets
+    const dateInput = modal.querySelector('#schedule-date');
+    const getFormattedDate = (offset = 0) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    modal.querySelector('[data-preset="today"]').addEventListener('click', () => {
+      dateInput.value = getFormattedDate(0);
+    });
+    modal.querySelector('[data-preset="tomorrow"]').addEventListener('click', () => {
+      dateInput.value = getFormattedDate(1);
+    });
 
     // Close listeners
     const closeBtn = modal.querySelector('.close-modal-btn');
@@ -373,7 +432,6 @@
         description
       };
 
-      // Save
       const currentList = await new Promise(resolve => {
         chrome.storage.local.get(['soma_personal_schedules'], (res) => {
           resolve(res.soma_personal_schedules || []);
@@ -388,11 +446,38 @@
 
       closeModal();
       form.reset();
+      startSelect.value = '09:00';
+      endSelect.value = '10:00';
 
-      // Refresh Calendar
       const lectures = await parseLecturesTable();
       renderCalendar(lectures);
     });
+  }
+
+  // Open modal with specific date helper
+  function openModalWithDate(dateStr) {
+    injectModalDOM();
+    const modal = document.getElementById('personal-schedule-modal');
+    if (!modal) return;
+
+    const dateInput = modal.querySelector('#schedule-date');
+    if (dateInput) {
+      if (dateStr) {
+        dateInput.value = dateStr;
+      } else {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
+    modal.style.display = 'flex';
+    const titleInput = modal.querySelector('#schedule-title');
+    if (titleInput) {
+      titleInput.focus();
+    }
   }
 
   // Render the Calendar UI
@@ -508,8 +593,23 @@
       cell.setAttribute('data-calendar-date', dateStr);
 
       const dateHeader = document.createElement('div');
-      dateHeader.className = `calendar-date${isToday ? ' today-text' : ''}`;
-      dateHeader.textContent = formattedDateText + (isToday ? ' [오늘]' : '');
+      dateHeader.className = 'calendar-date-header-row';
+
+      const dateSpan = document.createElement('span');
+      dateSpan.className = `calendar-date${isToday ? ' today-text' : ''}`;
+      dateSpan.textContent = formattedDateText + (isToday ? ' [오늘]' : '');
+      dateHeader.appendChild(dateSpan);
+
+      const quickAddBtn = document.createElement('button');
+      quickAddBtn.className = 'quick-add-cell-btn';
+      quickAddBtn.innerHTML = '＋';
+      quickAddBtn.title = '이 날짜에 개인 일정 추가';
+      quickAddBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openModalWithDate(dateStr);
+      });
+      dateHeader.appendChild(quickAddBtn);
       cell.appendChild(dateHeader);
 
       visibleEvents.forEach(evt => {
@@ -661,7 +761,7 @@
     });
 
     document.getElementById('btn-add-personal').addEventListener('click', () => {
-      document.getElementById('personal-schedule-modal').style.display = 'flex';
+      openModalWithDate();
     });
   }
 
