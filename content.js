@@ -470,6 +470,7 @@
         <button id="btn-reset-weeks" class="control-btn secondary" ${startOffsetWeeks === 0 ? 'hidden' : ''}>↩ 이번주부터 보기</button>
         <button id="btn-toggle-ended" class="control-btn secondary">${hideEndedLectures ? '👁️ 종료된 일정 표시' : '👁️ 종료된 일정 숨기기'}</button>
         <button id="btn-add-personal" class="control-btn accent">➕ 개인 일정 추가</button>
+        <button id="btn-clear-cache" class="control-btn secondary" title="장소 정보 캐시를 초기화하고 다시 불러옵니다">🗑️ 캐시 지우기</button>
       </div>
     `;
     calendarWrapper.appendChild(header);
@@ -708,6 +709,17 @@
 
     document.getElementById('btn-add-personal').addEventListener('click', () => {
       openModalWithDate();
+    });
+
+    document.getElementById('btn-clear-cache').addEventListener('click', async () => {
+      const allItems = await new Promise(resolve => chrome.storage.local.get(null, resolve));
+      const keysToRemove = Object.keys(allItems).filter(k => k.startsWith('soma_lecture_detail_'));
+      if (keysToRemove.length === 0) {
+        alert('삭제할 캐시가 없습니다.');
+        return;
+      }
+      await new Promise(resolve => chrome.storage.local.remove(keysToRemove, resolve));
+      alert(`✅ 캐시 ${keysToRemove.length}개를 삭제했습니다. 페이지를 새로고침하면 장소 정보를 다시 불러옵니다.`);
     });
   }
 
