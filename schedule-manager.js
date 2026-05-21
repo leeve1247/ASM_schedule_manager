@@ -847,7 +847,7 @@
     header.className = 'calendar-header';
     header.innerHTML = `
       <div class="calendar-title-group">
-        <h3>📅 멘토링 / 특강 & 개인 일정 대시보드</h3>
+        <h3>통합 일정 대시보드</h3>
         <span class="calendar-subtitle">접수한 일정과 내 개인 일정을 함께 모아 관리합니다.</span>
       </div>
       <div class="calendar-nav-group">
@@ -863,6 +863,7 @@
             <span class="asm-slider"></span>
           </span>
         </label>
+        <span class="alarm-info-icon" data-tooltip="멘토링 일정 1시간 전에 discord 메시지를 통해 알림 (개인일정은 알림 X)">⚠️</span>
         <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
       </div>
     `;
