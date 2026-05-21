@@ -194,6 +194,135 @@
     });
   }
 
+  async function fetchMentoringSchedulesFromHistory() {
+    const origin = location.origin;
+    // 현재 페이지 경로에서 베이스 경로 추출 (/busan/sw/ 또는 /sw/)
+    const baseMatch = location.pathname.match(/^(.*?\/sw)\//);
+    const base = baseMatch ? baseMatch[1] : "/busan/sw";
+    const urls = [
+      `${origin}${base}/mypage/userAnswer/history.do?menuNo=200047`,
+    ];
+
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url, { credentials: "include" });
+        if (!resp.ok) continue;
+
+        const html = await resp.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const rows = doc.querySelectorAll(".boardlist table tbody tr");
+
+        const schedules = [];
+        rows.forEach((tr) => {
+          const cells = tr.querySelectorAll("td");
+          if (cells.length < 8) return;
+
+          const titleLink = cells[2].querySelector("a");
+          const title = titleLink ? titleLink.textContent.trim() : "";
+          const href = titleLink ? titleLink.getAttribute("href") : "";
+
+          let qustnrSn = "";
+          if (href) {
+            const m = href.match(/[?&]qustnrSn=(\d+)/);
+            if (m) qustnrSn = m[1];
+          }
+
+          const rawText = cells[5].innerHTML // cells[4]=접수기간, cells[5]=강의날짜(시간 포함)
+            .replace(/<br\s*\/?>/gi, " ")
+            .replace(/&nbsp;/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          // 취소된 접수 제외 (schedule-manager.js와 동일 로직)
+          const status = cells[6] ? cells[6].textContent.trim() : "";
+          const approval = cells[7] ? cells[7].textContent.trim() : "";
+          const combined = `${status} ${approval}`;
+          if (/취소/.test(combined) && !/취소불가/.test(combined)) return;
+
+          const dateMatch = rawText.match(/(\d{4}-\d{2}-\d{2})/);
+          const timeMatch = rawText.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/);
+
+          if (!dateMatch || !timeMatch) return;
+
+          schedules.push({
+            qustnrSn,
+            title,
+            dateStr: dateMatch[1],
+            startTime: timeMatch[1],
+            endTime: timeMatch[2],
+          });
+        });
+
+        if (schedules.length > 0) {
+          chrome.storage.local.set({
+            soma_mentoring_schedules: schedules,
+            soma_mentoring_schedules_ts: Date.now(),
+          });
+          return schedules;
+        }
+      } catch (_) {
+        // 다음 URL 시도
+      }
+    }
+
+    return [];
+  }
+
+  const MENTORING_CACHE_TTL = 5 * 60 * 1000; // 5분
+
+  async function loadMentoringSchedules() {
+    const stored = await new Promise((resolve) => {
+      chrome.storage.local.get(["soma_mentoring_schedules", "soma_mentoring_schedules_ts"], (res) => {
+        resolve(res);
+      });
+    });
+
+    const ts = stored.soma_mentoring_schedules_ts || 0;
+    const cached = stored.soma_mentoring_schedules;
+
+    if (cached && cached.length > 0 && Date.now() - ts < MENTORING_CACHE_TTL) {
+      return cached;
+    }
+
+    return fetchMentoringSchedulesFromHistory();
+  }
+
+  function hasMentoringScheduleConflict(ev, mentoringSchedules) {
+    if (!ev?.date || !ev?.timeStart || !ev?.timeEnd || !Array.isArray(mentoringSchedules)) {
+      return false;
+    }
+
+    const [ey, em, ed] = ev.date.split("-").map(Number);
+    const [esh, esm] = ev.timeStart.split(":").map(Number);
+    const [eeh, eem] = ev.timeEnd.split(":").map(Number);
+
+    if ([ey, em, ed, esh, esm, eeh, eem].some(Number.isNaN)) {
+      return false;
+    }
+
+    const eventStart = new Date(ey, em - 1, ed, esh, esm, 0);
+    const eventEnd = new Date(ey, em - 1, ed, eeh, eem, 0);
+
+    return mentoringSchedules.some((ms) => {
+      if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) return false;
+      // 자기 자신 제외
+      if (ev.sn && ms.qustnrSn && ev.sn === ms.qustnrSn) return false;
+
+      const [py, pm, pd] = ms.dateStr.split("-").map(Number);
+      const [psh, psm] = ms.startTime.split(":").map(Number);
+      const [peh, pem] = ms.endTime.split(":").map(Number);
+
+      if ([py, pm, pd, psh, psm, peh, pem].some(Number.isNaN)) {
+        return false;
+      }
+
+      const msStart = new Date(py, pm - 1, pd, psh, psm, 0);
+      const msEnd = new Date(py, pm - 1, pd, peh, pem, 0);
+
+      return eventStart < msEnd && msStart < eventEnd;
+    });
+  }
+
   function hasPersonalScheduleConflict(ev, personalSchedules) {
     if (!ev?.date || !ev?.timeStart || !ev?.timeEnd || !Array.isArray(personalSchedules)) {
       return false;
@@ -508,7 +637,7 @@
     const isGray = isPast || ev.isClosed;
 
     const card = document.createElement("div");
-    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}${ev.hasPersonalConflict ? " asm-card-conflict" : ""}`;
+    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}${(ev.hasPersonalConflict || ev.hasMentoringConflict) ? " asm-card-conflict" : ""}`;
     card.setAttribute("role", "link");
     card.setAttribute("tabindex", "0");
 
@@ -553,6 +682,10 @@
 
     if (ev.hasPersonalConflict) {
       badges.appendChild(mkBadge("개인일정 주의", "asm-conflict"));
+    }
+
+    if (ev.hasMentoringConflict) {
+      badges.appendChild(mkBadge("멘토링일정주의", "asm-conflict"));
     }
 
     card.appendChild(badges);
@@ -1019,6 +1152,7 @@
     let currentOffset = 0;
     let allEvents = [];
     let personalSchedules = [];
+    let mentoringSchedules = [];
 
     let appliedSearchType = "title";
     let appliedSearchKeyword = "";
@@ -1045,16 +1179,18 @@
 
       return events.map((ev) => {
         const withConflict = hasPersonalScheduleConflict(ev, personalSchedules);
+        const withMentoringConflict = hasMentoringScheduleConflict(ev, mentoringSchedules);
 
         if (ev.sn && cache.has(ev.sn)) {
           return {
             ...ev,
             location: cache.get(ev.sn) || null,
             hasPersonalConflict: withConflict,
+            hasMentoringConflict: withMentoringConflict,
           };
         }
 
-        return { ...ev, hasPersonalConflict: withConflict };
+        return { ...ev, hasPersonalConflict: withConflict, hasMentoringConflict: withMentoringConflict };
       });
     }
 
@@ -1139,7 +1275,10 @@
     }
 
     // ① 현재 페이지 데이터로 즉시 렌더
-    personalSchedules = await loadPersonalSchedules();
+    [personalSchedules, mentoringSchedules] = await Promise.all([
+      loadPersonalSchedules(),
+      loadMentoringSchedules(),
+    ]);
     const initialMap = parseTableRows(document);
     allEvents = collectEvents(initialMap);
     renderPanel(withLocations(getFilteredEvents()), !loadCache());

@@ -74,18 +74,18 @@
 }
 
 .asm-panel-nav-btn.asm-nav-today {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #e3f5fc;
+  color: #086DB7;
   font-weight: 600;
 }
 
 .asm-panel-nav-btn.asm-nav-today:hover {
-  background: #dbeafe;
+  background: #b8e5f7;
 }
 
 .asm-panel-nav-btn.asm-nav-today-current {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #e3f5fc;
+  color: #086DB7;
   font-weight: 600;
 }
 
@@ -218,7 +218,6 @@
   color: #777;
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: -0.8px;
   opacity: 1;
 }
 
@@ -230,10 +229,10 @@
 
   margin: 0;
 
-  border: 1px solid #1d4ed8;
+  border: 1px solid #086DB7;
   border-left: none;
   border-radius: 0 5px 5px 0;
-  background: #1d4ed8;
+  background: #086DB7;
 
   color: #fff;
   font-size: 13px;
@@ -244,8 +243,8 @@
 }
 
 .asm-search-btn:hover {
-  background: #1e40af;
-  border-color: #1e40af;
+  background: #065a96;
+  border-color: #065a96;
 }
 
 .asm-search-reset {
@@ -330,18 +329,18 @@
 
 .asm-cal-day.asm-cal-has-events:hover {
   /* border-color: #93c5fd; */
-  /* background: #eff6ff; */
+  /* background: #e3f5fc; */
 }
 
 /* 오늘 */
 .asm-cal-day.asm-cal-today {
-  /* border-right-color: #3b82f6; */
-  /* border-bottom-color: #3b82f6; */
-  background: #eff6ff;
+  /* border-right-color: #086DB7; */
+  /* border-bottom-color: #086DB7; */
+  background: #e3f5fc;
 }
 
 .asm-cal-day.asm-cal-today .asm-cal-daynum {
-  color: #1d4ed8;
+  color: #086DB7;
 }
 
 /* 지난 날짜 */
@@ -357,8 +356,8 @@
 
 /* 선택된 날짜 */
 .asm-cal-day.asm-cal-selected {
-  border-color: #3b82f6;
-  background: #1d4ed8;
+  border-color: #086DB7;
+  background: #086DB7;
 }
 
 .asm-cal-day.asm-cal-selected .asm-cal-daynum,
@@ -402,8 +401,8 @@
   flex-shrink: 0;
 }
 
-.asm-dot-MRC010 { background: #3b82f6; }
-.asm-dot-MRC020 { background: #8b5cf6; }
+.asm-dot-MRC010 { background: #086DB7; }
+.asm-dot-MRC020 { background: #00D3A9; }
 .asm-dot-gray   { background: #cbd5e1; }
 
 .asm-dot-more {
@@ -448,7 +447,7 @@
   width: 22px;
   height: 22px;
   border: 3px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border-top-color: #00B5C7;
   border-radius: 50%;
   animation: asm-spin 0.75s linear infinite;
 }
@@ -525,19 +524,19 @@
 
 /* 접수중: 카테고리별 색상 */
 .asm-event-card.asm-card-open.asm-cat-MRC010 {
-  background: #eff6ff;
+  background: #e6eef8;
 }
 
 .asm-event-card.asm-card-open.asm-cat-MRC010 .asm-card-title::before {
-  background: #3b82f6;
+  background: #086DB7;
 }
 
 .asm-event-card.asm-card-open.asm-cat-MRC020 {
-  background: #f5f3ff;
+  background: #e0faf4;
 }
 
 .asm-event-card.asm-card-open.asm-cat-MRC020 .asm-card-title::before {
-  background: #8b5cf6;
+  background: #00D3A9;
 }
 
 /* 회색 (마감 / 지난 강의) */
@@ -573,12 +572,12 @@
   line-height: 1.5;
 }
 
-.asm-cat-badge.asm-cat-MRC010 { background: #dbeafe; color: #1d4ed8; }
-.asm-cat-badge.asm-cat-MRC020 { background: #ede9fe; color: #6d28d9; }
+.asm-cat-badge.asm-cat-MRC010 { background: #ccd8f0; color: #086DB7; }
+.asm-cat-badge.asm-cat-MRC020 { background: #b8f5e8; color: #007a5e; }
 
-.asm-badge.asm-online  { background: #e0f2fe; color: #0369a1; }
-.asm-badge.asm-offline { background: #ffedd5; color: #c2410c; }
-.asm-badge.asm-open-badge { background: #dcfce7; color: #15803d; }
+.asm-badge.asm-online  { background: #b8e5f7; color: #086DB7; }
+.asm-badge.asm-offline { background: #fde4d8; color: #b05030; }
+.asm-badge.asm-open-badge { background: #fefccb; color: #7a7a00; }
 .asm-badge.asm-closed  { background: #f1f5f9; color: #64748b; }
 .asm-badge.asm-done    { background: #f1f5f9; color: #94a3b8; }
 .asm-badge.asm-conflict { background: #fee2e2; color: #b91c1c; }
@@ -638,7 +637,7 @@
 
 .asm-card-link {
   font-size: 11px;
-  color: #3b82f6;
+  color: #086DB7;
   font-weight: 600;
   white-space: nowrap;
   text-decoration: none;

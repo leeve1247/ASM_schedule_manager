@@ -91,7 +91,7 @@
 }
 
 #history-calendar .asm-switch input:checked + .asm-slider {
-  background-color: #3b82f6;
+  background-color: #086DB7;
 }
 
 #history-calendar .asm-switch input:checked + .asm-slider:before {
@@ -211,13 +211,13 @@
 }
 
 #history-calendar .control-btn.nav-btn.nav-today {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #e3f5fc;
+  color: #086DB7;
   font-weight: 700;
 }
 
 #history-calendar .control-btn.nav-btn.nav-today:hover {
-  background: #dbeafe;
+  background: #b8e5f7;
 }
 
 #history-calendar .control-btn {
@@ -255,13 +255,13 @@
 }
 
 #history-calendar .control-btn.accent {
-  background: #114C9D;
+  background: #086DB7;
   border: none;
   color: #ffffff;
 }
 
 #history-calendar .control-btn.accent:hover {
-  background: #0d3d7e;
+  background: #075e9e;
   color: #ffffff;
 }
 
@@ -346,8 +346,8 @@
   gap: 4px;
   font-size: 10px;
   font-weight: 700;
-  color: #ef4444;
-  border: 1.5px solid #ef4444;
+  color: #086DB7;
+  border: 1.5px solid #086DB7;
   border-radius: 4px;
   padding: 0 4px;
   line-height: 16px;
@@ -359,7 +359,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ef4444;
+  background: #086DB7;
 }
 
 /* 3. Event Cards */
@@ -393,24 +393,24 @@
 
 /* Dot Colors and pastel backgrounds depending on types */
 #history-calendar .calendar-lecture.special {
-  background: #eff6ff;
+  background: #e6eef8;
 }
 #history-calendar .calendar-lecture.special .text-title::before {
-  background: #3b82f6;
+  background: #086DB7;
 }
 
 #history-calendar .calendar-lecture.mentoring {
-  background: #f5f3ff;
+  background: #e0faf4;
 }
 #history-calendar .calendar-lecture.mentoring .text-title::before {
-  background: #8b5cf6;
+  background: #00D3A9;
 }
 
 #history-calendar .calendar-lecture.event-personal {
-  background: #f0fdf4;
+  background: #edfce6;
 }
 #history-calendar .calendar-lecture.event-personal .text-title::before {
-  background: #16a34a;
+  background: #90EA84;
 }
 
 /* Past Events styled with ended state */
@@ -471,18 +471,18 @@
 }
 
 #history-calendar .special .text-type-badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #ccd8f0;
+  color: #086DB7;
 }
 
 #history-calendar .mentoring .text-type-badge {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: #b8f5e8;
+  color: #007a5e;
 }
 
 #history-calendar .personal-badge {
-  background: #dcfce7 !important;
-  color: #16a34a !important;
+  background: #d4f7c4 !important;
+  color: #2a8020 !important;
 }
 
 #history-calendar .info-row {
@@ -550,15 +550,15 @@
 }
 
 #history-calendar .button-group .edit-btn {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: #bbf7d0;
+  background: #edfce6;
+  color: #2a8020;
+  border-color: #a8e898;
 }
 
 #history-calendar .button-group .edit-btn:hover:not(:disabled) {
-  background: #dcfce7 !important;
-  color: #15803d !important;
-  border-color: #86efac !important;
+  background: #d4f7c4 !important;
+  color: #1a7010 !important;
+  border-color: #6edc80 !important;
 }
 
 #history-calendar .button-group .delete-btn {
@@ -672,9 +672,9 @@
 
 #personal-schedule-form input:focus,
 #personal-schedule-form textarea:focus {
-  border-color: #3b82f6;
+  border-color: #086DB7;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(8, 109, 183, 0.15);
 }
 
 #personal-schedule-form .flex-row {
@@ -714,15 +714,15 @@
 }
 
 #personal-schedule-form .btn-save {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #90EA84 0%, #00D3A9 100%);
   border: none;
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 10px rgba(144, 234, 132, 0.2);
 }
 
 #personal-schedule-form .btn-save:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #00D3A9 0%, #00B5C7 100%);
+  box-shadow: 0 4px 12px rgba(144, 234, 132, 0.3);
 }
 
 .location-type-row {
@@ -749,9 +749,9 @@
 }
 
 .location-type-btn.active {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #93c5fd;
+  background: #e3f5fc;
+  color: #086DB7;
+  border-color: #7fcde8;
 }
 
 .location-detail-input {
@@ -860,15 +860,15 @@
 }
 
 #soma-conflict-banner .label-mentoring {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: #e6eef8;
+  color: #086DB7;
+  border: 1px solid #b8cce8;
 }
 
 #soma-conflict-banner .label-personal {
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
+  background: #edfce6;
+  color: #2a8020;
+  border: 1px solid #a8e898;
 }
 
 #soma-conflict-banner .timeline-value {
@@ -917,6 +917,112 @@
   transform: translateY(-1px);
 }
 
+/* 멘토링 일정 충돌 경고 배너 (soma-conflict-banner 동일 스타일) */
+#soma-mentoring-conflict-banner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: #fffdfd;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 0 0 24px;
+  color: #1e293b;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.05);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#soma-mentoring-conflict-banner .conflict-icon {
+  font-size: 24px;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+#soma-mentoring-conflict-banner .conflict-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+#soma-mentoring-conflict-banner .conflict-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #991b1b;
+  line-height: 1.35;
+}
+
+#soma-mentoring-conflict-banner .conflict-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+#soma-mentoring-conflict-banner .conflict-timeline {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #fff5f5;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  max-width: 650px;
+}
+
+#soma-mentoring-conflict-banner .timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+#soma-mentoring-conflict-banner .timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+#soma-mentoring-conflict-banner .timeline-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  min-width: 90px;
+  text-align: center;
+}
+
+#soma-mentoring-conflict-banner .label-mentoring {
+  background: #e6eef8;
+  color: #086DB7;
+  border: 1px solid #b8cce8;
+}
+
+#soma-mentoring-conflict-banner .label-personal {
+  background: #fff0e6;
+  color: #c2540a;
+  border: 1px solid #fed7aa;
+}
+
+#soma-mentoring-conflict-banner .timeline-value {
+  color: #334155;
+  font-weight: 500;
+}
+
+#soma-mentoring-conflict-banner .timeline-value .personal-title {
+  color: #0f172a;
+}
+
+#soma-mentoring-conflict-banner .timeline-value .personal-time {
+  color: #64748b;
+  margin-left: 4px;
+}
+
 /* Disable state overrides */
 .soma-conflict-disabled {
   background: #cbd5e1 !important;
@@ -939,7 +1045,7 @@
 #history-calendar .quick-add-cell-btn {
   background: none;
   border: none;
-  color: #10b981;
+  color: #2a8020;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -950,7 +1056,7 @@
 }
 
 #history-calendar .quick-add-cell-btn:hover {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(144, 234, 132, 0.15);
   transform: scale(1.2);
 }
 
@@ -1009,7 +1115,7 @@
 }
 
 #personal-schedule-form select:focus {
-  border-color: #3b82f6;
+  border-color: #086DB7;
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(8, 109, 183, 0.15);
 }

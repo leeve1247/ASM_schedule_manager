@@ -839,6 +839,22 @@
 
     const mergedPersonalSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
 
+    // 멘토링 일정 충돌 감지를 위해 접수된 강의를 storage에 저장
+    const mentoringSchedules = lectures
+      .map(l => {
+        const parsed = parseLectureDateTimeText(l.dateTimeText);
+        if (!parsed || !l.dateStr) return null;
+        return {
+          qustnrSn: l.qustnrSn || '',
+          title: l.title || '',
+          dateStr: l.dateStr,
+          startTime: `${parsed.sh}:${parsed.sm}`,
+          endTime: `${parsed.eh}:${parsed.em}`
+        };
+      })
+      .filter(Boolean);
+    chrome.storage.local.set({ soma_mentoring_schedules: mentoringSchedules });
+
     const calendarWrapper = document.createElement('div');
     calendarWrapper.id = 'history-calendar';
 
@@ -1241,6 +1257,7 @@
   function removeConflictBanners() {
     document.getElementById('soma-conflict-banner')?.remove();
     document.getElementById('soma-conflict-debug-banner')?.remove();
+    document.getElementById('soma-mentoring-conflict-banner')?.remove();
   }
 
   function findConflictBannerAnchor() {
@@ -1326,6 +1343,51 @@
           </div>
           <div class="timeline-action">
             <a class="conflict-link-btn" href="${getPersonalScheduleManageUrl()}">개인 일정 수정하기</a>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const anchor = findConflictBannerAnchor();
+    if (!anchor) return;
+
+    if (anchor.firstChild) {
+      anchor.insertBefore(banner, anchor.firstChild);
+    } else {
+      anchor.appendChild(banner);
+    }
+  }
+
+  function injectMentoringConflictBanner(conflictingLecture, detailText = '') {
+    const existing = document.getElementById('soma-mentoring-conflict-banner');
+    if (existing) existing.remove();
+
+    const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
+
+    const banner = document.createElement('div');
+    banner.id = 'soma-mentoring-conflict-banner';
+    // soma-conflict-banner 와 동일한 스타일 클래스 사용
+    banner.className = 'soma-mentoring-conflict-banner';
+    banner.innerHTML = `
+      <div class="conflict-icon">⚠️</div>
+      <div class="conflict-content">
+        <div class="conflict-title">멘토링 일정과 중복되는 멘토링입니다</div>
+        <div class="conflict-desc">
+          이미 접수한 멘토링 일정과 시간대가 겹칩니다. 일정이 중복되더라도 신청은 가능하지만 주의가 필요합니다.
+        </div>
+        <div class="conflict-timeline">
+          <div class="timeline-rows">
+            <div class="timeline-row">
+              <span class="timeline-label label-mentoring">📅 현재 멘토링 시간</span>
+              <span class="timeline-value">${mentoringTime}</span>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-label label-personal">📌 겹치는 접수 멘토링</span>
+              <span class="timeline-value">
+                <strong class="personal-title">"${conflictingLecture.title}"</strong>
+                <span class="personal-time">(${conflictingLecture.startTime} ~ ${conflictingLecture.endTime})</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1434,6 +1496,42 @@
     } else {
       removeConflictBanners();
       console.log('SOMA Schedule Manager: No scheduling conflict detected.');
+    }
+
+    // 접수된 멘토링 일정과의 충돌 체크 (별도 경고, 신청 차단 없음)
+    const currentQustnrSn = new URL(window.location.href).searchParams.get('qustnrSn') || '';
+    const mentoringSchedules = await new Promise(resolve => {
+      chrome.storage.local.get(['soma_mentoring_schedules'], (res) => {
+        resolve(res.soma_mentoring_schedules || []);
+      });
+    });
+
+    let conflictingMentoring = null;
+    for (const ms of mentoringSchedules) {
+      if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) continue;
+      if (currentQustnrSn && ms.qustnrSn === currentQustnrSn) continue; // 자기 자신 제외
+
+      const [py, pm, pd] = ms.dateStr.split('-');
+      const [psh, psm] = ms.startTime.split(':');
+      const [peh, pem] = ms.endTime.split(':');
+
+      const msStart = new Date(parseInt(py, 10), parseInt(pm, 10) - 1, parseInt(pd, 10), parseInt(psh, 10), parseInt(psm, 10), 0);
+      const msEnd = new Date(parseInt(py, 10), parseInt(pm, 10) - 1, parseInt(pd, 10), parseInt(peh, 10), parseInt(pem, 10), 0);
+
+      if (lectureStart < msEnd && msStart < lectureEnd) {
+        conflictingMentoring = ms;
+        break;
+      }
+    }
+
+    const existingMentoringBanner = document.getElementById('soma-mentoring-conflict-banner');
+    if (conflictingMentoring) {
+      console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${conflictingMentoring.title}"`);
+      if (!existingMentoringBanner) {
+        injectMentoringConflictBanner(conflictingMentoring, detailText);
+      }
+    } else if (existingMentoringBanner) {
+      existingMentoringBanner.remove();
     }
   }
 
