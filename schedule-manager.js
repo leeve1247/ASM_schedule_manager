@@ -923,7 +923,7 @@
 
           const btnEdit = document.createElement('button');
           btnEdit.className = 'edit-btn';
-          btnEdit.innerHTML = '✏️ 수정';
+          btnEdit.innerHTML = '수정';
           btnEdit.title = '개인 일정 수정';
           btnEdit.addEventListener('click', (e) => {
             e.preventDefault();
@@ -932,7 +932,7 @@
 
           const btnDelete = document.createElement('button');
           btnDelete.className = 'delete-btn';
-          btnDelete.innerHTML = '🗑️ 삭제';
+          btnDelete.innerHTML = '삭제';
           btnDelete.title = '개인 일정 삭제';
           btnDelete.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -993,7 +993,7 @@
           const btnCancel = document.createElement('button');
           if (lec.hasCancelButton) {
             btnCancel.className = 'cancel-btn';
-            btnCancel.innerHTML = '❌ 취소';
+            btnCancel.innerHTML = '취소';
             btnCancel.title = '신청 취소';
             btnCancel.addEventListener('click', (e) => {
               e.preventDefault();
@@ -1001,7 +1001,7 @@
             });
           } else {
             btnCancel.className = 'cancel-btn unavailable';
-            btnCancel.innerHTML = evt.ended ? '🚫 취소 불가' : '🔒 취소 불가';
+            btnCancel.innerHTML = '🚫 취소 불가';
             btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : '하루 전날부터는 취소 불가';
             btnCancel.disabled = true;
           }
