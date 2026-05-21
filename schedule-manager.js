@@ -795,6 +795,23 @@
     }
   }
 
+  async function updateAlarmButtonState() {
+    const btn = document.getElementById('btn-toggle-alarm');
+    const txt = document.getElementById('alarm-toggle-text');
+    if (!btn || !txt) return;
+    const alarmFeature = getAlarmFeature();
+    const alarmSettings = alarmFeature
+      ? await alarmFeature.loadSettings()
+      : { userId: '', discordWebhookUrl: '', notificationsEnabled: false };
+    const isAlarmConfigured = Boolean(alarmSettings.userId && alarmSettings.discordWebhookUrl);
+    const alarmToggleLabel = !isAlarmConfigured
+      ? '🔔 알림 받기'
+      : (alarmSettings.notificationsEnabled ? '🔔 알림 끄기' : '🔕 알림 받기');
+    
+    txt.textContent = alarmToggleLabel;
+    btn.checked = isAlarmConfigured && alarmSettings.notificationsEnabled;
+  }
+
   // Render the Calendar UI
   async function renderCalendar(lectures) {
     const existing = document.getElementById('history-calendar');
@@ -839,7 +856,13 @@
         <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
       </div>
       <div class="calendar-actions">
-        <button id="btn-toggle-alarm" class="control-btn secondary alarm-toggle-btn">${alarmToggleLabel}</button>
+        <label class="alarm-toggle-container" for="btn-toggle-alarm">
+          <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
+          <span class="asm-switch">
+            <input type="checkbox" id="btn-toggle-alarm" ${isAlarmConfigured && alarmSettings.notificationsEnabled ? 'checked' : ''}>
+            <span class="asm-slider"></span>
+          </span>
+        </label>
         <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
       </div>
     `;
@@ -1098,19 +1121,25 @@
       renderCalendar(lectures);
     });
 
-    document.getElementById('btn-toggle-alarm').addEventListener('click', async () => {
+    document.getElementById('btn-toggle-alarm').addEventListener('click', async (e) => {
       const feature = getAlarmFeature();
       if (!feature) {
         alert('알림 기능이 아직 로드되지 않았습니다. 확장 프로그램을 새로고침한 뒤 다시 시도해 주세요.');
+        e.preventDefault();
         return;
       }
 
-      await feature.toggleNotifications({
+      const res = await feature.toggleNotifications({
         lectures,
         onChanged: async () => {
-          renderCalendar(lectures);
+          await updateAlarmButtonState();
         }
       });
+
+      if (res && res.configured === false) {
+        const btn = document.getElementById('btn-toggle-alarm');
+        if (btn) btn.checked = false;
+      }
     });
 
     document.getElementById('btn-add-personal').addEventListener('click', () => {
