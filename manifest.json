@@ -6,6 +6,12 @@
   "permissions": [
     "storage"
   ],
+  "host_permissions": [
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -26,8 +32,8 @@
         "*://*.swmaestro.org/sw/mypage/mentoLec/view.do*",
         "*://*.swmaestro.ai/sw/mypage/mentoLec/view.do*"
       ],
-      "js": ["schedule-manager.js"],
-      "css": ["schedule-manager.css"],
+      "js": ["alarm-client.js", "schedule-manager.js"],
+      "css": ["schedule-manager.css", "alarm-client.css"],
       "run_at": "document_idle"
     }
   ],

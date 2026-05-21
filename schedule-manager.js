@@ -24,6 +24,10 @@
   let startOffsetWeeks = 0; // 0 means starting from the Sunday of current week
   let editingScheduleId = null;
 
+  function getAlarmFeature() {
+    return globalThis.ASMAlarmFeature || null;
+  }
+
   // Helper: check if a lecture/schedule has ended
   function isLectureEnded(dateTimeText) {
     const match = dateTimeText.match(/(\d{4})-(\d{2})-(\d{2})\([^)]+\)\s*(\d{2}):(\d{2})(?::\d{2})?\s*~\s*(\d{2}):(\d{2})(?::\d{2})?/);
@@ -760,6 +764,14 @@
         resolve(res.soma_personal_schedules || []);
       });
     });
+    const alarmFeature = getAlarmFeature();
+    const alarmSettings = alarmFeature
+      ? await alarmFeature.loadSettings()
+      : { userId: '', discordWebhookUrl: '', notificationsEnabled: false };
+    const isAlarmConfigured = Boolean(alarmSettings.userId && alarmSettings.discordWebhookUrl);
+    const alarmToggleLabel = !isAlarmConfigured
+      ? '🔔 알림 받기'
+      : (alarmSettings.notificationsEnabled ? '🔔 알림 끄기' : '🔕 알림 받기');
 
     const mergedPersonalSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
 
@@ -780,6 +792,7 @@
         <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
       </div>
       <div class="calendar-actions">
+        <button id="btn-toggle-alarm" class="control-btn secondary alarm-toggle-btn">${alarmToggleLabel}</button>
         <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
       </div>
     `;
@@ -1035,6 +1048,21 @@
     document.getElementById('btn-next-weeks').addEventListener('click', () => {
       startOffsetWeeks += CALENDAR_SHIFT_WEEKS;
       renderCalendar(lectures);
+    });
+
+    document.getElementById('btn-toggle-alarm').addEventListener('click', async () => {
+      const feature = getAlarmFeature();
+      if (!feature) {
+        alert('알림 기능이 아직 로드되지 않았습니다. 확장 프로그램을 새로고침한 뒤 다시 시도해 주세요.');
+        return;
+      }
+
+      await feature.toggleNotifications({
+        lectures,
+        onChanged: async () => {
+          renderCalendar(lectures);
+        }
+      });
     });
 
     document.getElementById('btn-add-personal').addEventListener('click', () => {
@@ -1305,6 +1333,10 @@
         injectModalDOM();
         const lectures = await parseLecturesTable();
         renderCalendar(lectures);
+        const alarmFeature = getAlarmFeature();
+        if (alarmFeature) {
+          await alarmFeature.syncOnHistoryPageLoadIfConfigured(lectures);
+        }
       } catch (e) {
         console.error('Failed to initialize history dashboard:', e);
       }

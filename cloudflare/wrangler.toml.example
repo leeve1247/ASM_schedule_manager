@@ -1,0 +1,11 @@
+name = "asm-schedule-alarm"
+main = "src/index.js"
+compatibility_date = "2026-05-21"
+
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "asm-schedule-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

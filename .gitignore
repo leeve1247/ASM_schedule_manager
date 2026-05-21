@@ -1,1 +1,4 @@
 .claude/
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/wrangler.toml
