@@ -4,8 +4,9 @@
   margin-bottom: 16px;
   border: 1px solid #e2e8f0;
   background: #fff;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  display: flow-root;
+  overflow: visible;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 13px;
 }
 
@@ -45,7 +46,7 @@
   display: flex;
   align-items: center;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 5px;
   overflow: hidden;
 }
 
@@ -92,7 +93,7 @@
   justify-self: end;
   background: #fff;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 5px;
   padding: 4px 10px;
   font-size: 12px;
   color: #374151;
@@ -109,7 +110,7 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 0;
+  gap: 14px;
 }
 
 /* 달력 + 검색 묶음 */
@@ -117,7 +118,6 @@
   flex: 3 1 0;
   min-width: 0;
   box-sizing: border-box;
-  padding-right: 14px;
 
   display: flex;
   flex-direction: column;
@@ -160,7 +160,7 @@
   padding: 0 28px 0 12px;
 
   border: 1px solid #b8bfcc;
-  border-radius: 8px;
+  border-radius: 5px;
   background-color: #fff;
 
   color: #444;
@@ -204,7 +204,7 @@
 
   border: 1px solid #b8bfcc;
   border-right: none;
-  border-radius: 8px 0 0 8px;
+  border-radius: 5px 0 0 5px;
   background: #fff;
 
   color: #333;
@@ -232,7 +232,7 @@
 
   border: 1px solid #1d4ed8;
   border-left: none;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 5px 5px 0;
   background: #1d4ed8;
 
   color: #fff;
@@ -255,7 +255,7 @@
   box-sizing: border-box;
 
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #686868;
 
   color: #fff;
@@ -329,14 +329,14 @@
 }
 
 .asm-cal-day.asm-cal-has-events:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  /* border-color: #93c5fd; */
+  /* background: #eff6ff; */
 }
 
 /* 오늘 */
 .asm-cal-day.asm-cal-today {
-  border-right-color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  /* border-right-color: #3b82f6; */
+  /* border-bottom-color: #3b82f6; */
   background: #eff6ff;
 }
 
@@ -414,8 +414,8 @@
 
 /* ── 이벤트 패널 (오른쪽 고정 컬럼) ── */
 .asm-event-panel {
-  flex: 7 1 0;
-  min-width: 0;
+  flex: 1 1 58%;
+  min-width: 360px;
   border-left: 1px solid #e2e8f0;
   padding-left: 14px;
   min-height: 200px;
@@ -486,7 +486,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  border-radius: 8px;
+  border-radius: 5px;
   padding: 8px 10px;
   min-width: 200px;
   max-width: 300px;
@@ -494,6 +494,7 @@
   border: 1px solid #e2e8f0;
   background: #ffffff;
   transition: box-shadow 0.15s, transform 0.15s;
+  box-sizing: border-box;
 }
 
 .asm-event-card:hover {
@@ -549,6 +550,11 @@
   background: #cbd5e1;
 }
 
+.asm-event-card.asm-card-conflict {
+  border-color: #fca5a5;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.14);
+}
+
 /* 배지 */
 .asm-card-badges {
   display: flex;
@@ -575,6 +581,7 @@
 .asm-badge.asm-open-badge { background: #dcfce7; color: #15803d; }
 .asm-badge.asm-closed  { background: #f1f5f9; color: #64748b; }
 .asm-badge.asm-done    { background: #f1f5f9; color: #94a3b8; }
+.asm-badge.asm-conflict { background: #fee2e2; color: #b91c1c; }
 
 .asm-cap {
   font-size: 11px;
@@ -620,6 +627,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .asm-card-time {
@@ -670,9 +678,21 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
+  .asm-cal-area {
+    flex-basis: 40%;
+  }
+
+  .asm-event-panel {
+    flex-basis: 60%;
+    min-width: 320px;
+  }
+}
+
+@media (max-width: 980px) {
   .asm-panel-body {
     flex-direction: column;
+    gap: 0;
   }
 
   .asm-cal-area {
@@ -688,7 +708,18 @@
     padding-top: 12px;
     margin-top: 12px;
   }
+}
 
+@media (max-width: 900px) {
+  .asm-day-cards {
+    gap: 10px;
+  }
+
+  .asm-event-card {
+    min-width: 160px;
+    max-width: none;
+    flex: 1 1 calc(50% - 5px);
+  }
 }
 
 
@@ -714,5 +745,20 @@
   .asm-search-reset {
     flex: 0 0 56px;
     width: 56px;
+  }
+
+  .asm-event-card {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  .asm-card-footer-bottom {
+    align-items: flex-start;
+  }
+
+  .asm-card-time,
+  .asm-card-link,
+  .asm-cap {
+    white-space: normal;
   }
 }

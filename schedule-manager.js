@@ -30,9 +30,10 @@
 
   // Helper: check if a lecture/schedule has ended
   function isLectureEnded(dateTimeText) {
-    const match = dateTimeText.match(/(\d{4})-(\d{2})-(\d{2})\([^)]+\)\s*(\d{2}):(\d{2})(?::\d{2})?\s*~\s*(\d{2}):(\d{2})(?::\d{2})?/);
-    if (!match) return false;
-    const [_, y, m, d, sh, sm, eh, em] = match;
+    const parsed = parseLectureDateTimeText(dateTimeText);
+    if (!parsed) return false;
+
+    const { y, m, d, eh, em } = parsed;
     const endTime = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(eh, 10), parseInt(em, 10), 0);
     return endTime < new Date();
   }
@@ -116,13 +117,57 @@
 
     const normalized = dateTimeText.replace(/\s+/g, ' ').trim();
     const match = normalized.match(
-      /(\d{4})[-./](\d{2})[-./](\d{2})(?:\([^)]+\))?\s*(\d{2})(?::(\d{2}))?\s*시?\s*~\s*(\d{2})(?::(\d{2}))?\s*시?/
+      /(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:\([^)]+\))?\s*(\d{1,2})(?::(\d{2}))?\s*시?\s*~\s*(\d{1,2})(?::(\d{2}))?\s*시?/
     );
 
     if (!match) return null;
 
     const [, y, m, d, sh, sm = '00', eh, em = '00'] = match;
-    return { y, m, d, sh, sm, eh, em };
+    return {
+      y,
+      m: m.padStart(2, '0'),
+      d: d.padStart(2, '0'),
+      sh: sh.padStart(2, '0'),
+      sm,
+      eh: eh.padStart(2, '0'),
+      em
+    };
+  }
+
+  function getLectureDateBounds(dateTimeText) {
+    const parsed = parseLectureDateTimeText(dateTimeText);
+    if (!parsed) return null;
+
+    const { y, m, d, sh, sm, eh, em } = parsed;
+    return {
+      start: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(sh, 10), parseInt(sm, 10), 0),
+      end: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(eh, 10), parseInt(em, 10), 0)
+    };
+  }
+
+  function getCancelDeadlineHours(locationText) {
+    const normalized = (locationText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+    if (normalized.includes('온라인') || /webex|zoom|meet|teams/.test(normalized)) {
+      return 24;
+    }
+
+    return 96;
+  }
+
+  function getCancelPolicyReason(locationText) {
+    return getCancelDeadlineHours(locationText) === 24
+      ? '온라인 일정은 시작 24시간 전까지만 취소 가능'
+      : '오프라인 일정은 시작 96시간 전까지만 취소 가능';
+  }
+
+  function isLectureCancelable(dateTimeText, locationText) {
+    const bounds = getLectureDateBounds(dateTimeText);
+    if (!bounds) return false;
+
+    const deadlineHours = getCancelDeadlineHours(locationText);
+    const deadlineTime = new Date(bounds.start.getTime() - deadlineHours * 60 * 60 * 1000);
+    return new Date() < deadlineTime;
   }
 
   // Fetch SOMA lecture details (Location & Enrollment) with cache support
@@ -447,7 +492,9 @@
         location: details.location,
         people: formatPeopleSummary(details.people),
         approvalStatus: formatApprovalStatus(details.approvalStatus === '정보 없음' ? raw.approval : details.approvalStatus),
-        deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${raw.status} ${raw.approval}`, ended)
+        deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${raw.status} ${raw.approval}`, ended),
+        cancelAllowed: raw.hasCancelButton && !ended && isLectureCancelable(raw.dateTimeText, details.location),
+        cancelPolicyReason: getCancelPolicyReason(details.location)
       });
     }
 
@@ -1004,7 +1051,7 @@
           const buttonGroup = document.createElement('div');
           buttonGroup.className = 'button-group';
           const btnCancel = document.createElement('button');
-          if (lec.hasCancelButton) {
+          if (lec.cancelAllowed) {
             btnCancel.className = 'cancel-btn';
             btnCancel.innerHTML = '취소';
             btnCancel.title = '신청 취소';
@@ -1015,7 +1062,7 @@
           } else {
             btnCancel.className = 'cancel-btn unavailable';
             btnCancel.innerHTML = '🚫 취소 불가';
-            btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : '하루 전날부터는 취소 불가';
+            btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : lec.cancelPolicyReason;
             btnCancel.disabled = true;
           }
 
@@ -1073,6 +1120,18 @@
   // --- DETAIL PAGE / CONFLICT RESOLUTION MODE ---
 
   function findLectureDateTimeOnDetailPage() {
+    const eventDateEl = document.querySelector('.eventDt');
+    if (eventDateEl) {
+      const group = eventDateEl.closest('.group');
+      const valueEl = group?.querySelector('.c');
+      const valueText = valueEl?.textContent?.trim().replace(/\s+/g, ' ') || '';
+      const match = parseLectureDateTimeText(valueText);
+      if (match) {
+        const { y, m, d, sh, sm, eh, em } = match;
+        return `${y}-${m}-${d} ${sh}:${sm} ~ ${eh}:${em}`;
+      }
+    }
+
     const groups = document.querySelectorAll('div.group');
     for (const group of groups) {
       const labelEl = group.querySelector('strong.t');
@@ -1169,23 +1228,74 @@
     return `${window.location.origin}${basePath}/mypage/userAnswer/history.do?menuNo=200047`;
   }
 
+  function isApplicationTrigger(el) {
+    if (!el || el.id === 'soma-conflict-banner' || el.closest('#soma-conflict-banner')) {
+      return false;
+    }
+
+    const text = (el.textContent || el.value || '').trim();
+    const onclickAttr = el.getAttribute('onclick') || '';
+    const hrefAttr = el.getAttribute('href') || '';
+    const classText = typeof el.className === 'string' ? el.className : '';
+
+    return (
+      /(신청|접수)/.test(text) ||
+      /checkApply|checkMento|apply|lectureApply|userAnswer/i.test(onclickAttr) ||
+      /apply|lectureApply|userAnswer/i.test(hrefAttr) ||
+      /(apply|receipt|request|submit)/i.test(classText)
+    );
+  }
+
+  function findApplicationTargets() {
+    const explicitTargets = [
+      document.getElementById('applyLec'),
+      document.getElementById('applyBtn')
+    ].filter(Boolean);
+
+    if (explicitTargets.length > 0) {
+      return explicitTargets.filter(isApplicationTrigger);
+    }
+
+    const applyElements = Array.from(
+      document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, a, [role="button"]')
+    );
+
+    return applyElements.filter(isApplicationTrigger);
+  }
+
   function injectWarningBanner(schedule, detailText = '') {
     const existing = document.getElementById('soma-conflict-banner');
     if (existing) existing.remove();
+    
+    const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
     
     const banner = document.createElement('div');
     banner.id = 'soma-conflict-banner';
     banner.innerHTML = `
       <div class="conflict-icon">⚠️</div>
       <div class="conflict-content">
-        <div class="conflict-title">개인 일정과 겹치는 멘토링입니다.</div>
+        <div class="conflict-title">개인 일정과 중복되는 멘토링입니다</div>
         <div class="conflict-desc">
-          이 강의 시간은 개인 일정 <strong>"${schedule.title}"</strong> (${schedule.startTime} ~ ${schedule.endTime})과 중복되므로 신청할 수 없습니다.
+          현재 선택하신 멘토링 시간대에 겹치는 개인 일정이 등록되어 있어 신청이 제한됩니다. 멘토링을 신청하시려면 개인 일정을 수정하거나 변경해 주세요.
         </div>
-        <div class="conflict-help">멘토링을 신청하시려면 일정을 변경하세요.</div>
-        ${detailText ? `<div class="conflict-meta">${detailText}</div>` : ''}
-        <div class="conflict-actions">
-          <a class="conflict-link-btn" href="${getPersonalScheduleManageUrl()}">개인 일정 수정하기</a>
+        
+        <div class="conflict-timeline">
+          <div class="timeline-rows">
+            <div class="timeline-row">
+              <span class="timeline-label label-mentoring">📅 멘토링 시간</span>
+              <span class="timeline-value">${mentoringTime}</span>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-label label-personal">👤 개인 일정</span>
+              <span class="timeline-value">
+                <strong class="personal-title">"${schedule.title}"</strong>
+                <span class="personal-time">(${schedule.startTime} ~ ${schedule.endTime})</span>
+              </span>
+            </div>
+          </div>
+          <div class="timeline-action">
+            <a class="conflict-link-btn" href="${getPersonalScheduleManageUrl()}">개인 일정 수정하기</a>
+          </div>
         </div>
       </div>
     `;
@@ -1202,20 +1312,16 @@
 
   function blockApplication(conflictingSchedule, detailText = '') {
     console.log('SOMA Schedule Manager: blockApplication started.');
-    // Collect possible apply triggers
-    const applyElements = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, a'));
-    const targetElements = applyElements.filter(el => {
-      const text = (el.textContent || el.value || '').trim();
-      const onclickAttr = el.getAttribute('onclick') || '';
-      return text.includes('신청') || text.includes('접수') || onclickAttr.includes('checkApply') || onclickAttr.includes('checkMento');
-    });
+    const targetElements = findApplicationTargets();
     console.log('SOMA Schedule Manager: Target elements found to block:', targetElements);
 
     targetElements.forEach(el => {
       if (!el.parentNode) return;
+      if (el.dataset.somaConflictBlocked === 'true') return;
       
       // Clone the element to strip all page event listeners (jQuery, etc.)
       const clone = el.cloneNode(true);
+      clone.dataset.somaConflictBlocked = 'true';
       
       if (clone.tagName === 'INPUT' || clone.tagName === 'BUTTON') {
         clone.disabled = true;
@@ -1267,11 +1373,12 @@
         resolve(res.soma_personal_schedules || []);
       });
     });
-    console.log('SOMA Schedule Manager: Loaded personal schedules:', personalSchedules);
+    const mergedSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
+    console.log('SOMA Schedule Manager: Loaded personal schedules:', mergedSchedules);
 
     // Evaluate overlaps
     let conflictingSchedule = null;
-    for (const ps of personalSchedules) {
+    for (const ps of mergedSchedules) {
       if (!ps?.dateStr || !ps?.startTime || !ps?.endTime) continue;
 
       const [py, pm, pd] = ps.dateStr.split('-');
@@ -1305,7 +1412,7 @@
     let retries = 10;
     while (retries > 0) {
       const dateTimeText = findLectureDateTimeOnDetailPage();
-      const applyBtn = document.querySelector('button, input[type="submit"], input[type="button"], a.btn');
+      const applyBtn = findApplicationTargets()[0];
       
       if (dateTimeText && applyBtn) {
         console.log('SOMA Schedule Manager: Target DOM elements resolved.');

@@ -186,6 +186,48 @@
     return { type: "offline", label: "오프라인" };
   }
 
+  function loadPersonalSchedules() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["soma_personal_schedules"], (res) => {
+        resolve(res.soma_personal_schedules || []);
+      });
+    });
+  }
+
+  function hasPersonalScheduleConflict(ev, personalSchedules) {
+    if (!ev?.date || !ev?.timeStart || !ev?.timeEnd || !Array.isArray(personalSchedules)) {
+      return false;
+    }
+
+    const [ey, em, ed] = ev.date.split("-").map(Number);
+    const [esh, esm] = ev.timeStart.split(":").map(Number);
+    const [eeh, eem] = ev.timeEnd.split(":").map(Number);
+
+    if ([ey, em, ed, esh, esm, eeh, eem].some(Number.isNaN)) {
+      return false;
+    }
+
+    const eventStart = new Date(ey, em - 1, ed, esh, esm, 0);
+    const eventEnd = new Date(ey, em - 1, ed, eeh, eem, 0);
+
+    return personalSchedules.some((ps) => {
+      if (!ps?.dateStr || !ps?.startTime || !ps?.endTime) return false;
+
+      const [py, pm, pd] = ps.dateStr.split("-").map(Number);
+      const [psh, psm] = ps.startTime.split(":").map(Number);
+      const [peh, pem] = ps.endTime.split(":").map(Number);
+
+      if ([py, pm, pd, psh, psm, peh, pem].some(Number.isNaN)) {
+        return false;
+      }
+
+      const personalStart = new Date(py, pm - 1, pd, psh, psm, 0);
+      const personalEnd = new Date(py, pm - 1, pd, peh, pem, 0);
+
+      return eventStart < personalEnd && personalStart < eventEnd;
+    });
+  }
+
   // ── 상세 페이지 fetch → 장소 정보 수집 ───────────────────────────────────
 
   async function fetchLocations(events) {
@@ -466,7 +508,7 @@
     const isGray = isPast || ev.isClosed;
 
     const card = document.createElement("div");
-    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}`;
+    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}${ev.hasPersonalConflict ? " asm-card-conflict" : ""}`;
     card.setAttribute("role", "link");
     card.setAttribute("tabindex", "0");
 
@@ -508,6 +550,11 @@
     const statusCls = isPast ? "asm-done" : ev.isClosed ? "asm-closed" : "asm-open-badge";
 
     badges.appendChild(mkBadge(statusLabel, statusCls));
+
+    if (ev.hasPersonalConflict) {
+      badges.appendChild(mkBadge("개인일정 주의", "asm-conflict"));
+    }
+
     card.appendChild(badges);
 
     const titleEl = document.createElement("div");
@@ -735,7 +782,7 @@
     const loadingEl = document.createElement("span");
     loadingEl.className = "asm-panel-loading";
     loadingEl.id = "asm-panel-loading";
-    loadingEl.textContent = isLoading ? "데이터 불러오는 중…" : "";
+    // loadingEl.textContent = isLoading ? "데이터 불러오는 중…" : "";
 
     titleWrap.appendChild(loadingEl);
     header.appendChild(titleWrap);
@@ -971,6 +1018,7 @@
 
     let currentOffset = 0;
     let allEvents = [];
+    let personalSchedules = [];
 
     let appliedSearchType = "title";
     let appliedSearchKeyword = "";
@@ -996,11 +1044,17 @@
       const cache = loadLocCache();
 
       return events.map((ev) => {
+        const withConflict = hasPersonalScheduleConflict(ev, personalSchedules);
+
         if (ev.sn && cache.has(ev.sn)) {
-          return { ...ev, location: cache.get(ev.sn) || null };
+          return {
+            ...ev,
+            location: cache.get(ev.sn) || null,
+            hasPersonalConflict: withConflict,
+          };
         }
 
-        return ev;
+        return { ...ev, hasPersonalConflict: withConflict };
       });
     }
 
@@ -1028,10 +1082,9 @@
       if (existing) {
         existing.parentNode.replaceChild(panel, existing);
       } else {
-        const bbsTop = document.querySelector(".bbs-top.bg");
-
-        if (bbsTop) {
-          bbsTop.parentNode.insertBefore(panel, bbsTop);
+        const tabs = document.querySelector(".tabs-st1");
+        if (tabs) {
+          tabs.parentNode.insertBefore(panel, tabs.nextSibling);
         } else {
           calWrap.parentNode.insertBefore(panel, calWrap);
         }
@@ -1086,6 +1139,7 @@
     }
 
     // ① 현재 페이지 데이터로 즉시 렌더
+    personalSchedules = await loadPersonalSchedules();
     const initialMap = parseTableRows(document);
     allEvents = collectEvents(initialMap);
     renderPanel(withLocations(getFilteredEvents()), !loadCache());
