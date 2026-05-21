@@ -172,6 +172,23 @@
   background: #f8fafc;
 }
 
+#history-calendar .calendar-cell.past-day {
+  background: #f1f5f9;
+}
+
+#history-calendar .calendar-cell.past-day:hover {
+  background: #e2e8f0;
+}
+
+#history-calendar .calendar-cell.past-day .calendar-date {
+  color: #94a3b8;
+}
+
+#history-calendar .calendar-cell.past-day .calendar-lecture,
+#history-calendar .calendar-cell.past-day .asm-event-card {
+  opacity: 0.75;
+}
+
 /* Today Cell Highlight */
 #history-calendar .calendar-date {
   font-size: 12px;

@@ -878,6 +878,7 @@
       const dateStr = `${y}-${m}-${d}`;
 
       const isToday = currentDate.getTime() === today.getTime();
+      const isPast = currentDate.getTime() < today.getTime();
       const formattedDateText = `${currentDate.getMonth() + 1}월 ${currentDate.getDate()}일 (${dayKorean[currentDate.getDay()]})`;
 
       // Gather SOMA lectures for this day
@@ -917,7 +918,7 @@
       const visibleEvents = allEvents;
 
       const cell = document.createElement('div');
-      cell.className = 'calendar-cell';
+      cell.className = `calendar-cell${isPast ? ' past-day' : ''}`;
       cell.setAttribute('data-calendar-date', dateStr);
 
       const dateHeader = document.createElement('div');
