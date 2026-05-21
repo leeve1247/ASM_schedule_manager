@@ -5,12 +5,8 @@
   font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 30px auto;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   color: #1e293b;
 }
 
@@ -64,7 +60,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 #history-calendar .control-btn:hover {
@@ -89,12 +84,10 @@
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   border: none;
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
 }
 
 #history-calendar .control-btn.accent:hover {
   background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
   color: #ffffff;
 }
 
@@ -125,9 +118,9 @@
 
 /* Calendar Cells */
 #history-calendar .calendar-cell {
-  background: rgba(248, 250, 252, 0.6);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 14px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
   padding: 12px;
   min-height: 100px;
   display: flex;
@@ -137,16 +130,14 @@
 }
 
 #history-calendar .calendar-cell:hover {
-  background: rgba(241, 245, 249, 0.8);
+  background: #f1f5f9;
   border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 /* Today Cell Highlight */
 #history-calendar .calendar-cell.today-bg {
-  background: rgba(239, 246, 255, 0.8);
-  border: 1.5px solid #60a5fa;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.15);
+  background: #eff6ff;
+  border: 1.5px solid #3b82f6;
 }
 
 #history-calendar .calendar-date {
@@ -166,29 +157,29 @@
 /* 3. Event Cards */
 #history-calendar .calendar-lecture {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   padding: 10px;
   font-size: 12px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.15s, background 0.15s;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 #history-calendar .calendar-lecture:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+  border-color: #93c5fd;
 }
 
 /* Left Indicator Colors depending on types */
 #history-calendar .calendar-lecture.special {
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid #3b82f6;
+  background: #eff6ff;
 }
 
 #history-calendar .calendar-lecture.mentoring {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #8b5cf6;
+  background: #f5f3ff;
 }
 
 #history-calendar .calendar-lecture.event-personal {
@@ -242,13 +233,13 @@
 }
 
 #history-calendar .special .text-type-badge {
-  background: #fef3c7;
-  color: #d97706;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 #history-calendar .mentoring .text-type-badge {
-  background: #dbeafe;
-  color: #2563eb;
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
 #history-calendar .personal-badge {
@@ -372,8 +363,8 @@
 .modal-content {
   background: #ffffff;
   border-radius: 20px;
-  width: 400px;
-  max-width: 90%;
+  width: 200px;
+  max-width: 40%;
   padding: 24px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(226, 232, 240, 0.8);

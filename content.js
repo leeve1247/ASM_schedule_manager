@@ -65,7 +65,7 @@
 
   const CACHE_KEY = "asm_event_map_v4";
   const LOC_CACHE_KEY = "asm_location_v1";
-  const CACHE_TTL = 10 * 60 * 1000; // 10분
+  const CACHE_TTL = 1 * 60 * 1000; // 1분
 
   function loadCache() {
     try {
@@ -563,12 +563,6 @@
           dot.className = `asm-dot ${pastEv || ev.isClosed ? "asm-dot-gray" : "asm-dot-" + ev.category}`;
           dotsEl.appendChild(dot);
         });
-        if (dayEvents.length > maxDots) {
-          const more = document.createElement("span");
-          more.className = "asm-dot-more";
-          more.textContent = `+${dayEvents.length - maxDots}`;
-          dotsEl.appendChild(more);
-        }
         cell.appendChild(dotsEl);
 
         cell.addEventListener("click", () => {

@@ -781,8 +781,8 @@
             <div class="info-group">
               <div class="text-title" data-role="title">${ps.title}</div>
               <div class="text-type-badge personal-badge">${badgeText}</div>
-              <div class="info-row" data-role="time">⏰ ${ps.startTime} ~ ${ps.endTime}</div>
-              ${ps.description ? `<div class="info-row desc-row" data-role="desc">📝 ${ps.description}</div>` : ''}
+              <div class="info-row" data-role="time"><strong>시간</strong> ${ps.startTime} ~ ${ps.endTime}</div>
+              ${ps.description ? `<div class="info-row desc-row" data-role="desc"><strong>메모</strong> ${ps.description}</div>` : ''}
             </div>
           `;
 
@@ -852,12 +852,12 @@
           infoLink.innerHTML = `
             <div class="text-title" data-role="title">${lec.title}</div>
             <div class="text-type-badge">${lec.type}</div>
-            <div class="info-row" data-role="mentor">🧑‍🏫 멘토 ${lec.mentorName}</div>
-            <div class="info-row" data-role="time">⏰ 시간 ${timeStr}</div>
-            <div class="info-row" data-role="location">📍 장소 ${lec.location}</div>
-            <div class="info-row" data-role="people">👥 신청인원 ${lec.people}</div>
-            <div class="info-row" data-role="approval">✅ 개설승인 ${lec.approvalStatus}</div>
-            <div class="info-row" data-role="status">📌 상태 ${lec.deadlineStatus}</div>
+            <div class="info-row" data-role="mentor"><strong>멘토</strong> ${lec.mentorName}</div>
+            <div class="info-row" data-role="time"><strong>시간</strong> ${timeStr}</div>
+            <div class="info-row" data-role="location"><strong>장소</strong> ${lec.location}</div>
+            <div class="info-row" data-role="people"><strong>신청인원</strong> ${lec.people}</div>
+            <div class="info-row" data-role="approval"><strong>개설승인</strong> ${lec.approvalStatus}</div>
+            <div class="info-row" data-role="status"><strong>상태</strong> ${lec.deadlineStatus}</div>
           `;
           card.appendChild(infoLink);
 
