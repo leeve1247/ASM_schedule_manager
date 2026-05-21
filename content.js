@@ -25,11 +25,14 @@
 
   function parseTableRows(root) {
     const map = new Map();
+
     root.querySelectorAll("tbody tr").forEach((tr) => {
       const link = tr.querySelector('a[href*="mentoLec/view.do"]');
       if (!link) return;
+
       const snMatch = link.href.match(/qustnrSn=(\d+)/);
       if (!snMatch) return;
+
       const sn = snMatch[1];
 
       const allTds = tr.querySelectorAll("td");
@@ -38,8 +41,10 @@
       const dateTimeRaw = pcTds[2] ? pcTds[2].textContent : "";
       const dateMatch = dateTimeRaw.match(/(\d{4}-\d{2}-\d{2})/);
       const timeMatch = dateTimeRaw.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/);
+
       const capRaw = pcTds[3] ? pcTds[3].textContent : "";
       const capMatch = capRaw.match(/(\d+)\s*\/\s*(\d+)/);
+
       const statusRaw = pcTds[5] ? pcTds[5].textContent.trim() : "";
       const author = pcTds[6] ? pcTds[6].textContent.trim() : "";
 
@@ -58,6 +63,7 @@
         author,
       });
     });
+
     return map;
   }
 
@@ -71,8 +77,10 @@
     try {
       const raw = sessionStorage.getItem(CACHE_KEY);
       if (!raw) return null;
+
       const { ts, data } = JSON.parse(raw);
       if (Date.now() - ts > CACHE_TTL) return null;
+
       return new Map(data);
     } catch {
       return null;
@@ -91,9 +99,12 @@
   async function fetchPageMap(pageIndex, baseUrl) {
     const url = `${baseUrl}&scdate=2026-01-01&ecdate=2026-12-31&edcDateOrder=&regDateOrder=&pageIndex=${pageIndex}`;
     const res = await fetch(url, { credentials: "include" });
+
     if (!res.ok) return new Map();
+
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, "text/html");
+
     return parseTableRows(doc);
   }
 
@@ -103,11 +114,16 @@
     try {
       const raw = sessionStorage.getItem(LOC_CACHE_KEY);
       if (!raw) return new Map();
+
       const { ts, data } = JSON.parse(raw);
+
       // 장소는 30분 캐시
       if (Date.now() - ts > 30 * 60 * 1000) return new Map();
+
       return new Map(data);
-    } catch { return new Map(); }
+    } catch {
+      return new Map();
+    }
   }
 
   function saveLocCache(map) {
@@ -128,9 +144,11 @@
         const td =
           th.nextElementSibling ||
           th.closest("tr")?.nextElementSibling?.querySelector("td");
+
         if (td) return td.textContent.trim();
       }
     }
+
     // dt → 다음 dd
     for (const dt of doc.querySelectorAll("dt")) {
       if (dt.textContent.trim() === "장소") {
@@ -138,6 +156,7 @@
         if (dd) return dd.textContent.trim();
       }
     }
+
     // label 형태
     for (const el of doc.querySelectorAll(".label, .tit, strong")) {
       if (el.textContent.trim() === "장소") {
@@ -145,14 +164,20 @@
         if (next) return next.textContent.trim();
       }
     }
+
     return null;
   }
 
   function classifyLocation(text) {
     if (!text) return null;
+
     const t = text.trim();
     if (!t) return null;
-    if (t.includes("온라인") || /zoom|meet|teams|webex/i.test(t)) return { type: "online", label: "온라인" };
+
+    if (t.includes("온라인") || /zoom|meet|teams|webex/i.test(t)) {
+      return { type: "online", label: "온라인" };
+    }
+
     return { type: "offline", label: "오프라인" };
   }
 
@@ -161,16 +186,21 @@
   async function fetchLocations(events) {
     const locCache = loadLocCache();
     const missing = events.filter((ev) => ev.sn && !locCache.has(ev.sn));
+
     if (missing.length === 0) return locCache;
 
     const origin = location.origin;
+
     const results = await Promise.allSettled(
       missing.map(async (ev) => {
         const url = `${origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${ev.sn}&menuNo=200046`;
         const res = await fetch(url, { credentials: "include" });
+
         if (!res.ok) return { sn: ev.sn, loc: null };
+
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, "text/html");
+
         return { sn: ev.sn, loc: parseLocationFromDoc(doc) };
       })
     );
@@ -182,6 +212,7 @@
     });
 
     saveLocCache(locCache);
+
     return locCache;
   }
 
@@ -194,17 +225,21 @@
     const lastLink = document.querySelector(
       '.paginationSet a[title="마지막 목록"], .paginationSet .i.last a'
     );
+
     if (lastLink) {
       const m = lastLink.href.match(/pageIndex=(\d+)/);
-      if (m) return parseInt(m[1]);
+      if (m) return parseInt(m[1], 10);
     }
+
     // 페이지 번호 링크 중 최대값
     const pageLinks = document.querySelectorAll(".paginationSet li a");
     let max = 1;
+
     pageLinks.forEach((a) => {
       const m = a.href.match(/pageIndex=(\d+)/);
-      if (m) max = Math.max(max, parseInt(m[1]));
+      if (m) max = Math.max(max, parseInt(m[1], 10));
     });
+
     return max;
   }
 
@@ -231,12 +266,16 @@
 
     results.forEach((r) => {
       if (r.status === "fulfilled") {
-        r.value.forEach((v, k) => { if (!merged.has(k)) merged.set(k, v); });
+        r.value.forEach((v, k) => {
+          if (!merged.has(k)) merged.set(k, v);
+        });
       }
     });
 
     saveCache(merged);
+
     if (onProgress) onProgress(merged);
+
     return merged;
   }
 
@@ -251,53 +290,163 @@
       .forEach((li) => {
         const td = li.closest("td[data-date]");
         const date = td ? td.getAttribute("data-date") : null;
+
         if (!date) return;
+
         const anchor = li.querySelector("a[title]");
         if (!anchor) return;
+
         const title = anchor.getAttribute("title") || "";
         const category = [...anchor.classList].find((c) => c.startsWith("MRC")) || "";
         const popLink = li.querySelector(".calendarPop a.link");
         const snMatch = popLink ? popLink.href.match(/qustnrSn=(\d+)/) : null;
         const sn = snMatch ? snMatch[1] : null;
         const url = popLink ? popLink.href : "#";
+
         if (sn && seen.has(sn)) return;
         if (sn) seen.add(sn);
+
         const info = (sn && eventMap.get(sn)) || {};
+
         events.push({
-          sn, date: info.date || date, title, category,
+          sn,
+          date: info.date || date,
+          title,
+          category,
           categoryNm: category === "MRC010" ? "자유 멘토링" : "멘토 특강",
           url,
           isClosed: info.isClosed ?? false,
-          current: info.current || "", total: info.total || "",
+          current: info.current || "",
+          total: info.total || "",
           author: info.author || "",
-          timeStart: info.timeStart || "", timeEnd: info.timeEnd || "",
+          timeStart: info.timeStart || "",
+          timeEnd: info.timeEnd || "",
         });
       });
 
     // 리스트 테이블에서 캘린더 DOM에 없는 이벤트 보완 (다음 달 등)
     eventMap.forEach((info, sn) => {
       if (seen.has(sn) || !info.date) return;
+
       // info.title: parseTableRows에서 저장한 제목 (페이지2+ fetch 포함)
       // DOM에서 링크를 찾을 수 없는 경우에도 제목 사용 가능
       const link = document.querySelector(`a[href*="qustnrSn=${sn}"][href*="mentoLec/view"]`);
-      const titleFromDom = link ? link.textContent.trim().replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, "") : "";
+      const titleFromDom = link
+        ? link.textContent.trim().replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, "")
+        : "";
+
       const title = info.title || titleFromDom || `(번호 ${sn})`;
-      const titleRaw = link ? link.textContent.trim() : (info.title || "");
+      const titleRaw = link ? link.textContent.trim() : info.title || "";
       const category = titleRaw.startsWith("[자유 멘토링]") ? "MRC010" : "MRC020";
-      const url = link ? link.href : `${location.origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${sn}&menuNo=200046`;
+      const url = link
+        ? link.href
+        : `${location.origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${sn}&menuNo=200046`;
+
       events.push({
-        sn, date: info.date,
+        sn,
+        date: info.date,
         title,
-        category, categoryNm: category === "MRC010" ? "자유 멘토링" : "멘토 특강",
+        category,
+        categoryNm: category === "MRC010" ? "자유 멘토링" : "멘토 특강",
         url,
         isClosed: info.isClosed,
-        current: info.current, total: info.total,
+        current: info.current,
+        total: info.total,
         author: info.author,
-        timeStart: info.timeStart, timeEnd: info.timeEnd,
+        timeStart: info.timeStart,
+        timeEnd: info.timeEnd,
       });
     });
 
     return events;
+  }
+
+  // ── 이벤트 정렬 유틸 ──────────────────────────────────────────────────────
+  // 정렬 기준:
+  // 1. 신청가능/접수중 위
+  // 2. 마감/진행완료 아래
+  // 3. 각 그룹 안에서 시작시간 오름차순
+  // 4. 시작시간이 같으면 멘토 이름 가나다순
+  // 5. 멘토 이름도 같으면 제목 가나다순
+  // 6. 전부 같으면 sn 기준 보조 정렬
+
+  function getEventStatusGroup(ev, todayStr) {
+    const isPast = ev.date < todayStr;
+    const isClosed = ev.isClosed;
+
+    // 0: 신청가능 / 접수중
+    // 1: 마감 / 진행완료
+    return isPast || isClosed ? 1 : 0;
+  }
+
+  function timeToMinutes(time) {
+    if (!time) return 24 * 60 + 999;
+
+    const [h, m] = time.split(":").map(Number);
+
+    if (Number.isNaN(h) || Number.isNaN(m)) {
+      return 24 * 60 + 999;
+    }
+
+    return h * 60 + m;
+  }
+
+  function getComparableAuthor(author) {
+    return (author || "")
+      .replace(/\s*멘토\s*$/g, "")
+      .trim()
+      .normalize("NFC");
+  }
+
+  function getComparableTitle(title) {
+    return (title || "")
+      .replace(/^\s*\[(온라인|오프라인)\]\s*/g, "")
+      .replace(/^\s*\((온라인|오프라인)\)\s*/g, "")
+      .replace(/^\s*\[(자유 멘토링|멘토 특강)\]\s*/g, "")
+      .trim()
+      .normalize("NFC");
+  }
+
+  function compareKoreanText(aText, bText) {
+    return aText.localeCompare(bText, "ko-KR", {
+      usage: "sort",
+      sensitivity: "variant",
+      numeric: true,
+      ignorePunctuation: true,
+    });
+  }
+
+  function sortEventsByStatusTimeAuthor(a, b, todayStr) {
+    const groupA = getEventStatusGroup(a, todayStr);
+    const groupB = getEventStatusGroup(b, todayStr);
+
+    // 1. 신청가능/접수중 먼저, 마감/진행완료 나중
+    if (groupA !== groupB) return groupA - groupB;
+
+    const timeA = timeToMinutes(a.timeStart);
+    const timeB = timeToMinutes(b.timeStart);
+
+    // 2. 같은 그룹 안에서는 시작시간순
+    if (timeA !== timeB) return timeA - timeB;
+
+    const authorA = getComparableAuthor(a.author);
+    const authorB = getComparableAuthor(b.author);
+
+    // 3. 시작시간이 같으면 멘토 이름 가나다순
+    const authorCompare = compareKoreanText(authorA, authorB);
+    if (authorCompare !== 0) return authorCompare;
+
+    const titleA = getComparableTitle(a.title);
+    const titleB = getComparableTitle(b.title);
+
+    // 4. 멘토 이름도 같으면 제목 가나다순
+    const titleCompare = compareKoreanText(titleA, titleB);
+    if (titleCompare !== 0) return titleCompare;
+
+    // 5. 전부 같으면 sn 기준 보조 정렬
+    return String(a.sn || "").localeCompare(String(b.sn || ""), "ko-KR", {
+      numeric: true,
+    });
   }
 
   // ── 이벤트 카드 생성 ──────────────────────────────────────────────────────
@@ -319,8 +468,11 @@
 
     // 장소: 상세 페이지 데이터 우선, 없으면 제목에서 감지
     const locInfo = ev.location ? classifyLocation(ev.location) : null;
+
     if (locInfo) {
-      badges.appendChild(mkBadge(locInfo.label, locInfo.type === "online" ? "asm-online" : "asm-offline"));
+      badges.appendChild(
+        mkBadge(locInfo.label, locInfo.type === "online" ? "asm-online" : "asm-offline")
+      );
     } else if (ev.title.includes("[온라인]") || ev.title.includes("(온라인)")) {
       badges.appendChild(mkBadge("온라인", "asm-online"));
     } else if (ev.title.includes("[오프라인]") || ev.title.includes("(오프라인)")) {
@@ -329,6 +481,7 @@
 
     const statusLabel = isPast ? "진행완료" : ev.isClosed ? "마감" : "접수중";
     const statusCls = isPast ? "asm-done" : ev.isClosed ? "asm-closed" : "asm-open-badge";
+
     badges.appendChild(mkBadge(statusLabel, statusCls));
 
     card.appendChild(badges);
@@ -360,6 +513,7 @@
     // 3행: 인원수 + 바로가기
     const bottom = document.createElement("div");
     bottom.className = "asm-card-footer-bottom";
+
     if (ev.current !== "" && ev.total !== "") {
       const cap = document.createElement("span");
       cap.className = "asm-cap";
@@ -368,15 +522,18 @@
     } else {
       bottom.appendChild(document.createElement("span"));
     }
+
     const linkEl = document.createElement("a");
     linkEl.className = "asm-card-link";
     linkEl.href = ev.url;
     linkEl.target = "_blank";
     linkEl.textContent = "바로가기 →";
+
     bottom.appendChild(linkEl);
     footer.appendChild(bottom);
 
     card.appendChild(footer);
+
     return card;
   }
 
@@ -391,30 +548,31 @@
 
   function renderEventPanel(container, dayEvents, dateStr, todayStr) {
     container.innerHTML = "";
+
     const d = new Date(dateStr + "T00:00:00");
 
     const headerEl = document.createElement("div");
     headerEl.className = "asm-event-panel-header";
+
     const dateLabel = document.createElement("span");
     dateLabel.className = "asm-event-panel-date";
     dateLabel.textContent = `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, "0")}(${DAY_KO[d.getDay()]})`;
+
     const cntLabel = document.createElement("span");
     cntLabel.className = "asm-event-panel-cnt";
     cntLabel.textContent = `${dayEvents.length}건`;
+
     headerEl.appendChild(dateLabel);
     headerEl.appendChild(cntLabel);
     container.appendChild(headerEl);
 
     const cards = document.createElement("div");
     cards.className = "asm-day-cards";
-    dayEvents
-      .sort((a, b) => {
-        const ap = a.date < todayStr ? 1 : 0;
-        const bp = b.date < todayStr ? 1 : 0;
-        if (ap !== bp) return ap - bp;
-        return (a.isClosed ? 1 : 0) - (b.isClosed ? 1 : 0);
-      })
+
+    [...dayEvents]
+      .sort((a, b) => sortEventsByStatusTimeAuthor(a, b, todayStr))
       .forEach((ev) => cards.appendChild(makeCard(ev, todayStr)));
+
     container.appendChild(cards);
   }
 
@@ -425,9 +583,11 @@
     const todayStr = toDateStr(today);
 
     const byDate = new Map();
+
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       byDate.set(toDateStr(new Date(d)), []);
     }
+
     events.forEach((ev) => {
       if (byDate.has(ev.date)) byDate.get(ev.date).push(ev);
     });
@@ -448,8 +608,8 @@
     loadingEl.className = "asm-panel-loading";
     loadingEl.id = "asm-panel-loading";
     loadingEl.textContent = isLoading ? "데이터 불러오는 중…" : "";
-    titleWrap.appendChild(loadingEl);
 
+    titleWrap.appendChild(loadingEl);
     header.appendChild(titleWrap);
 
     // 네비게이션 버튼
@@ -483,12 +643,15 @@
     const toggleBtn = document.createElement("button");
     toggleBtn.className = "asm-panel-toggle";
     toggleBtn.textContent = "접기";
+
     let collapsed = false;
+
     toggleBtn.addEventListener("click", () => {
       collapsed = !collapsed;
       body.style.display = collapsed ? "none" : "";
       toggleBtn.textContent = collapsed ? "펼치기" : "접기";
     });
+
     header.appendChild(toggleBtn);
     panel.appendChild(header);
 
@@ -499,12 +662,14 @@
     // 요일 헤더
     const wdRow = document.createElement("div");
     wdRow.className = "asm-cal-weekdays";
+
     ["일", "월", "화", "수", "목", "금", "토"].forEach((wd, i) => {
       const cell = document.createElement("div");
-      cell.className = `asm-cal-wd${(i === 0 || i === 6) ? " asm-wd-weekend" : ""}`;
+      cell.className = `asm-cal-wd${i === 0 || i === 6 ? " asm-wd-weekend" : ""}`;
       cell.textContent = wd;
       wdRow.appendChild(cell);
     });
+
     // 날짜 그리드
     const grid = document.createElement("div");
     grid.className = "asm-cal-grid";
@@ -515,6 +680,7 @@
     function showPlaceholder() {
       eventPanel.innerHTML = '<div class="asm-event-panel-placeholder"><span>날짜를 선택하면<br>일정이 표시됩니다</span></div>';
     }
+
     showPlaceholder();
 
     let selectedDate = null;
@@ -533,14 +699,22 @@
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
       const hasEvents = dayEvents.length > 0;
 
+      const sortedDayEvents = [...dayEvents].sort((a, b) =>
+        sortEventsByStatusTimeAuthor(a, b, todayStr)
+      );
+
       const cell = document.createElement("div");
+
       cell.className = [
         "asm-cal-day",
         isToday ? "asm-cal-today" : "",
         isPast ? "asm-cal-past" : "",
         isWeekend ? "asm-cal-weekend" : "",
         hasEvents ? "asm-cal-has-events" : "",
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
+
       cell.dataset.date = dateStr;
 
       const numEl = document.createElement("div");
@@ -551,16 +725,22 @@
       if (hasEvents) {
         const cntEl = document.createElement("div");
         cntEl.className = "asm-cal-cnt";
-        cntEl.textContent = `${dayEvents.length}건`;
+        cntEl.textContent = `${sortedDayEvents.length}건`;
         cell.appendChild(cntEl);
 
         const dotsEl = document.createElement("div");
         dotsEl.className = "asm-cal-dots";
-        const maxDots = Math.min(dayEvents.length, 5);
-        dayEvents.slice(0, maxDots).forEach((ev) => {
+
+        const maxDots = Math.min(sortedDayEvents.length, 5);
+
+        sortedDayEvents.slice(0, maxDots).forEach((ev) => {
           const dot = document.createElement("span");
           const pastEv = ev.date < todayStr;
-          dot.className = `asm-dot ${pastEv || ev.isClosed ? "asm-dot-gray" : "asm-dot-" + ev.category}`;
+
+          dot.className = `asm-dot ${
+            pastEv || ev.isClosed ? "asm-dot-gray" : "asm-dot-" + ev.category
+          }`;
+
           dotsEl.appendChild(dot);
         });
         cell.appendChild(dotsEl);
@@ -572,12 +752,15 @@
             showPlaceholder();
             return;
           }
+
           grid.querySelectorAll(".asm-cal-day.asm-cal-selected").forEach((c) =>
             c.classList.remove("asm-cal-selected")
           );
+
           selectedDate = dateStr;
           cell.classList.add("asm-cal-selected");
-          renderEventPanel(eventPanel, dayEvents, dateStr, todayStr);
+
+          renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr);
         });
       }
 
@@ -588,17 +771,25 @@
     calSection.className = "asm-cal-section";
     calSection.appendChild(wdRow);
     calSection.appendChild(grid);
+
     body.appendChild(calSection);
     body.appendChild(eventPanel);
     panel.appendChild(body);
 
     // 오늘 자동 열기
     const todayCell = grid.querySelector(`[data-date="${todayStr}"]`);
+
     if (todayCell && byDate.get(todayStr)?.length > 0) {
       setTimeout(() => todayCell.click(), 0);
     }
 
-    return { panel, grid, eventPanel, byDate, selectedDate: () => selectedDate };
+    return {
+      panel,
+      grid,
+      eventPanel,
+      byDate,
+      selectedDate: () => selectedDate,
+    };
   }
 
   // ── 초기화 ────────────────────────────────────────────────────────────────
@@ -612,14 +803,22 @@
 
     function getFilteredEvents() {
       const { start, end } = getMonthRange(currentOffset);
-      const s = toDateStr(start), e = toDateStr(end);
-      return allEvents.map((ev) => ({ ...ev })).filter((ev) => ev.date >= s && ev.date <= e);
+      const s = toDateStr(start);
+      const e = toDateStr(end);
+
+      return allEvents
+        .map((ev) => ({ ...ev }))
+        .filter((ev) => ev.date >= s && ev.date <= e);
     }
 
     function withLocations(events) {
       const cache = loadLocCache();
+
       return events.map((ev) => {
-        if (ev.sn && cache.has(ev.sn)) return { ...ev, location: cache.get(ev.sn) || null };
+        if (ev.sn && cache.has(ev.sn)) {
+          return { ...ev, location: cache.get(ev.sn) || null };
+        }
+
         return ev;
       });
     }
@@ -627,19 +826,27 @@
     function renderPanel(events, loading) {
       const existing = document.getElementById("asm-2week-panel");
       const { panel } = buildPanel(events, loading, currentOffset, navigate);
+
       if (existing) {
         existing.parentNode.replaceChild(panel, existing);
       } else {
         const bbsTop = document.querySelector(".bbs-top.bg");
-        if (bbsTop) bbsTop.parentNode.insertBefore(panel, bbsTop);
-        else calWrap.parentNode.insertBefore(panel, calWrap);
+
+        if (bbsTop) {
+          bbsTop.parentNode.insertBefore(panel, bbsTop);
+        } else {
+          calWrap.parentNode.insertBefore(panel, calWrap);
+        }
       }
     }
 
     async function navigate(newOffset) {
       currentOffset = newOffset;
+
       renderPanel(withLocations(getFilteredEvents()), false);
+
       await fetchLocations(getFilteredEvents());
+
       renderPanel(withLocations(getFilteredEvents()), false);
     }
 
