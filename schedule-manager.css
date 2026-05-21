@@ -102,22 +102,24 @@
 #history-calendar .alarm-info-icon {
   position: relative;
   cursor: help;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
-  color: #d97706;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
   transition: all 0.2s ease;
 }
 
 #history-calendar .alarm-info-icon:hover {
-  background: #fef3c7;
-  color: #b45309;
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 
 #history-calendar .alarm-info-icon::after {

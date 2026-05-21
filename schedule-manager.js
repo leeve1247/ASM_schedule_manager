@@ -856,6 +856,7 @@
         <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
       </div>
       <div class="calendar-actions">
+        <span class="alarm-info-icon" data-tooltip="멘토링 일정 1시간 전에 discord 메시지를 통해 알림 (개인일정은 알림 X)">!</span>
         <label class="alarm-toggle-container" for="btn-toggle-alarm">
           <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
           <span class="asm-switch">
@@ -863,7 +864,6 @@
             <span class="asm-slider"></span>
           </span>
         </label>
-        <span class="alarm-info-icon" data-tooltip="멘토링 일정 1시간 전에 discord 메시지를 통해 알림 (개인일정은 알림 X)">⚠️</span>
         <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
       </div>
     `;
