@@ -19,7 +19,15 @@
     return { start: base, end, today, year: base.getFullYear(), month: base.getMonth() };
   }
 
-  // ── 리스트 테이블 파싱 (DOM 또는 HTML 문자열에서) ──────────────────────────
+  function normalizeText(text) {
+    return (text || "")
+      .toString()
+      .trim()
+      .normalize("NFC")
+      .toLowerCase();
+  }
+
+  // ── 리스트 테이블 파싱 ────────────────────────────────────────────────────
   // td 인덱스: [0]=NO [1]=tit [2]=접수기간 [3]=진행날짜 [4]=모집인원 [5]=개설승인 [6]=상태 [7]=작성자 [8]=등록일
   // pc_only td: [0]=NO [1]=접수기간 [2]=진행날짜 [3]=모집인원 [4]=개설승인 [5]=상태 [6]=작성자
 
@@ -138,7 +146,6 @@
   // ── 상세 페이지에서 장소 파싱 ─────────────────────────────────────────────
 
   function parseLocationFromDoc(doc) {
-    // th → 다음 td (같은 tr 또는 형제 tr)
     for (const th of doc.querySelectorAll("th")) {
       if (th.textContent.trim() === "장소") {
         const td =
@@ -149,7 +156,6 @@
       }
     }
 
-    // dt → 다음 dd
     for (const dt of doc.querySelectorAll("dt")) {
       if (dt.textContent.trim() === "장소") {
         const dd = dt.nextElementSibling;
@@ -157,7 +163,6 @@
       }
     }
 
-    // label 형태
     for (const el of doc.querySelectorAll(".label, .tit, strong")) {
       if (el.textContent.trim() === "장소") {
         const next = el.nextElementSibling || el.parentElement?.nextElementSibling;
@@ -181,7 +186,7 @@
     return { type: "offline", label: "오프라인" };
   }
 
-  // ── 2주 이벤트 상세 페이지 fetch → 장소 정보 수집 ────────────────────────
+  // ── 상세 페이지 fetch → 장소 정보 수집 ───────────────────────────────────
 
   async function fetchLocations(events) {
     const locCache = loadLocCache();
@@ -231,7 +236,6 @@
       if (m) return parseInt(m[1], 10);
     }
 
-    // 페이지 번호 링크 중 최대값
     const pageLinks = document.querySelectorAll(".paginationSet li a");
     let max = 1;
 
@@ -247,7 +251,7 @@
     const cached = loadCache();
     if (cached) return cached;
 
-    const merged = parseTableRows(document); // 현재 페이지 즉시 반영
+    const merged = parseTableRows(document);
     const totalPages = getTotalPages();
     const baseUrl = getBaseUrl();
 
@@ -256,7 +260,6 @@
       return merged;
     }
 
-    // 나머지 페이지 병렬 fetch
     const pageNums = [];
     for (let i = 2; i <= totalPages; i++) pageNums.push(i);
 
@@ -328,8 +331,6 @@
     eventMap.forEach((info, sn) => {
       if (seen.has(sn) || !info.date) return;
 
-      // info.title: parseTableRows에서 저장한 제목 (페이지2+ fetch 포함)
-      // DOM에서 링크를 찾을 수 없는 경우에도 제목 사용 가능
       const link = document.querySelector(`a[href*="qustnrSn=${sn}"][href*="mentoLec/view"]`);
       const titleFromDom = link
         ? link.textContent.trim().replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, "")
@@ -361,6 +362,22 @@
     return events;
   }
 
+  // ── 검색 필터 ─────────────────────────────────────────────────────────────
+
+  function filterEventsBySearch(events, searchType, searchKeyword) {
+    const keyword = normalizeText(searchKeyword);
+    if (!keyword) return events;
+
+    return events.filter((ev) => {
+      const target =
+        searchType === "title"
+          ? normalizeText(ev.title)
+          : normalizeText(ev.author);
+
+      return target.includes(keyword);
+    });
+  }
+
   // ── 이벤트 정렬 유틸 ──────────────────────────────────────────────────────
   // 정렬 기준:
   // 1. 신청가능/접수중 위
@@ -374,8 +391,6 @@
     const isPast = ev.date < todayStr;
     const isClosed = ev.isClosed;
 
-    // 0: 신청가능 / 접수중
-    // 1: 마감 / 진행완료
     return isPast || isClosed ? 1 : 0;
   }
 
@@ -420,30 +435,25 @@
     const groupA = getEventStatusGroup(a, todayStr);
     const groupB = getEventStatusGroup(b, todayStr);
 
-    // 1. 신청가능/접수중 먼저, 마감/진행완료 나중
     if (groupA !== groupB) return groupA - groupB;
 
     const timeA = timeToMinutes(a.timeStart);
     const timeB = timeToMinutes(b.timeStart);
 
-    // 2. 같은 그룹 안에서는 시작시간순
     if (timeA !== timeB) return timeA - timeB;
 
     const authorA = getComparableAuthor(a.author);
     const authorB = getComparableAuthor(b.author);
 
-    // 3. 시작시간이 같으면 멘토 이름 가나다순
     const authorCompare = compareKoreanText(authorA, authorB);
     if (authorCompare !== 0) return authorCompare;
 
     const titleA = getComparableTitle(a.title);
     const titleB = getComparableTitle(b.title);
 
-    // 4. 멘토 이름도 같으면 제목 가나다순
     const titleCompare = compareKoreanText(titleA, titleB);
     if (titleCompare !== 0) return titleCompare;
 
-    // 5. 전부 같으면 sn 기준 보조 정렬
     return String(a.sn || "").localeCompare(String(b.sn || ""), "ko-KR", {
       numeric: true,
     });
@@ -457,6 +467,21 @@
 
     const card = document.createElement("div");
     card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}`;
+    card.setAttribute("role", "link");
+    card.setAttribute("tabindex", "0");
+
+    card.addEventListener("click", () => {
+      if (ev.url && ev.url !== "#") {
+        window.open(ev.url, "_blank");
+      }
+    });
+
+    card.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && ev.url && ev.url !== "#") {
+        e.preventDefault();
+        window.open(ev.url, "_blank");
+      }
+    });
 
     const badges = document.createElement("div");
     badges.className = "asm-card-badges";
@@ -483,7 +508,6 @@
     const statusCls = isPast ? "asm-done" : ev.isClosed ? "asm-closed" : "asm-open-badge";
 
     badges.appendChild(mkBadge(statusLabel, statusCls));
-
     card.appendChild(badges);
 
     const titleEl = document.createElement("div");
@@ -494,7 +518,6 @@
     const footer = document.createElement("div");
     footer.className = "asm-card-footer";
 
-    // 1행: 멘토명
     if (ev.author) {
       const author = document.createElement("div");
       author.className = "asm-card-author";
@@ -502,7 +525,6 @@
       footer.appendChild(author);
     }
 
-    // 2행: 시간
     if (ev.timeStart) {
       const time = document.createElement("div");
       time.className = "asm-card-time";
@@ -510,7 +532,6 @@
       footer.appendChild(time);
     }
 
-    // 3행: 인원수 + 바로가기
     const bottom = document.createElement("div");
     bottom.className = "asm-card-footer-bottom";
 
@@ -528,10 +549,10 @@
     linkEl.href = ev.url;
     linkEl.target = "_blank";
     linkEl.textContent = "바로가기 →";
+    linkEl.addEventListener("click", (e) => e.stopPropagation());
 
     bottom.appendChild(linkEl);
     footer.appendChild(bottom);
-
     card.appendChild(footer);
 
     return card;
@@ -584,11 +605,97 @@
     container.appendChild(cards);
   }
 
+  // ── 검색 UI ───────────────────────────────────────────────────────────────
+
+  function createSearchRow(searchDraft, onSearchChange, onSearchSubmit, onSearchReset) {
+    const row = document.createElement("div");
+    row.className = "asm-search-row";
+
+    const select = document.createElement("select");
+    select.className = "asm-search-select";
+    select.value = searchDraft.type;
+
+    const titleOption = document.createElement("option");
+    titleOption.value = "title";
+    titleOption.textContent = "제목";
+
+    const authorOption = document.createElement("option");
+    authorOption.value = "author";
+    authorOption.textContent = "작성자";
+
+    select.appendChild(titleOption);
+    select.appendChild(authorOption);
+
+    const input = document.createElement("input");
+    input.className = "asm-search-input";
+    input.type = "text";
+    input.placeholder = "검색어를 입력해주세요.";
+    input.value = searchDraft.keyword;
+
+    const searchBtn = document.createElement("button");
+    searchBtn.type = "button";
+    searchBtn.className = "asm-search-btn";
+    searchBtn.textContent = "검색";
+
+    const resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "asm-search-reset";
+    resetBtn.textContent = "초기화";
+
+    select.addEventListener("change", () => {
+      onSearchChange(select.value, input.value);
+    });
+
+    input.addEventListener("input", () => {
+      onSearchChange(select.value, input.value);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onSearchSubmit(select.value, input.value);
+      }
+    });
+
+    searchBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onSearchSubmit(select.value, input.value);
+    });
+
+    resetBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onSearchReset();
+    });
+
+    const searchBox = document.createElement("div");
+    searchBox.className = "asm-search-box";
+    searchBox.appendChild(input);
+    searchBox.appendChild(searchBtn);
+
+    row.appendChild(select);
+    row.appendChild(searchBox);
+    row.appendChild(resetBtn);
+
+    return row;
+  }
+
   // ── 캘린더 패널 빌드 ─────────────────────────────────────────────────────
 
-  function buildPanel(events, isLoading, offset = 0, onNavigate = null) {
+  function buildPanel(
+    events,
+    isLoading,
+    offset = 0,
+    onNavigate = null,
+    searchDraft = { type: "title", keyword: "" },
+    onSearchChange = null,
+    onSearchSubmit = null,
+    onSearchReset = null,
+    isCollapsed = false,
+    onToggleCollapsed = null
+  ) {
     const { start, end, today, year, month } = getMonthRange(offset);
     const todayStr = toDateStr(today);
+    const defaultSelectedDate = offset === 0 ? todayStr : toDateStr(start);
 
     const byDate = new Map();
 
@@ -611,7 +718,6 @@
     titleWrap.className = "asm-panel-title-wrap";
     titleWrap.innerHTML = `<span class="asm-panel-ico">📅</span><span class="asm-panel-title">${year}년 ${month + 1}월</span>`;
 
-    // 로딩 표시
     const loadingEl = document.createElement("span");
     loadingEl.className = "asm-panel-loading";
     loadingEl.id = "asm-panel-loading";
@@ -620,52 +726,64 @@
     titleWrap.appendChild(loadingEl);
     header.appendChild(titleWrap);
 
-    // 네비게이션 버튼
+    // 네비게이션: 이전달 / 오늘 / 다음달 항상 표시
     const navWrap = document.createElement("div");
     navWrap.className = "asm-panel-nav";
 
     const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
     prevBtn.className = "asm-panel-nav-btn";
-    prevBtn.textContent = "‹ 이전달";
+    prevBtn.textContent = "‹ 이전 달";
     prevBtn.title = "이전 달";
-    prevBtn.addEventListener("click", () => onNavigate && onNavigate(offset - 1));
+    prevBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onNavigate && onNavigate(offset - 1);
+    });
     navWrap.appendChild(prevBtn);
 
-    if (offset !== 0) {
-      const todayBtn = document.createElement("button");
-      todayBtn.className = "asm-panel-nav-btn asm-nav-today";
-      todayBtn.textContent = "오늘";
-      todayBtn.addEventListener("click", () => onNavigate && onNavigate(0));
-      navWrap.appendChild(todayBtn);
-    }
+    const todayBtn = document.createElement("button");
+    todayBtn.type = "button";
+    todayBtn.className =
+      offset === 0
+        ? "asm-panel-nav-btn asm-nav-today asm-nav-today-current"
+        : "asm-panel-nav-btn asm-nav-today";
+    todayBtn.textContent = "오늘";
+    todayBtn.title = "오늘이 포함된 달로 이동";
+    todayBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onNavigate && onNavigate(0);
+    });
+    navWrap.appendChild(todayBtn);
 
     const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
     nextBtn.className = "asm-panel-nav-btn";
-    nextBtn.textContent = "다음달 ›";
+    nextBtn.textContent = "다음 달 ›";
     nextBtn.title = "다음 달";
-    nextBtn.addEventListener("click", () => onNavigate && onNavigate(offset + 1));
+    nextBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onNavigate && onNavigate(offset + 1);
+    });
     navWrap.appendChild(nextBtn);
 
     header.appendChild(navWrap);
 
     const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
     toggleBtn.className = "asm-panel-toggle";
-    toggleBtn.textContent = "접기";
-
-    let collapsed = false;
-
-    toggleBtn.addEventListener("click", () => {
-      collapsed = !collapsed;
-      body.style.display = collapsed ? "none" : "";
-      toggleBtn.textContent = collapsed ? "펼치기" : "접기";
-    });
+    toggleBtn.textContent = isCollapsed ? "펼치기" : "접기";
 
     header.appendChild(toggleBtn);
     panel.appendChild(header);
 
-    // 본문
     const body = document.createElement("div");
     body.className = "asm-panel-body";
+    body.style.display = isCollapsed ? "none" : "";
+
+    toggleBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onToggleCollapsed && onToggleCollapsed();
+    });
 
     // 요일 헤더
     const wdRow = document.createElement("div");
@@ -696,6 +814,27 @@
     showPlaceholder();
 
     let selectedDate = null;
+
+    function selectDate(dateStr) {
+      const cell = grid.querySelector(`[data-date="${dateStr}"]`);
+      const dayEvents = byDate.get(dateStr) || [];
+
+      grid.querySelectorAll(".asm-cal-day.asm-cal-selected").forEach((c) =>
+        c.classList.remove("asm-cal-selected")
+      );
+
+      selectedDate = dateStr;
+
+      if (cell) {
+        cell.classList.add("asm-cal-selected");
+      }
+
+      const sortedDayEvents = [...dayEvents].sort((a, b) =>
+        sortEventsByStatusTimeAuthor(a, b, todayStr)
+      );
+
+      renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr, isLoading);
+    }
 
     // 월 첫째 날 요일 전 빈 셀 (일=0 ~ 토=6)
     for (let i = 0; i < start.getDay(); i++) {
@@ -755,26 +894,22 @@
 
           dotsEl.appendChild(dot);
         });
+
         cell.appendChild(dotsEl);
-
-        cell.addEventListener("click", () => {
-          if (selectedDate === dateStr) {
-            selectedDate = null;
-            cell.classList.remove("asm-cal-selected");
-            showPlaceholder();
-            return;
-          }
-
-          grid.querySelectorAll(".asm-cal-day.asm-cal-selected").forEach((c) =>
-            c.classList.remove("asm-cal-selected")
-          );
-
-          selectedDate = dateStr;
-          cell.classList.add("asm-cal-selected");
-
-          renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr, isLoading);
-        });
       }
+
+      cell.addEventListener("click", () => {
+        if (!hasEvents) return;
+
+        if (selectedDate === dateStr) {
+          selectedDate = null;
+          cell.classList.remove("asm-cal-selected");
+          showPlaceholder();
+          return;
+        }
+
+        selectDate(dateStr);
+      });
 
       grid.appendChild(cell);
     });
@@ -784,16 +919,26 @@
     calSection.appendChild(wdRow);
     calSection.appendChild(grid);
 
-    body.appendChild(calSection);
+    const searchRow = createSearchRow(
+      searchDraft,
+      onSearchChange || (() => {}),
+      onSearchSubmit || (() => {}),
+      onSearchReset || (() => {})
+    );
+
+    const calArea = document.createElement("div");
+    calArea.className = "asm-cal-area";
+    calArea.appendChild(searchRow);
+    calArea.appendChild(calSection);
+
+    body.appendChild(calArea);
     body.appendChild(eventPanel);
     panel.appendChild(body);
 
-    // 오늘 자동 열기
-    const todayCell = grid.querySelector(`[data-date="${todayStr}"]`);
-
-    if (todayCell && byDate.get(todayStr)?.length > 0) {
-      setTimeout(() => todayCell.click(), 0);
-    }
+    // 오늘(또는 해당 달 첫 날) 자동 선택
+    setTimeout(() => {
+      selectDate(defaultSelectedDate);
+    }, 0);
 
     return {
       panel,
@@ -813,14 +958,24 @@
     let currentOffset = 0;
     let allEvents = [];
 
+    let appliedSearchType = "title";
+    let appliedSearchKeyword = "";
+
+    let draftSearchType = "title";
+    let draftSearchKeyword = "";
+
+    let isPanelCollapsed = false;
+
     function getFilteredEvents() {
       const { start, end } = getMonthRange(currentOffset);
       const s = toDateStr(start);
       const e = toDateStr(end);
 
-      return allEvents
+      const monthEvents = allEvents
         .map((ev) => ({ ...ev }))
         .filter((ev) => ev.date >= s && ev.date <= e);
+
+      return filterEventsBySearch(monthEvents, appliedSearchType, appliedSearchKeyword);
     }
 
     function withLocations(events) {
@@ -835,9 +990,26 @@
       });
     }
 
-    function renderPanel(events, loading) {
+    function renderPanel(events, loading, focusSearch = false) {
       const existing = document.getElementById("asm-2week-panel");
-      const { panel } = buildPanel(events, loading, currentOffset, navigate);
+
+      const searchDraft = {
+        type: draftSearchType,
+        keyword: draftSearchKeyword,
+      };
+
+      const { panel } = buildPanel(
+        events,
+        loading,
+        currentOffset,
+        navigate,
+        searchDraft,
+        handleSearchDraftChange,
+        handleSearchSubmit,
+        handleSearchReset,
+        isPanelCollapsed,
+        handleToggleCollapsed
+      );
 
       if (existing) {
         existing.parentNode.replaceChild(panel, existing);
@@ -850,6 +1022,43 @@
           calWrap.parentNode.insertBefore(panel, calWrap);
         }
       }
+
+      if (focusSearch) {
+        const input = panel.querySelector(".asm-search-input");
+        if (input) {
+          input.focus();
+          const len = input.value.length;
+          input.setSelectionRange(len, len);
+        }
+      }
+    }
+
+    function handleSearchDraftChange(nextType, nextKeyword) {
+      draftSearchType = nextType;
+      draftSearchKeyword = nextKeyword;
+    }
+
+    function handleSearchSubmit(nextType, nextKeyword) {
+      draftSearchType = nextType;
+      draftSearchKeyword = nextKeyword;
+      appliedSearchType = nextType;
+      appliedSearchKeyword = nextKeyword;
+
+      renderPanel(withLocations(getFilteredEvents()), false, true);
+    }
+
+    function handleSearchReset() {
+      draftSearchType = "title";
+      draftSearchKeyword = "";
+      appliedSearchType = "title";
+      appliedSearchKeyword = "";
+
+      renderPanel(withLocations(getFilteredEvents()), false, true);
+    }
+
+    function handleToggleCollapsed() {
+      isPanelCollapsed = !isPanelCollapsed;
+      renderPanel(withLocations(getFilteredEvents()), false);
     }
 
     async function navigate(newOffset) {
