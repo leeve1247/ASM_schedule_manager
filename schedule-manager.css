@@ -216,48 +216,67 @@
   border-radius: 8px;
   padding: 6px 8px;
   font-size: 12px;
-  transition: border-color 0.15s, background 0.15s;
+  transition: box-shadow 0.15s;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 #history-calendar .calendar-lecture:hover {
-  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Left Indicator Colors depending on types */
+/* 카테고리 닷 인디케이터 */
+#history-calendar .calendar-lecture .text-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+/* Dot Colors and pastel backgrounds depending on types */
 #history-calendar .calendar-lecture.special {
-  border-left: 4px solid #3b82f6;
   background: #eff6ff;
+}
+#history-calendar .calendar-lecture.special .text-title::before {
+  background: #3b82f6;
 }
 
 #history-calendar .calendar-lecture.mentoring {
-  border-left: 4px solid #8b5cf6;
   background: #f5f3ff;
+}
+#history-calendar .calendar-lecture.mentoring .text-title::before {
+  background: #8b5cf6;
 }
 
 #history-calendar .calendar-lecture.event-personal {
-  border-left: 4px solid #16a34a;
-  background: #ffffff;
-  border-color: #e2e8f0 #e2e8f0 #e2e8f0 #16a34a;
+  background: #f0fdf4;
+}
+#history-calendar .calendar-lecture.event-personal .text-title::before {
+  background: #16a34a;
 }
 
 /* Past Events styled with ended state */
 #history-calendar .calendar-lecture.ended {
   opacity: 0.6;
   background: #f8fafc;
-  border-left-color: #94a3b8;
 }
 
 #history-calendar .calendar-lecture.ended:hover {
   opacity: 0.9;
 }
 
+#history-calendar .calendar-lecture.ended .text-title::before {
+  background: #94a3b8;
+}
+
 #history-calendar .calendar-lecture.ended.event-personal {
   opacity: 0.45;
   background: #f1f5f9;
-  border-color: #e2e8f0 #e2e8f0 #e2e8f0 #94a3b8;
   filter: grayscale(40%);
 }
 

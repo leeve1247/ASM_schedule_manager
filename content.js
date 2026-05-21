@@ -546,7 +546,7 @@
 
   // ── 날짜 클릭 이벤트 패널 렌더 ───────────────────────────────────────────
 
-  function renderEventPanel(container, dayEvents, dateStr, todayStr) {
+  function renderEventPanel(container, dayEvents, dateStr, todayStr, isLoading) {
     container.innerHTML = "";
 
     const d = new Date(dateStr + "T00:00:00");
@@ -565,6 +565,14 @@
     headerEl.appendChild(dateLabel);
     headerEl.appendChild(cntLabel);
     container.appendChild(headerEl);
+
+    if (isLoading) {
+      const loadingRow = document.createElement("div");
+      loadingRow.className = "asm-cards-loading";
+      loadingRow.innerHTML = '<span class="asm-loading-spinner"></span><span>불러오는 중…</span>';
+      container.appendChild(loadingRow);
+      return;
+    }
 
     const cards = document.createElement("div");
     cards.className = "asm-day-cards";
@@ -678,7 +686,11 @@
     eventPanel.className = "asm-event-panel";
 
     function showPlaceholder() {
-      eventPanel.innerHTML = '<div class="asm-event-panel-placeholder"><span>날짜를 선택하면<br>일정이 표시됩니다</span></div>';
+      if (isLoading) {
+        eventPanel.innerHTML = '<div class="asm-event-panel-placeholder"><span class="asm-loading-spinner"></span><span>데이터 불러오는 중…</span></div>';
+      } else {
+        eventPanel.innerHTML = '<div class="asm-event-panel-placeholder"><span>날짜를 선택하면<br>일정이 표시됩니다</span></div>';
+      }
     }
 
     showPlaceholder();
@@ -760,7 +772,7 @@
           selectedDate = dateStr;
           cell.classList.add("asm-cal-selected");
 
-          renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr);
+          renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr, isLoading);
         });
       }
 
