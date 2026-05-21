@@ -12,14 +12,19 @@
 
 /* 1. Dashboard Header Styling */
 #history-calendar .calendar-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+#history-calendar .calendar-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 #history-calendar .calendar-title-group h3 {
@@ -36,14 +41,6 @@
 #history-calendar .calendar-subtitle {
   font-size: 13px;
   color: #64748b;
-}
-
-/* Controls Toolbar */
-#history-calendar .calendar-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 /* Navigation Group: 2주 전 | 오늘 | 2주 후 */
@@ -187,12 +184,6 @@
   z-index: 1;
 }
 
-/* Dimmed empty past cell (hideEndedLectures mode) */
-#history-calendar .calendar-cell.calendar-cell-dimmed {
-  background: #f9fafb;
-  opacity: 0.45;
-  pointer-events: none;
-}
 
 #history-calendar .calendar-date {
   font-size: 12px;

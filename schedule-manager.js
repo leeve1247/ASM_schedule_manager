@@ -6,7 +6,7 @@
 
   // 10 minutes cache TTL for future SOMA lectures
   const CACHE_TTL_MS = 10 * 60 * 1000;
-  const CALENDAR_DAY_COUNT = 28;
+  const CALENDAR_DAY_COUNT = 14;
   const CALENDAR_SHIFT_WEEKS = 2;
   const FIXED_SHARED_SCHEDULES = [
     {
@@ -22,7 +22,6 @@
 
   // Extension State
   let startOffsetWeeks = 0; // 0 means starting from the Sunday of current week
-  let hideEndedLectures = false;
   let editingScheduleId = null;
 
   // Helper: check if a lecture/schedule has ended
@@ -663,15 +662,13 @@
         <h3>📅 멘토링 / 특강 & 개인 일정 대시보드</h3>
         <span class="calendar-subtitle">접수한 일정과 내 개인 일정을 함께 모아 관리합니다.</span>
       </div>
-      <div class="calendar-controls">
-        <div class="calendar-nav-group">
-          <button id="btn-prev-weeks" class="control-btn nav-btn">◀ 2주 전</button>
-          <button id="btn-today" class="control-btn nav-btn nav-today">오늘</button>
-          <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ▶</button>
-        </div>
-        <button id="btn-toggle-ended" class="control-btn secondary">${hideEndedLectures ? '👁️ 종료된 일정 표시' : '👁️ 종료된 일정 숨기기'}</button>
+      <div class="calendar-nav-group">
+        <button id="btn-prev-weeks" class="control-btn nav-btn">◀ 2주 전</button>
+        <button id="btn-today" class="control-btn nav-btn nav-today">오늘</button>
+        <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ▶</button>
+      </div>
+      <div class="calendar-actions">
         <button id="btn-add-personal" class="control-btn accent">➕ 개인 일정 추가</button>
-        <button id="btn-clear-cache" class="control-btn secondary" title="장소 정보 캐시를 초기화하고 다시 불러옵니다">🗑️ 캐시 지우기</button>
       </div>
     `;
     calendarWrapper.appendChild(header);
@@ -745,23 +742,7 @@
       // Sort events chronologically
       allEvents.sort((a, b) => a.timeKey.localeCompare(b.timeKey));
 
-      // Filter ended if hide option enabled
-      const visibleEvents = hideEndedLectures
-        ? allEvents.filter(e => !e.ended)
-        : allEvents;
-
-      // Render empty placeholder to preserve grid alignment
-      if (hideEndedLectures && currentDate < today && visibleEvents.length === 0) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-cell calendar-cell-dimmed';
-        emptyCell.setAttribute('data-calendar-date', dateStr);
-        const emptyDateSpan = document.createElement('span');
-        emptyDateSpan.className = 'calendar-date';
-        emptyDateSpan.textContent = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
-        emptyCell.appendChild(emptyDateSpan);
-        grid.appendChild(emptyCell);
-        continue;
-      }
+      const visibleEvents = allEvents;
 
       const cell = document.createElement('div');
       cell.className = `calendar-cell${isToday ? ' today-bg' : ''}`;
@@ -929,24 +910,8 @@
       renderCalendar(lectures);
     });
 
-    document.getElementById('btn-toggle-ended').addEventListener('click', () => {
-      hideEndedLectures = !hideEndedLectures;
-      renderCalendar(lectures);
-    });
-
     document.getElementById('btn-add-personal').addEventListener('click', () => {
       openModalWithDate();
-    });
-
-    document.getElementById('btn-clear-cache').addEventListener('click', async () => {
-      const allItems = await new Promise(resolve => chrome.storage.local.get(null, resolve));
-      const keysToRemove = Object.keys(allItems).filter(k => k.startsWith('soma_lecture_detail_'));
-      if (keysToRemove.length === 0) {
-        alert('삭제할 캐시가 없습니다.');
-        return;
-      }
-      await new Promise(resolve => chrome.storage.local.remove(keysToRemove, resolve));
-      alert(`✅ 캐시 ${keysToRemove.length}개를 삭제했습니다. 페이지를 새로고침하면 장소 정보를 다시 불러옵니다.`);
     });
   }
 
