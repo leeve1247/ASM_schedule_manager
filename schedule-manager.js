@@ -6,7 +6,7 @@
 
   // 10 minutes cache TTL for future SOMA lectures
   const CACHE_TTL_MS = 10 * 60 * 1000;
-  const CALENDAR_DAY_COUNT = 30;
+  const CALENDAR_DAY_COUNT = 14;
   const CALENDAR_SHIFT_WEEKS = 2;
   const FIXED_SHARED_SCHEDULES = [
     {
@@ -22,7 +22,6 @@
 
   // Extension State
   let startOffsetWeeks = 0; // 0 means starting from the Sunday of current week
-  let hideEndedLectures = false;
   let editingScheduleId = null;
 
   // Helper: check if a lecture/schedule has ended
@@ -306,42 +305,125 @@
     }
   }
 
-  // Parse original SOMA table rows
-  async function parseLecturesTable() {
-    const rows = document.querySelectorAll('.boardlist table tbody tr');
-    const lectures = [];
+  // Extract raw row data from a document (current page or fetched page)
+  function extractRawRowsFromDoc(doc, isCurrentPage) {
+    const rows = doc.querySelectorAll('.boardlist table tbody tr');
+    const rawList = [];
 
     for (const row of rows) {
       const cells = row.querySelectorAll('td');
-      if (cells.length < 8) continue; // Skip header/footer/empty rows
+      if (cells.length < 8) continue;
 
       const no = cells[0].textContent.trim();
       const type = cells[1].textContent.trim();
-      
+
       const titleLink = cells[2].querySelector('a');
       const title = titleLink ? titleLink.textContent.trim() : cells[2].textContent.trim();
       const url = titleLink ? titleLink.getAttribute('href') : '';
-      
+
       let qustnrSn = '';
       if (url) {
         const match = url.match(/[?&]qustnrSn=(\d+)/);
-        if (match) {
-          qustnrSn = match[1];
-        }
+        if (match) qustnrSn = match[1];
       }
 
       const author = cells[3].textContent.trim();
       const dateTimeText = cells[4].innerHTML.replace(/<br\s*\/?>/gi, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-      
+
       const dateMatch = dateTimeText.match(/(\d{4})-(\d{2})-(\d{2})/);
       const dateStr = dateMatch ? dateMatch[0] : '';
-      
+
       const registerDate = cells[5].textContent.trim().replace(/\s+/g, ' ');
       const status = cells[6].textContent.trim();
       const approval = cells[7].textContent.trim();
-      
-      const hasCancelButton = !!row.querySelector('[onclick*="delDate"]');
 
+      // Cancel button only exists in live DOM of the current page
+      const hasCancelButton = isCurrentPage ? !!row.querySelector('[onclick*="delDate"]') : false;
+
+      rawList.push({ no, type, title, url, qustnrSn, author, dateTimeText, dateStr, registerDate, status, approval, hasCancelButton });
+    }
+
+    return rawList;
+  }
+
+  // Collect page indexes visible in the pagination widget of a document
+  function collectPageIndexes(doc) {
+    const indexes = new Set();
+
+    const pagingEl = doc.querySelector('.paging, .pagination, [class*="paging"]');
+    if (!pagingEl) return indexes;
+
+    pagingEl.querySelectorAll('a').forEach(link => {
+      const href = link.getAttribute('href') || '';
+      const onclick = link.getAttribute('onclick') || '';
+
+      const fromHref = href.match(/pageIndex=(\d+)/);
+      if (fromHref) indexes.add(parseInt(fromHref[1], 10));
+
+      // fn_link_page(N) or similar JS pagination
+      const fromOnclick = onclick.match(/\((\d+)\)/);
+      if (fromOnclick) indexes.add(parseInt(fromOnclick[1], 10));
+    });
+
+    return indexes;
+  }
+
+  // Fetch and parse all paginated pages, returning raw row data from every page
+  async function fetchAllRawRows() {
+    const rawList = extractRawRowsFromDoc(document, true);
+
+    const currentUrl = new URL(window.location.href);
+    const seenIndexes = new Set([parseInt(currentUrl.searchParams.get('pageIndex') || '1', 10)]);
+    const pendingIndexes = new Set(collectPageIndexes(document));
+
+    for (const idx of pendingIndexes) {
+      if (seenIndexes.has(idx)) continue;
+      seenIndexes.add(idx);
+
+      const pageUrl = new URL(currentUrl.href);
+      pageUrl.searchParams.set('pageIndex', idx);
+
+      try {
+        const resp = await fetch(pageUrl.toString(), { credentials: 'include' });
+        if (!resp.ok) continue;
+        const html = await resp.text();
+        const parser = new DOMParser();
+        const pageDoc = parser.parseFromString(html, 'text/html');
+
+        rawList.push(...extractRawRowsFromDoc(pageDoc, false));
+
+        // Discover additional page links from fetched page (handles non-sequential pagers)
+        for (const newIdx of collectPageIndexes(pageDoc)) {
+          if (!seenIndexes.has(newIdx)) pendingIndexes.add(newIdx);
+        }
+      } catch (e) {
+        console.error(`Failed to fetch page ${idx}:`, e);
+      }
+    }
+
+    // Deduplicate by qustnrSn — same lecture can appear across multiple pages
+    const seenQustnrSn = new Set();
+    return rawList.filter(raw => {
+      if (!raw.qustnrSn) return true;
+      if (seenQustnrSn.has(raw.qustnrSn)) return false;
+      seenQustnrSn.add(raw.qustnrSn);
+      return true;
+    });
+  }
+
+  // Parse original SOMA table rows across all pages
+  async function parseLecturesTable() {
+    const allRaw = await fetchAllRawRows();
+
+    // Filter out cancelled registrations ("취소불가" = still active, must keep)
+    const rawList = allRaw.filter(raw => {
+      const combined = `${raw.status} ${raw.approval}`;
+      return !/취소/.test(combined) || /취소불가/.test(combined);
+    });
+
+    const lectures = [];
+
+    for (const raw of rawList) {
       let details = {
         mentorName: '로딩 중...',
         location: '로딩 중...',
@@ -349,30 +431,19 @@
         approvalStatus: '로딩 중...',
         deadlineStatus: '로딩 중...'
       };
-      if (qustnrSn && url) {
-        details = await fetchLectureDetails(qustnrSn, url, dateTimeText);
+      if (raw.qustnrSn && raw.url) {
+        details = await fetchLectureDetails(raw.qustnrSn, raw.url, raw.dateTimeText);
       }
 
-      const ended = isLectureEnded(dateTimeText);
+      const ended = isLectureEnded(raw.dateTimeText);
 
       lectures.push({
-        no,
-        type,
-        title,
-        url,
-        qustnrSn,
-        author,
-        dateTimeText,
-        dateStr,
-        registerDate,
-        status,
-        approval,
-        hasCancelButton,
-        mentorName: details.mentorName === '정보 없음' ? author : details.mentorName,
+        ...raw,
+        mentorName: details.mentorName === '정보 없음' ? raw.author : details.mentorName,
         location: details.location,
         people: formatPeopleSummary(details.people),
-        approvalStatus: formatApprovalStatus(details.approvalStatus === '정보 없음' ? approval : details.approvalStatus),
-        deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${status} ${approval}`, ended)
+        approvalStatus: formatApprovalStatus(details.approvalStatus === '정보 없음' ? raw.approval : details.approvalStatus),
+        deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${raw.status} ${raw.approval}`, ended)
       });
     }
 
@@ -436,6 +507,14 @@
               <label for="schedule-end-time">종료 시간 *</label>
               <select id="schedule-end-time" required></select>
             </div>
+          </div>
+          <div class="form-group">
+            <label>장소 (선택)</label>
+            <div class="location-type-row">
+              <button type="button" class="location-type-btn active" data-type="online">온라인</button>
+              <button type="button" class="location-type-btn" data-type="offline">오프라인</button>
+            </div>
+            <input type="text" id="schedule-location" class="location-detail-input" placeholder="링크 또는 플랫폼 (선택)">
           </div>
           <div class="form-group">
             <label for="schedule-desc">설명 (선택)</label>
@@ -504,6 +583,18 @@
       dateInput.value = getFormattedDate(1);
     });
 
+    // Location type toggle
+    const locationBtns = modal.querySelectorAll('.location-type-btn');
+    const locationInput = modal.querySelector('#schedule-location');
+    const locationPlaceholders = { online: '링크 또는 플랫폼 (선택)', offline: '장소 또는 주소 (선택)' };
+    locationBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        locationBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        locationInput.placeholder = locationPlaceholders[btn.dataset.type];
+      });
+    });
+
     // Close listeners
     const closeBtn = modal.querySelector('.close-modal-btn');
     const cancelBtn = modal.querySelector('.btn-cancel');
@@ -525,6 +616,8 @@
       const startTime = document.getElementById('schedule-start-time').value;
       const endTime = document.getElementById('schedule-end-time').value;
       const description = document.getElementById('schedule-desc').value.trim();
+      const locationType = modal.querySelector('.location-type-btn.active')?.dataset.type || 'online';
+      const location = document.getElementById('schedule-location').value.trim();
 
       if (startTime >= endTime) {
         alert('종료 시간은 시작 시간보다 늦어야 합니다.');
@@ -546,7 +639,9 @@
             dateStr,
             startTime,
             endTime,
-            description
+            description,
+            locationType,
+            location
           };
         }
       } else {
@@ -556,7 +651,9 @@
           dateStr,
           startTime,
           endTime,
-          description
+          description,
+          locationType,
+          location
         };
         currentList.push(newSchedule);
       }
@@ -603,6 +700,11 @@
     if (titleInput) titleInput.value = '';
     const descTextarea = modal.querySelector('#schedule-desc');
     if (descTextarea) descTextarea.value = '';
+    modal.querySelectorAll('.location-type-btn').forEach(b => b.classList.remove('active'));
+    const onlineBtn = modal.querySelector('.location-type-btn[data-type="online"]');
+    if (onlineBtn) onlineBtn.classList.add('active');
+    const locInput = modal.querySelector('#schedule-location');
+    if (locInput) { locInput.value = ''; locInput.placeholder = '링크 또는 플랫폼 (선택)'; }
 
     modal.style.display = 'flex';
     if (titleInput) {
@@ -625,6 +727,15 @@
     modal.querySelector('#schedule-start-time').value = ps.startTime;
     modal.querySelector('#schedule-end-time').value = ps.endTime;
     modal.querySelector('#schedule-desc').value = ps.description || '';
+    modal.querySelectorAll('.location-type-btn').forEach(b => b.classList.remove('active'));
+    const lt = ps.locationType || 'online';
+    const activeLocBtn = modal.querySelector(`.location-type-btn[data-type="${lt}"]`);
+    if (activeLocBtn) activeLocBtn.classList.add('active');
+    const locInput = modal.querySelector('#schedule-location');
+    if (locInput) {
+      locInput.value = ps.location || '';
+      locInput.placeholder = lt === 'offline' ? '장소 또는 주소 (선택)' : '링크 또는 플랫폼 (선택)';
+    }
 
     modal.style.display = 'flex';
     const titleInput = modal.querySelector('#schedule-title');
@@ -663,12 +774,13 @@
         <h3>📅 멘토링 / 특강 & 개인 일정 대시보드</h3>
         <span class="calendar-subtitle">접수한 일정과 내 개인 일정을 함께 모아 관리합니다.</span>
       </div>
-      <div class="calendar-controls">
-        <button id="btn-prev-weeks" class="control-btn">⬆ 이전 2주 보기</button>
-        <button id="btn-reset-weeks" class="control-btn secondary" ${startOffsetWeeks === 0 ? 'hidden' : ''}>↩ 이번주부터 보기</button>
-        <button id="btn-toggle-ended" class="control-btn secondary">${hideEndedLectures ? '👁️ 종료된 일정 표시' : '👁️ 종료된 일정 숨기기'}</button>
-        <button id="btn-add-personal" class="control-btn accent">➕ 개인 일정 추가</button>
-        <button id="btn-clear-cache" class="control-btn secondary" title="장소 정보 캐시를 초기화하고 다시 불러옵니다">🗑️ 캐시 지우기</button>
+      <div class="calendar-nav-group">
+        <button id="btn-prev-weeks" class="control-btn nav-btn">◀ 2주 전</button>
+        <button id="btn-today" class="control-btn nav-btn nav-today">오늘</button>
+        <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ▶</button>
+      </div>
+      <div class="calendar-actions">
+        <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
       </div>
     `;
     calendarWrapper.appendChild(header);
@@ -676,6 +788,16 @@
     // 2. Calendar Cells Grid
     const grid = document.createElement('div');
     grid.className = 'calendar-grid';
+
+    const dayKorean = ['일', '월', '화', '수', '목', '금', '토'];
+
+    // Weekday header row
+    dayKorean.forEach((wd, idx) => {
+      const wdHeader = document.createElement('div');
+      wdHeader.className = `calendar-weekday-header${idx === 0 || idx === 6 ? ' weekend' : ''}`;
+      wdHeader.textContent = wd;
+      grid.appendChild(wdHeader);
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -685,8 +807,6 @@
 
     const startDate = new Date(SundayOfCurrentWeek);
     startDate.setDate(startDate.getDate() + (startOffsetWeeks * 7));
-
-    const dayKorean = ['일', '월', '화', '수', '목', '금', '토'];
 
     for (let i = 0; i < CALENDAR_DAY_COUNT; i++) {
       const currentDate = new Date(startDate);
@@ -734,27 +854,31 @@
       // Sort events chronologically
       allEvents.sort((a, b) => a.timeKey.localeCompare(b.timeKey));
 
-      // Filter ended if hide option enabled
-      const visibleEvents = hideEndedLectures
-        ? allEvents.filter(e => !e.ended)
-        : allEvents;
-
-      // Skip rendering empty past cells to clean layout
-      if (hideEndedLectures && currentDate < today && visibleEvents.length === 0) {
-        continue;
-      }
+      const visibleEvents = allEvents;
 
       const cell = document.createElement('div');
-      cell.className = `calendar-cell${isToday ? ' today-bg' : ''}`;
+      cell.className = 'calendar-cell';
       cell.setAttribute('data-calendar-date', dateStr);
 
       const dateHeader = document.createElement('div');
       dateHeader.className = 'calendar-date-header-row';
 
+      const dateLeft = document.createElement('div');
+      dateLeft.className = 'calendar-date-left';
+
+      if (isToday) {
+        const todayBadge = document.createElement('span');
+        todayBadge.className = 'today-badge';
+        todayBadge.textContent = '오늘';
+        dateLeft.appendChild(todayBadge);
+      }
+
       const dateSpan = document.createElement('span');
-      dateSpan.className = `calendar-date${isToday ? ' today-text' : ''}`;
-      dateSpan.textContent = formattedDateText + (isToday ? ' [오늘]' : '');
-      dateHeader.appendChild(dateSpan);
+      dateSpan.className = 'calendar-date';
+      dateSpan.textContent = formattedDateText;
+      dateLeft.appendChild(dateSpan);
+
+      dateHeader.appendChild(dateLeft);
 
       const quickAddBtn = document.createElement('button');
       quickAddBtn.className = 'quick-add-cell-btn';
@@ -777,11 +901,14 @@
           card.title = ps.title;
 
           const badgeText = ps.isFixedShared ? '📌 공통 일정' : '👤 개인 일정';
+          const locationLabel = ps.locationType === 'offline' ? '오프라인' : (ps.locationType === 'online' ? '온라인' : '');
+          const locationDetail = ps.location ? ` · ${ps.location}` : '';
           card.innerHTML = `
             <div class="info-group">
               <div class="text-title" data-role="title">${ps.title}</div>
               <div class="text-type-badge personal-badge">${badgeText}</div>
               <div class="info-row" data-role="time"><strong>시간</strong> ${ps.startTime} ~ ${ps.endTime}</div>
+              ${ps.locationType ? `<div class="info-row" data-role="location"><strong>장소</strong> ${locationLabel}${locationDetail}</div>` : ''}
               ${ps.description ? `<div class="info-row desc-row" data-role="desc"><strong>메모</strong> ${ps.description}</div>` : ''}
             </div>
           `;
@@ -796,7 +923,7 @@
 
           const btnEdit = document.createElement('button');
           btnEdit.className = 'edit-btn';
-          btnEdit.innerHTML = '✏️ 수정';
+          btnEdit.innerHTML = '수정';
           btnEdit.title = '개인 일정 수정';
           btnEdit.addEventListener('click', (e) => {
             e.preventDefault();
@@ -805,7 +932,7 @@
 
           const btnDelete = document.createElement('button');
           btnDelete.className = 'delete-btn';
-          btnDelete.innerHTML = '🗑️ 삭제';
+          btnDelete.innerHTML = '삭제';
           btnDelete.title = '개인 일정 삭제';
           btnDelete.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -866,7 +993,7 @@
           const btnCancel = document.createElement('button');
           if (lec.hasCancelButton) {
             btnCancel.className = 'cancel-btn';
-            btnCancel.innerHTML = '❌ 취소';
+            btnCancel.innerHTML = '취소';
             btnCancel.title = '신청 취소';
             btnCancel.addEventListener('click', (e) => {
               e.preventDefault();
@@ -874,7 +1001,7 @@
             });
           } else {
             btnCancel.className = 'cancel-btn unavailable';
-            btnCancel.innerHTML = evt.ended ? '🚫 취소 불가' : '🔒 취소 불가';
+            btnCancel.innerHTML = '🚫 취소 불가';
             btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : '하루 전날부터는 취소 불가';
             btnCancel.disabled = true;
           }
@@ -900,32 +1027,18 @@
       renderCalendar(lectures);
     });
 
-    const resetWeeksBtn = document.getElementById('btn-reset-weeks');
-    if (resetWeeksBtn) {
-      resetWeeksBtn.addEventListener('click', () => {
-        startOffsetWeeks = 0;
-        renderCalendar(lectures);
-      });
-    }
+    document.getElementById('btn-today').addEventListener('click', () => {
+      startOffsetWeeks = 0;
+      renderCalendar(lectures);
+    });
 
-    document.getElementById('btn-toggle-ended').addEventListener('click', () => {
-      hideEndedLectures = !hideEndedLectures;
+    document.getElementById('btn-next-weeks').addEventListener('click', () => {
+      startOffsetWeeks += CALENDAR_SHIFT_WEEKS;
       renderCalendar(lectures);
     });
 
     document.getElementById('btn-add-personal').addEventListener('click', () => {
       openModalWithDate();
-    });
-
-    document.getElementById('btn-clear-cache').addEventListener('click', async () => {
-      const allItems = await new Promise(resolve => chrome.storage.local.get(null, resolve));
-      const keysToRemove = Object.keys(allItems).filter(k => k.startsWith('soma_lecture_detail_'));
-      if (keysToRemove.length === 0) {
-        alert('삭제할 캐시가 없습니다.');
-        return;
-      }
-      await new Promise(resolve => chrome.storage.local.remove(keysToRemove, resolve));
-      alert(`✅ 캐시 ${keysToRemove.length}개를 삭제했습니다. 페이지를 새로고침하면 장소 정보를 다시 불러옵니다.`);
     });
   }
 

@@ -38,6 +38,11 @@
   color: #64748b;
 }
 
+.asm-panel-loading {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
 .asm-panel-nav {
   display: flex;
   align-items: center;
@@ -93,8 +98,10 @@
 .asm-cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 0;
+  margin-bottom: 0;
+  border-top: 1.5px solid #e2e8f0;
+  border-left: 1.5px solid #e2e8f0;
 }
 
 .asm-cal-wd {
@@ -103,6 +110,8 @@
   font-weight: 600;
   color: #94a3b8;
   padding: 4px 0;
+  border-right: 1.5px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
 }
 
 .asm-cal-wd.asm-wd-weekend {
@@ -113,20 +122,21 @@
 .asm-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 0;
+  border-left: 1.5px solid #e2e8f0;
 }
 
 /* 빈 셀 (월 시작 전 패딩) */
 .asm-cal-day.asm-cal-empty {
-  border-color: transparent;
-  background: transparent;
+  background: #f9fafb;
   pointer-events: none;
 }
 
 /* 날짜 셀 */
 .asm-cal-day {
-  border-radius: 8px;
-  border: 1.5px solid #e2e8f0;
+  border-radius: 0;
+  border-right: 1.5px solid #e2e8f0;
+  border-bottom: 1.5px solid #e2e8f0;
   padding: 8px 6px 6px;
   min-height: 65px;
   display: flex;
@@ -244,6 +254,29 @@
   padding: 20px 0;
 }
 
+.asm-cards-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 2px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.asm-loading-spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: asm-spin 0.75s linear infinite;
+}
+
+@keyframes asm-spin {
+  to { transform: rotate(360deg); }
+}
+
 .asm-event-panel-header {
   display: flex;
   align-items: baseline;
@@ -278,29 +311,48 @@
   min-width: 200px;
   max-width: 300px;
   flex: 1 1 200px;
-  border-left: 3px solid transparent;
-  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
   transition: box-shadow 0.15s;
 }
 .asm-event-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* 카테고리 닷 인디케이터 */
+.asm-event-card .asm-card-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  vertical-align: middle;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
 /* 접수중: 카테고리별 색상 */
 .asm-event-card.asm-card-open.asm-cat-MRC010 {
-  border-left-color: #3b82f6;
   background: #eff6ff;
 }
+.asm-event-card.asm-card-open.asm-cat-MRC010 .asm-card-title::before {
+  background: #3b82f6;
+}
 .asm-event-card.asm-card-open.asm-cat-MRC020 {
-  border-left-color: #8b5cf6;
   background: #f5f3ff;
+}
+.asm-event-card.asm-card-open.asm-cat-MRC020 .asm-card-title::before {
+  background: #8b5cf6;
 }
 
 /* 회색 (마감 / 지난 강의) */
 .asm-event-card.asm-card-gray {
-  border-left-color: #cbd5e1;
   background: #f8fafc;
   opacity: 0.6;
+}
+.asm-event-card.asm-card-gray .asm-card-title::before {
+  background: #cbd5e1;
 }
 
 /* 배지 */
@@ -338,7 +390,7 @@
 
 /* 제목: 전체 표시 */
 .asm-card-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.5;
@@ -386,3 +438,4 @@
 }
 .asm-card-link:hover { text-decoration: underline; }
 .asm-event-card.asm-card-gray .asm-card-link { color: #94a3b8; }
+
