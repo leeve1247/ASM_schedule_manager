@@ -36,13 +36,11 @@ async function requestGcalMatch(
   schedules: { qustnrSn: string; dateStr: string; startTime: string; endTime: string; title: string }[]
 ): Promise<GcalMatchResponse> {
   const valid = schedules.filter((s) => s.qustnrSn && s.dateStr && s.startTime && s.endTime);
-  console.log('[ASM gcal] requesting match for', valid.length, 'lectures', valid);
   try {
     const response = await chrome.runtime.sendMessage({
       type: 'asm-gcal-match',
       lectures: valid,
     });
-    console.log('[ASM gcal] match response:', response);
     if (response && typeof response === 'object' && 'connected' in response) {
       return response as GcalMatchResponse;
     }
