@@ -16,7 +16,7 @@
     "https://asm-schedule-alarm.pa6764.workers.dev/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/background.ts"
   },
   "content_scripts": [
     {
