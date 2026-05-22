@@ -78,7 +78,7 @@
     return map;
   }
 
-  // ── 전체 페이지 fetch + sessionStorage 캐시 ───────────────────────────────
+  // ── 전체 페이지 fetch + chrome.storage.local 캐시 ─────────────────────────
 
   const STABLE_CACHE_KEY = "asm_event_stable_v1";
   const COUNT_CACHE_KEY  = "asm_event_count_v1";
@@ -86,53 +86,168 @@
 
   const STABLE_CACHE_TTL = 4 * 60 * 60 * 1000; // 4시간 — 제목·시간·상태 등 잘 안 바뀌는 데이터
   const COUNT_CACHE_TTL  = 5 * 60 * 1000;       // 5분  — 수강자수
+  const LIST_FETCH_BATCH_SIZE = 3;              // SOMA 목록 페이지 동시 요청 수
+  const FULL_FETCH_JITTER_MAX_MS = 10 * 1000;   // 동시 접속 부하 분산용 최대 지연
 
-  function loadStableCache() {
+  let locCacheMemory = new Map();
+
+  function hasChromeLocalStorage() {
+    return (
+      typeof chrome !== "undefined" &&
+      chrome.storage &&
+      chrome.storage.local
+    );
+  }
+
+  function readChromeStorage(keys) {
+    return new Promise((resolve) => {
+      if (!hasChromeLocalStorage()) {
+        resolve({});
+        return;
+      }
+
+      chrome.storage.local.get(keys, (result) => {
+        if (chrome.runtime?.lastError) {
+          resolve({});
+          return;
+        }
+
+        resolve(result || {});
+      });
+    });
+  }
+
+  function writeChromeStorage(obj) {
+    return new Promise((resolve, reject) => {
+      if (!hasChromeLocalStorage()) {
+        resolve();
+        return;
+      }
+
+      chrome.storage.local.set(obj, () => {
+        const error = chrome.runtime?.lastError;
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }
+
+  function removeChromeStorage(keys) {
+    return new Promise((resolve) => {
+      if (!hasChromeLocalStorage()) {
+        resolve();
+        return;
+      }
+
+      chrome.storage.local.remove(keys, () => {
+        resolve();
+      });
+    });
+  }
+
+  async function readCacheEntry(key) {
     try {
-      const raw = sessionStorage.getItem(STABLE_CACHE_KEY);
+      const result = await readChromeStorage([key]);
+      if (result[key]) return result[key];
+
+      const raw = sessionStorage.getItem(key);
       if (!raw) return null;
-      const { ts, data } = JSON.parse(raw);
-      if (Date.now() - ts > STABLE_CACHE_TTL) return null;
-      return new Map(data);
-    } catch { return null; }
+
+      const entry = JSON.parse(raw);
+      if (hasChromeLocalStorage()) {
+        try {
+          await writeChromeStorage({ [key]: entry });
+          sessionStorage.removeItem(key);
+        } catch {}
+      }
+
+      return entry;
+    } catch {
+      return null;
+    }
   }
 
-  function saveStableCache(map) {
+  async function writeCacheEntry(key, entry) {
     try {
-      const stableOnly = new Map(
-        [...map].map(([k, v]) => [k, {
-          date: v.date, title: v.title,
-          timeStart: v.timeStart, timeEnd: v.timeEnd,
-          isClosed: v.isClosed, author: v.author,
-        }])
-      );
-      sessionStorage.setItem(
-        STABLE_CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), data: [...stableOnly] })
-      );
-    } catch {}
+      if (!hasChromeLocalStorage()) {
+        throw new Error("chrome.storage.local is unavailable");
+      }
+
+      await writeChromeStorage({ [key]: entry });
+      sessionStorage.removeItem(key);
+    } catch {
+      try {
+        sessionStorage.setItem(key, JSON.stringify(entry));
+      } catch {}
+    }
   }
 
-  function loadCountCache() {
-    try {
-      const raw = sessionStorage.getItem(COUNT_CACHE_KEY);
-      if (!raw) return null;
-      const { ts, data } = JSON.parse(raw);
-      if (Date.now() - ts > COUNT_CACHE_TTL) return null;
-      return new Map(data);
-    } catch { return null; }
+  async function removeCacheEntries(keys) {
+    keys.forEach((key) => {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {}
+    });
+
+    await removeChromeStorage(keys);
   }
 
-  function saveCountCache(map) {
+  function cacheEntryToMap(entry, ttl) {
+    if (!entry || !Array.isArray(entry.data)) return null;
+    if (Date.now() - (entry.ts || 0) > ttl) return null;
+
     try {
-      const countsOnly = new Map(
-        [...map].map(([k, v]) => [k, { current: v.current, total: v.total }])
-      );
-      sessionStorage.setItem(
-        COUNT_CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), data: [...countsOnly] })
-      );
-    } catch {}
+      return new Map(entry.data);
+    } catch {
+      return null;
+    }
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function waitBeforeFullFetch() {
+    const jitter = Math.floor(Math.random() * FULL_FETCH_JITTER_MAX_MS);
+    if (jitter > 0) await delay(jitter);
+  }
+
+  async function loadStableCache() {
+    return cacheEntryToMap(await readCacheEntry(STABLE_CACHE_KEY), STABLE_CACHE_TTL);
+  }
+
+  async function saveStableCache(map) {
+    const stableOnly = new Map(
+      [...map].map(([k, v]) => [k, {
+        date: v.date, title: v.title,
+        timeStart: v.timeStart, timeEnd: v.timeEnd,
+        isClosed: v.isClosed, author: v.author,
+      }])
+    );
+
+    await writeCacheEntry(STABLE_CACHE_KEY, {
+      ts: Date.now(),
+      data: [...stableOnly],
+    });
+  }
+
+  async function loadCountCache() {
+    return cacheEntryToMap(await readCacheEntry(COUNT_CACHE_KEY), COUNT_CACHE_TTL);
+  }
+
+  async function saveCountCache(map) {
+    const countsOnly = new Map(
+      [...map].map(([k, v]) => [k, { current: v.current, total: v.total }])
+    );
+
+    await writeCacheEntry(COUNT_CACHE_KEY, {
+      ts: Date.now(),
+      data: [...countsOnly],
+    });
   }
 
   function mergeStableAndCounts(stableMap, countMap) {
@@ -162,29 +277,21 @@
 
   // ── 장소 캐시 ─────────────────────────────────────────────────────────────
 
-  function loadLocCache() {
-    try {
-      const raw = sessionStorage.getItem(LOC_CACHE_KEY);
-      if (!raw) return new Map();
+  async function loadLocCache() {
+    locCacheMemory = cacheEntryToMap(
+      await readCacheEntry(LOC_CACHE_KEY),
+      STABLE_CACHE_TTL
+    ) || new Map();
 
-      const { ts, data } = JSON.parse(raw);
-
-      // 장소는 4시간 캐시
-      if (Date.now() - ts > 4 * 60 * 60 * 1000) return new Map();
-
-      return new Map(data);
-    } catch {
-      return new Map();
-    }
+    return locCacheMemory;
   }
 
-  function saveLocCache(map) {
-    try {
-      sessionStorage.setItem(
-        LOC_CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), data: [...map] })
-      );
-    } catch {}
+  async function saveLocCache(map) {
+    locCacheMemory = map;
+    await writeCacheEntry(LOC_CACHE_KEY, {
+      ts: Date.now(),
+      data: [...map],
+    });
   }
 
   // ── 상세 페이지에서 장소 파싱 ─────────────────────────────────────────────
@@ -439,7 +546,7 @@
   }
 
   async function fetchLocations(events) {
-    const locCache = loadLocCache();
+    const locCache = await loadLocCache();
     const todayStr = toDateStr(new Date());
 
     // 과거 이벤트는 장소 정보가 불필요하므로 생략
@@ -473,7 +580,7 @@
       }
     });
 
-    saveLocCache(locCache);
+    await saveLocCache(locCache);
 
     return locCache;
   }
@@ -505,8 +612,8 @@
   }
 
   async function buildCompleteEventMap(onProgress) {
-    const stableCache = loadStableCache();
-    const countCache  = loadCountCache();
+    const stableCache = await loadStableCache();
+    const countCache  = await loadCountCache();
 
     // 둘 다 유효하면 fetch 없이 반환
     if (stableCache && countCache) {
@@ -519,12 +626,14 @@
     const baseUrl = getBaseUrl();
 
     if (totalPages > 1) {
+      await waitBeforeFullFetch();
+
       const pageNums = [];
       for (let i = 2; i <= totalPages; i++) pageNums.push(i);
 
       const results = await fetchInBatches(
         pageNums.map((n) => () => fetchPageMap(n, baseUrl)),
-        3
+        LIST_FETCH_BATCH_SIZE
       );
 
       results.forEach((r) => {
@@ -537,10 +646,10 @@
     }
 
     // 수강자수는 항상 최신으로 저장
-    saveCountCache(freshMap);
+    await saveCountCache(freshMap);
 
     // 안정 데이터는 만료됐을 때만 갱신
-    if (!stableCache) saveStableCache(freshMap);
+    if (!stableCache) await saveStableCache(freshMap);
 
     if (onProgress) onProgress(freshMap);
 
@@ -1359,7 +1468,7 @@
     }
 
     function withLocations(events) {
-      const cache = loadLocCache();
+      const cache = locCacheMemory;
 
       return events.map((ev) => {
         const withConflict = hasPersonalScheduleConflict(ev, personalSchedules);
@@ -1458,15 +1567,9 @@
       renderPanel(withLocations(getFilteredEvents()), true);
 
       try {
-        sessionStorage.removeItem(STABLE_CACHE_KEY);
-        sessionStorage.removeItem(COUNT_CACHE_KEY);
-        sessionStorage.removeItem(LOC_CACHE_KEY);
-        await new Promise((resolve) =>
-          chrome.storage.local.remove(
-            ["soma_mentoring_schedules", "soma_mentoring_schedules_ts"],
-            resolve
-          )
-        );
+        await removeCacheEntries([STABLE_CACHE_KEY, COUNT_CACHE_KEY, LOC_CACHE_KEY]);
+        locCacheMemory = new Map();
+        await removeChromeStorage(["soma_mentoring_schedules", "soma_mentoring_schedules_ts"]);
 
         [personalSchedules, mentoringSchedules] = await Promise.all([
           loadPersonalSchedules(),
@@ -1495,13 +1598,19 @@
     }
 
     // ① 현재 페이지 데이터로 즉시 렌더
+    const [, stableCache, countCache] = await Promise.all([
+      loadLocCache(),
+      loadStableCache(),
+      loadCountCache(),
+    ]);
+
     [personalSchedules, mentoringSchedules] = await Promise.all([
       loadPersonalSchedules(),
       loadMentoringSchedules(),
     ]);
     const initialMap = parseTableRows(document);
     allEvents = collectEvents(initialMap);
-    renderPanel(withLocations(getFilteredEvents()), !loadCountCache() || !loadStableCache());
+    renderPanel(withLocations(getFilteredEvents()), !(stableCache && countCache));
 
     // ② 전체 페이지 fetch → 멘토/인원/상태 완성
     const completeMap = await buildCompleteEventMap();
