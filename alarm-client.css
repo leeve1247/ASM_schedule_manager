@@ -6,14 +6,33 @@
   white-space: nowrap;
 }
 
+#history-calendar .alarm-settings-btn {
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  background: #086DB7;
+  border-color: #086DB7;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+#history-calendar .alarm-settings-btn:hover {
+  background: #065a96;
+  border-color: #065a96;
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+
 .alarm-settings-modal-content {
   width: min(680px, calc(100vw - 32px));
   max-width: min(680px, calc(100vw - 32px));
   padding: 28px 28px 24px;
   border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(8, 109, 183, 0.15), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .alarm-settings-modal-content .modal-header {
@@ -23,7 +42,8 @@
 }
 
 .alarm-settings-modal-content .modal-header h4 {
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 400;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -52,8 +72,8 @@
 }
 
 #alarm-settings-form .alarm-settings-field span {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 400;
   color: #334155;
 }
 
@@ -61,7 +81,7 @@
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #cbd5e1;
@@ -91,8 +111,19 @@
   padding: 11px 18px;
   border-radius: 5px;
   font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  font-weight: 400;
+  background: #086DB7;
+  border-color: #086DB7;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+#alarm-settings-form .control-btn:hover {
+  background: #065a96;
+  border-color: #065a96;
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 720px) {
