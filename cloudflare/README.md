@@ -4,7 +4,7 @@
 
 ## 역할
 
-- 확장 프로그램이 신청한 멘토링 일정을 `/api/public/schedules/sync`로 전송
+- 확장 프로그램이 신청한 멘토링 일정을 Worker로 동기화
 - Worker가 D1에 일정과 알림 채널 설정 저장
 - 공개 동기화 API는 요청당 128KB, 사용자별 30초 최소 간격, 일정 200건 제한을 적용
 - Cron Trigger가 5분마다 실행되어 알림이 켜진 사용자에게 **멘토링 시작 1시간 전 Discord 알림 발송 (개인일정은 알림 제외)**
@@ -27,6 +27,8 @@ npx wrangler secret put API_TOKEN
 npx wrangler deploy
 ```
 
+`wrangler.toml`은 실제 D1 database id가 들어가는 로컬 배포 설정이라 Git에 올리지 않습니다. `wrangler.toml.example`은 새 환경에서 동일한 Worker 설정을 재현하기 위한 템플릿입니다.
+
 기존 D1 데이터베이스를 운영 중이면 `schema.sql`을 다시 실행하지 말고 migration만 적용합니다.
 
 ```bash
@@ -34,41 +36,22 @@ cd cloudflare
 npx wrangler d1 migrations apply asm-schedule-db
 ```
 
-## 확장 프로그램 설정값
+## 운영
 
-최초 1회만 아래 값을 저장합니다.
+- Worker 변경 후에는 `npm run deploy`로 배포합니다.
+- D1 스키마 변경이 있으면 먼저 `npm run db:migrations:apply`를 실행한 뒤 배포합니다.
+- Cron Trigger는 5분마다 실행됩니다.
+- 공개 테스트 알림 API는 비활성화되어 있습니다.
 
-- `소마 계정 이메일`
-- `표시 이름`
-- `Discord Webhook URL`
+## 사용자 설정값
 
-## API 예시
+확장 프로그램 사용자는 아래 값만 입력합니다.
 
-```json
-{
-  "userId": "user@soma.or.kr",
-  "clientToken": "64-character-random-client-token",
-  "userLabel": "재민",
-  "notifyEnabled": true,
-  "notificationTargets": {
-    "discordWebhookUrl": "https://discord.com/api/webhooks/..."
-  },
-  "schedules": [
-    {
-      "sourceEventId": "12345",
-      "title": "백엔드 멘토링",
-      "lectureType": "자유 멘토링",
-      "mentorName": "홍길동",
-      "startsAt": "2026-05-28T14:00:00+09:00",
-      "endsAt": "2026-05-28T15:00:00+09:00",
-      "location": "온라인",
-      "status": "접수완료",
-      "detailUrl": "https://www.swmaestro.ai/...",
-      "cancelable": true
-    }
-  ]
-}
-```
+- 소마 계정 이메일
+- 표시 이름
+- Discord Webhook URL
+
+사용자별 `clientToken`은 확장 프로그램이 브라우저 로컬 스토리지에 자동 생성하고 서버 동기화 요청에만 사용합니다.
 
 ## 주의
 
