@@ -1,4 +1,5 @@
 import {
+  clearEventCache as gcalClearEventCache,
   connect as gcalConnect,
   disconnect as gcalDisconnect,
   isConnected as gcalIsConnected,
@@ -44,13 +45,17 @@ interface GcalMatchMessage {
   type: 'asm-gcal-match';
   lectures: LectureMatchInput[];
 }
+interface GcalClearCacheMessage {
+  type: 'asm-gcal-clear-cache';
+}
 
 type IncomingMessage =
   | WorkerFetchMessage
   | GcalStatusMessage
   | GcalConnectMessage
   | GcalDisconnectMessage
-  | GcalMatchMessage;
+  | GcalMatchMessage
+  | GcalClearCacheMessage;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -68,6 +73,7 @@ function classifyMessage(value: unknown): IncomingMessage | null {
   if (type === 'asm-gcal-match' && Array.isArray(value.lectures)) {
     return { type, lectures: value.lectures as LectureMatchInput[] };
   }
+  if (type === 'asm-gcal-clear-cache') return { type };
   return null;
 }
 
@@ -122,6 +128,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (msg.type === 'asm-gcal-match') {
       const res = await gcalMatchLectures(msg.lectures);
       sendResponse(res);
+      return;
+    }
+
+    if (msg.type === 'asm-gcal-clear-cache') {
+      await gcalClearEventCache();
+      sendResponse({ ok: true });
       return;
     }
   })();

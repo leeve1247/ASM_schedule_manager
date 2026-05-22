@@ -138,41 +138,25 @@ export async function listEventsCached(timeMin: string, timeMax: string): Promis
   return events;
 }
 
-function toKstIso(dateStr: string, timeStr: string): string {
-  // dateStr: "YYYY-MM-DD", timeStr: "HH:MM"
-  return `${dateStr}T${timeStr}:00+09:00`;
-}
-
-function eventToRange(event: GcalEvent): { start: Date; end: Date } | null {
-  const startStr = event.start?.dateTime ?? event.start?.date;
-  const endStr = event.end?.dateTime ?? event.end?.date;
-  if (!startStr || !endStr) return null;
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  return { start, end };
+export async function clearEventCache(): Promise<void> {
+  const all = await new Promise<Record<string, unknown>>((resolve) => {
+    chrome.storage.session.get(null, (res) => resolve(res || {}));
+  });
+  const keys = Object.keys(all).filter((k) => k.startsWith('gcal_events:'));
+  if (keys.length === 0) return;
+  await new Promise<void>((resolve) => {
+    chrome.storage.session.remove(keys, () => resolve());
+  });
 }
 
 function isLectureMatched(lecture: LectureMatchInput, events: GcalEvent[]): boolean {
-  // Strong match: qustnrSn substring in description (set by our exporter).
-  if (lecture.qustnrSn) {
-    const needle = `qustnrSn=${lecture.qustnrSn}`;
-    if (events.some((e) => (e.description ?? '').includes(needle))) return true;
-  }
-
-  if (!lecture.dateStr || !lecture.startTime || !lecture.endTime) return false;
-  const lectureStart = new Date(toKstIso(lecture.dateStr, lecture.startTime));
-  const lectureEnd = new Date(toKstIso(lecture.dateStr, lecture.endTime));
-  if (Number.isNaN(lectureStart.getTime()) || Number.isNaN(lectureEnd.getTime())) return false;
-
-  return events.some((event) => {
-    const range = eventToRange(event);
-    if (!range) return false;
-    const overlaps = lectureStart < range.end && range.start < lectureEnd;
-    if (!overlaps) return false;
-    const desc = event.description ?? '';
-    return /swmaestro/i.test(desc);
-  });
+  // Strict match: this extension's exporter writes the lecture's SOMA URL
+  // (which contains `qustnrSn=<id>`) into the event description. Looser
+  // heuristics (time-overlap + "swmaestro" substring) false-positive when
+  // another SOMA event happens to overlap.
+  if (!lecture.qustnrSn) return false;
+  const needle = `qustnrSn=${lecture.qustnrSn}`;
+  return events.some((e) => (e.description ?? '').includes(needle));
 }
 
 export async function matchLectures(
