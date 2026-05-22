@@ -2,6 +2,24 @@ const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8"
 };
 
+const MAX_JSON_BODY_BYTES = 128 * 1024;
+const PUBLIC_SYNC_MIN_INTERVAL_MS = 30 * 1000;
+const MAX_SCHEDULES_PER_SYNC = 200;
+
+const FIELD_LIMITS = {
+  userId: 254,
+  clientToken: 64,
+  userLabel: 80,
+  discordWebhookUrl: 512,
+  sourceEventId: 128,
+  title: 200,
+  lectureType: 50,
+  mentorName: 80,
+  location: 200,
+  status: 80,
+  detailUrl: 512
+};
+
 function buildCorsHeaders(request) {
   const origin = request.headers.get("origin") || "*";
   return {
@@ -58,17 +76,40 @@ function isAuthorizedRequest(request, env) {
   return Boolean(expectedToken) && authHeader === `Bearer ${expectedToken}`;
 }
 
+async function readJsonPayload(request) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > MAX_JSON_BODY_BYTES) {
+    return { error: `Request body must not exceed ${MAX_JSON_BODY_BYTES} bytes`, status: 413 };
+  }
+
+  let rawBody;
+  try {
+    rawBody = await request.text();
+  } catch {
+    return { error: "Failed to read request body", status: 400 };
+  }
+
+  if (new TextEncoder().encode(rawBody).length > MAX_JSON_BODY_BYTES) {
+    return { error: `Request body must not exceed ${MAX_JSON_BODY_BYTES} bytes`, status: 413 };
+  }
+
+  try {
+    return { payload: JSON.parse(rawBody) };
+  } catch {
+    return { error: "Invalid JSON body", status: 400 };
+  }
+}
+
 async function handleScheduleSync(request, env, options = {}) {
   if (options.requireAuth && !isAuthorizedRequest(request, env)) {
     return json({ error: "Unauthorized" }, 401, request);
   }
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400, request);
+  const parsedRequest = await readJsonPayload(request);
+  if (parsedRequest.error) {
+    return json({ error: parsedRequest.error }, parsedRequest.status, request);
   }
+  const payload = parsedRequest.payload;
 
   const validationError = validateSyncPayload(payload, options);
   if (validationError) {
@@ -92,7 +133,8 @@ async function handleScheduleSync(request, env, options = {}) {
       display_name,
       discord_webhook_url,
       notify_enabled,
-      client_token
+      client_token,
+      last_sync_at
     FROM users
     WHERE id = ?
     LIMIT 1
@@ -113,6 +155,13 @@ async function handleScheduleSync(request, env, options = {}) {
     return json({ error: "Invalid client token" }, 403, request);
   }
 
+  if (options.publicMode && existingUser?.last_sync_at) {
+    const lastSyncAt = new Date(existingUser.last_sync_at).getTime();
+    if (!Number.isNaN(lastSyncAt) && Date.now() - lastSyncAt < PUBLIC_SYNC_MIN_INTERVAL_MS) {
+      return json({ error: "Too many sync requests. Please retry shortly." }, 429, request);
+    }
+  }
+
   const nextClientToken = options.publicMode
     ? ((!hasStoredClientToken || canRotateClientToken) ? clientToken : existingUser.client_token)
     : (existingUser?.client_token || "");
@@ -131,13 +180,15 @@ async function handleScheduleSync(request, env, options = {}) {
         discord_webhook_url,
         notify_enabled,
         client_token,
+        last_sync_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         display_name = excluded.display_name,
         discord_webhook_url = excluded.discord_webhook_url,
         notify_enabled = excluded.notify_enabled,
         client_token = excluded.client_token,
+        last_sync_at = excluded.last_sync_at,
         updated_at = excluded.updated_at
     `)
       .bind(
@@ -146,8 +197,17 @@ async function handleScheduleSync(request, env, options = {}) {
         desiredUser.discord_webhook_url,
         desiredUser.notify_enabled,
         nextClientToken,
+        nowIso,
         nowIso
       )
+      .run();
+  } else {
+    await env.DB.prepare(`
+      UPDATE users
+      SET last_sync_at = ?
+      WHERE id = ?
+    `)
+      .bind(nowIso, userId)
       .run();
   }
 
@@ -273,12 +333,11 @@ async function handleTestNotification(request, env, options = {}) {
     return json({ error: "Unauthorized" }, 401, request);
   }
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400, request);
+  const parsedRequest = await readJsonPayload(request);
+  if (parsedRequest.error) {
+    return json({ error: parsedRequest.error }, parsedRequest.status, request);
   }
+  const payload = parsedRequest.payload;
 
   const userId = (payload?.userId || "").trim();
   if (!userId) {
@@ -332,20 +391,27 @@ async function handleTestNotification(request, env, options = {}) {
 function validateSyncPayload(payload, options = {}) {
   if (!payload || typeof payload !== "object") return "Payload is required";
   if (!payload.userId || typeof payload.userId !== "string") return "userId is required";
+  if (payload.userId.trim().length > FIELD_LIMITS.userId) return "userId is too long";
   if (options.publicMode && !/^[a-f0-9]{64}$/i.test((payload.clientToken || "").trim())) {
     return "A valid client token is required";
   }
+  if ((payload.clientToken || "").trim().length > FIELD_LIMITS.clientToken) return "clientToken is too long";
   if (!Array.isArray(payload.schedules)) return "schedules must be an array";
-  if (payload.schedules.length > 200) return "schedules must not exceed 200 items";
+  if (payload.schedules.length > MAX_SCHEDULES_PER_SYNC) {
+    return `schedules must not exceed ${MAX_SCHEDULES_PER_SYNC} items`;
+  }
   if (typeof payload.notifyEnabled !== "boolean") {
     return "notifyEnabled must be a boolean";
   }
   if (!payload.notificationTargets || typeof payload.notificationTargets !== "object") {
     return "notificationTargets is required";
   }
+  if (payload.userLabel && typeof payload.userLabel !== "string") return "userLabel must be a string";
+  if ((payload.userLabel || "").trim().length > FIELD_LIMITS.userLabel) return "userLabel is too long";
 
   const discordWebhookUrl = (payload.notificationTargets.discordWebhookUrl || "").trim();
   const hasDiscord = Boolean(discordWebhookUrl);
+  if (discordWebhookUrl.length > FIELD_LIMITS.discordWebhookUrl) return "Discord webhook URL is too long";
   if (options.publicMode && !/^https:\/\/discord\.com\/api\/webhooks\/[^/\s]+\/[^/\s]+$/.test(discordWebhookUrl)) {
     return "A valid Discord webhook URL is required";
   }
@@ -359,9 +425,67 @@ function validateSyncPayload(payload, options = {}) {
   }
 
   for (const schedule of payload.schedules) {
+    if (!schedule || typeof schedule !== "object") {
+      return "Each schedule must be an object";
+    }
     if (!schedule.sourceEventId || !schedule.title || !schedule.startsAt || !schedule.endsAt) {
       return "Each schedule needs sourceEventId, title, startsAt, and endsAt";
     }
+    const scheduleValidationError = validateSchedulePayload(schedule);
+    if (scheduleValidationError) return scheduleValidationError;
+  }
+
+  return null;
+}
+
+function validateStringField(value, fieldName, maxLength, { required = false, url = false } = {}) {
+  if (value === undefined || value === null || value === "") {
+    return required ? `${fieldName} is required` : null;
+  }
+  if (typeof value !== "string") return `${fieldName} must be a string`;
+  if (value.trim().length > maxLength) return `${fieldName} is too long`;
+  if (url) {
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== "https:" || !/\.swmaestro\.(ai|org)$/i.test(parsed.hostname)) {
+        return `${fieldName} must be a valid SOMA HTTPS URL`;
+      }
+    } catch {
+      return `${fieldName} must be a valid URL`;
+    }
+  }
+  return null;
+}
+
+function validateIsoDateTime(value, fieldName) {
+  const error = validateStringField(value, fieldName, 40, { required: true });
+  if (error) return error;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return `${fieldName} must be a valid date-time`;
+  return null;
+}
+
+function validateSchedulePayload(schedule) {
+  const stringChecks = [
+    validateStringField(schedule.sourceEventId, "sourceEventId", FIELD_LIMITS.sourceEventId, { required: true }),
+    validateStringField(schedule.title, "title", FIELD_LIMITS.title, { required: true }),
+    validateStringField(schedule.lectureType || "", "lectureType", FIELD_LIMITS.lectureType),
+    validateStringField(schedule.mentorName || "", "mentorName", FIELD_LIMITS.mentorName),
+    validateStringField(schedule.location || "", "location", FIELD_LIMITS.location),
+    validateStringField(schedule.status || "", "status", FIELD_LIMITS.status),
+    validateStringField(schedule.detailUrl || "", "detailUrl", FIELD_LIMITS.detailUrl, { url: Boolean(schedule.detailUrl) }),
+    validateIsoDateTime(schedule.startsAt, "startsAt"),
+    validateIsoDateTime(schedule.endsAt, "endsAt")
+  ];
+  const firstError = stringChecks.find(Boolean);
+  if (firstError) return firstError;
+
+  if (Date.parse(schedule.startsAt) >= Date.parse(schedule.endsAt)) {
+    return "startsAt must be before endsAt";
+  }
+
+  if (schedule.cancelable !== undefined && typeof schedule.cancelable !== "boolean") {
+    return "cancelable must be a boolean";
   }
 
   return null;

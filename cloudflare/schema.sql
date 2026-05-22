@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   discord_webhook_url TEXT DEFAULT '',
   client_token TEXT DEFAULT '',
   notify_enabled INTEGER NOT NULL DEFAULT 1,
+  last_sync_at TEXT DEFAULT '',
   updated_at TEXT NOT NULL
 );
 
