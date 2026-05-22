@@ -1,8 +1,19 @@
 // Fetch SOMA lecture detail page and extract mentor/location/people/status.
 
-import { readChromeStorage, writeChromeStorage } from '../lib/storage';
+import { readChromeStorage, removeChromeStorage, writeChromeStorage } from '../lib/storage';
 import { isLectureEnded } from '../lib/date-time';
 import type { LectureDetails } from './types';
+
+const CACHE_KEY_PREFIX = 'soma_lecture_detail_';
+
+export async function clearLectureDetailCache(): Promise<void> {
+  const all = await new Promise<Record<string, unknown>>((resolve) => {
+    chrome.storage.local.get(null, (res) => resolve(res || {}));
+  });
+  const keys = Object.keys(all).filter((k) => k.startsWith(CACHE_KEY_PREFIX));
+  if (keys.length === 0) return;
+  await removeChromeStorage(keys);
+}
 
 // Stable lecture detail fields rarely change; keep a longer cache.
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
@@ -105,7 +116,7 @@ export async function fetchLectureDetails(
     return { ...PLACEHOLDER_DETAILS };
   }
 
-  const cacheKey = `soma_lecture_detail_${qustnrSn}`;
+  const cacheKey = `${CACHE_KEY_PREFIX}${qustnrSn}`;
   const stored = await readChromeStorage([cacheKey]);
   const cached = stored[cacheKey] as CachedLectureDetail | undefined;
 

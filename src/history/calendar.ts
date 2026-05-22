@@ -13,6 +13,7 @@ import { saveMentoringSchedules, type MentoringSchedule } from '../lib/mentoring
 import { openModalForEditing, openModalWithDate } from './modal';
 import { triggerCancellation } from './cancel';
 import { parseLecturesTable } from './lecture-table';
+import { clearLectureDetailCache } from './lecture-detail';
 import type { Lecture } from './types';
 
 const CALENDAR_DAY_COUNT = 14;
@@ -142,6 +143,7 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
       `
           : ''
       }
+      <button id="btn-refresh-lectures" class="control-btn nav-btn" title="최신 데이터로 새로고침">↻ 새로고침</button>
       <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
     </div>
   `;
@@ -533,5 +535,28 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
 
   document.getElementById('btn-add-personal')!.addEventListener('click', () => {
     openModalWithDate();
+  });
+
+  document.getElementById('btn-refresh-lectures')!.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    if (btn.disabled) return;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '↻ 새로고침 중…';
+    try {
+      await clearLectureDetailCache();
+      try {
+        await chrome.runtime.sendMessage({ type: 'asm-gcal-clear-cache' });
+      } catch {
+        /* gcal cache clear is best-effort */
+      }
+      const fresh = await parseLecturesTable();
+      await renderCalendar(fresh);
+    } catch (err) {
+      console.error('SOMA Schedule Manager: refresh failed', err);
+      btn.disabled = false;
+      btn.textContent = originalText;
+      alert('새로고침 중 오류가 발생했습니다.');
+    }
   });
 }
