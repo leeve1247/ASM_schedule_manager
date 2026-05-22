@@ -5,7 +5,7 @@
 # 주요 기능
 
 ## 1. 자유 멘토링 / 멘토 특강 캘린더
-<img width="3145" height="4123" alt="최종1" src="https://github.com/user-attachments/assets/1ca24e5d-837f-4019-9c07-bc7c918d8992" />
+<img width="3126" height="4198" alt="최종2" src="https://github.com/user-attachments/assets/1ad457bb-d69a-48e8-ae4d-a9283c1d732d" />
 
 - 자유 멘토링과 멘토 특강 일정을 달력 형태로 확인할 수 있습니다.
 - 기존 표 형태의 일정 데이터를 4주형 캘린더 카드로 보여줍니다.
@@ -24,7 +24,7 @@
 - 시간이 겹치면 경고 배너를 표시합니다.
 - 신청 버튼을 비활성화하지는 않았으나, 신청 시 개인의 주의가 필요합니다.
 
-<img width="526" height="372" alt="image" src="https://github.com/user-attachments/assets/6751f436-4f7c-4359-9015-f6b5f17e62fb" />
+<img width="508" height="374" alt="KakaoTalk_Photo_2026-05-22-17-48-47" src="https://github.com/user-attachments/assets/9b5bbf9b-00ef-440c-a40c-ce59bb444ad8" />
 
 - 본인이 신청한 강의는 수강중으로 표시합니다.
 
@@ -48,7 +48,10 @@
 
 ### 자유 멘토링 / 멘토 특강 캘린더에서의 주의 사항
 
-<img width="271" height="443" alt="image" src="https://github.com/user-attachments/assets/db95f1b9-f248-449b-bb82-d7c25b9b45ac" />
+<img width="488" height="86" alt="KakaoTalk_Photo_2026-05-22-17-49-58" src="https://github.com/user-attachments/assets/091546ec-285e-48c7-ab2e-38dec69437e5" />
+
+<img width="280" height="297" alt="KakaoTalk_Photo_2026-05-22-17-50-09" src="https://github.com/user-attachments/assets/3601928f-48d5-4fcb-ab84-95cdc12b2a63" />
+
 
 - 위 설명과 같이, 내가 신청한 멘토링 내역이 안 보인다면 접수 내역 페이지에 들러서 데이터가 파싱되면 자동으로 반영됩니다.
 - 자동 갱신 주기
