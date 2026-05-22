@@ -743,7 +743,8 @@
   box-shadow: inset 0 0 0 1px rgba(255, 165, 0, 0.3);
 }
 .asm-event-card.asm-card-enrolled {
-  border-color: #A78BFA;
+  border-width: 2px;
+  border-color: #A78BFAd1;
   box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.3);
 }
 
