@@ -85,13 +85,23 @@
 
 ```bash
 git clone https://github.com/woals00/ASM_schedule_manager.git
+cd ASM_schedule_manager
 ```
 
-2. Chrome 주소창에 `chrome://extensions/`를 입력합니다.
-3. 우측 상단의 `개발자 모드`를 켭니다.
-4. `압축해제된 확장 프로그램을 로드합니다` 버튼을 클릭합니다.
-5. 복제한 `ASM_schedule_manager` 폴더를 선택합니다.
-6. 확장 프로그램을 활성화한 뒤 소프트웨어 마에스트로 홈페이지에 접속합니다.
+2. 의존성을 설치하고 빌드합니다. (Node.js 18+ 필요)
+
+```bash
+npm install
+npm run build
+```
+
+3. Chrome 주소창에 `chrome://extensions/`를 입력합니다.
+4. 우측 상단의 `개발자 모드`를 켭니다.
+5. `압축해제된 확장 프로그램을 로드합니다` 버튼을 클릭합니다.
+6. 복제 폴더 내의 `dist/` 폴더를 선택합니다.
+7. 확장 프로그램을 활성화한 뒤 소프트웨어 마에스트로 홈페이지에 접속합니다.
+
+> 코드를 수정하며 개발하려면 `npm run dev` 로 워치 모드 실행 — 변경 시 `dist/` 가 자동 재빌드되고, 확장은 `chrome://extensions` 의 새로고침 버튼으로 반영합니다.
 
 ※ 생각보다 적용이 쉬우니 사용을 추천드립니다!
   - 이후 확장프로그램 등록까지 고려중입니다.

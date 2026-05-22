@@ -1,13 +1,11 @@
 {
   "manifest_version": 3,
   "name": "소마 멘토링 캘린더 개선",
-  "version": "1.0.0",
-  "description": "소프트웨어 마에스트로 멘토링 신청 캘린더 UI 개선 및 멘토 필터링 기능 추가",
   "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "icon/16.png",
+    "32": "icon/32.png",
+    "48": "icon/48.png",
+    "128": "icon/128.png"
   },
   "permissions": [
     "storage"
@@ -18,15 +16,15 @@
     "https://asm-schedule-alarm.pa6764.workers.dev/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "content_scripts": [
     {
       "matches": [
         "https://www.swmaestro.ai/*"
       ],
-      "js": ["calendar-export.js", "content.js"],
-      "css": ["content.css"],
+      "js": ["src/calendar-export.js", "src/content.js"],
+      "css": ["src/content.css"],
       "run_at": "document_idle"
     },
     {
@@ -40,15 +38,15 @@
         "*://*.swmaestro.org/sw/mypage/mentoLec/view.do*",
         "*://*.swmaestro.ai/sw/mypage/mentoLec/view.do*"
       ],
-      "js": ["calendar-export.js", "alarm-client.js", "schedule-manager.js"],
-      "css": ["schedule-manager.css", "alarm-client.css"],
+      "js": ["src/calendar-export.js", "src/alarm-client.js", "src/schedule-manager.js"],
+      "css": ["src/schedule-manager.css", "src/alarm-client.css"],
       "run_at": "document_idle"
     }
   ],
   "action": {
     "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png"
+      "16": "icon/16.png",
+      "32": "icon/32.png"
     },
     "default_title": "소마 멘토링 캘린더 개선"
   }
