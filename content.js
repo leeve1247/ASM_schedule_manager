@@ -80,31 +80,72 @@
 
   // ── 전체 페이지 fetch + sessionStorage 캐시 ───────────────────────────────
 
-  const CACHE_KEY = "asm_event_map_v4";
-  const LOC_CACHE_KEY = "asm_location_v1";
-  const CACHE_TTL = 1 * 60 * 1000; // 1분
+  const STABLE_CACHE_KEY = "asm_event_stable_v1";
+  const COUNT_CACHE_KEY  = "asm_event_count_v1";
+  const LOC_CACHE_KEY    = "asm_location_v1";
 
-  function loadCache() {
+  const STABLE_CACHE_TTL = 4 * 60 * 60 * 1000; // 4시간 — 제목·시간·상태 등 잘 안 바뀌는 데이터
+  const COUNT_CACHE_TTL  = 5 * 60 * 1000;       // 5분  — 수강자수
+
+  function loadStableCache() {
     try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
+      const raw = sessionStorage.getItem(STABLE_CACHE_KEY);
       if (!raw) return null;
-
       const { ts, data } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL) return null;
-
+      if (Date.now() - ts > STABLE_CACHE_TTL) return null;
       return new Map(data);
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }
 
-  function saveCache(map) {
+  function saveStableCache(map) {
     try {
+      const stableOnly = new Map(
+        [...map].map(([k, v]) => [k, {
+          date: v.date, title: v.title,
+          timeStart: v.timeStart, timeEnd: v.timeEnd,
+          isClosed: v.isClosed, author: v.author,
+        }])
+      );
       sessionStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), data: [...map] })
+        STABLE_CACHE_KEY,
+        JSON.stringify({ ts: Date.now(), data: [...stableOnly] })
       );
     } catch {}
+  }
+
+  function loadCountCache() {
+    try {
+      const raw = sessionStorage.getItem(COUNT_CACHE_KEY);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts > COUNT_CACHE_TTL) return null;
+      return new Map(data);
+    } catch { return null; }
+  }
+
+  function saveCountCache(map) {
+    try {
+      const countsOnly = new Map(
+        [...map].map(([k, v]) => [k, { current: v.current, total: v.total }])
+      );
+      sessionStorage.setItem(
+        COUNT_CACHE_KEY,
+        JSON.stringify({ ts: Date.now(), data: [...countsOnly] })
+      );
+    } catch {}
+  }
+
+  function mergeStableAndCounts(stableMap, countMap) {
+    const merged = new Map();
+    stableMap.forEach((v, sn) => {
+      const counts = countMap?.get(sn);
+      merged.set(sn, {
+        ...v,
+        current: counts?.current ?? v.current ?? "",
+        total:   counts?.total   ?? v.total   ?? "",
+      });
+    });
+    return merged;
   }
 
   async function fetchPageMap(pageIndex, baseUrl) {
@@ -128,8 +169,8 @@
 
       const { ts, data } = JSON.parse(raw);
 
-      // 장소는 30분 캐시
-      if (Date.now() - ts > 30 * 60 * 1000) return new Map();
+      // 장소는 4시간 캐시
+      if (Date.now() - ts > 4 * 60 * 60 * 1000) return new Map();
 
       return new Map(data);
     } catch {
@@ -374,16 +415,32 @@
 
   // ── 상세 페이지 fetch → 장소 정보 수집 ───────────────────────────────────
 
+  async function fetchInBatches(tasks, batchSize) {
+    const results = [];
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize);
+      const batchResults = await Promise.allSettled(batch.map((fn) => fn()));
+      results.push(...batchResults);
+    }
+    return results;
+  }
+
   async function fetchLocations(events) {
     const locCache = loadLocCache();
-    const missing = events.filter((ev) => ev.sn && !locCache.has(ev.sn));
+    const todayStr = toDateStr(new Date());
+
+    // 과거 이벤트는 장소 정보가 불필요하므로 생략
+    const missing = events.filter(
+      (ev) => ev.sn && !locCache.has(ev.sn) && ev.date >= todayStr
+    );
 
     if (missing.length === 0) return locCache;
 
     const origin = location.origin;
 
-    const results = await Promise.allSettled(
-      missing.map(async (ev) => {
+    // 동시 요청 3개씩 배치 처리
+    const results = await fetchInBatches(
+      missing.map((ev) => async () => {
         const url = `${origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${ev.sn}&menuNo=200046`;
         const res = await fetch(url, { credentials: "include" });
 
@@ -393,7 +450,8 @@
         const doc = new DOMParser().parseFromString(html, "text/html");
 
         return { sn: ev.sn, loc: parseLocationFromDoc(doc) };
-      })
+      }),
+      3
     );
 
     results.forEach((r) => {
@@ -434,38 +492,48 @@
   }
 
   async function buildCompleteEventMap(onProgress) {
-    const cached = loadCache();
-    if (cached) return cached;
+    const stableCache = loadStableCache();
+    const countCache  = loadCountCache();
 
-    const merged = parseTableRows(document);
+    // 둘 다 유효하면 fetch 없이 반환
+    if (stableCache && countCache) {
+      return mergeStableAndCounts(stableCache, countCache);
+    }
+
+    // 수강자수 만료(or 첫 로드) → 목록 페이지 fetch
+    const freshMap = parseTableRows(document);
     const totalPages = getTotalPages();
     const baseUrl = getBaseUrl();
 
-    if (totalPages <= 1) {
-      saveCache(merged);
-      return merged;
+    if (totalPages > 1) {
+      const pageNums = [];
+      for (let i = 2; i <= totalPages; i++) pageNums.push(i);
+
+      const results = await Promise.allSettled(
+        pageNums.map((n) => fetchPageMap(n, baseUrl))
+      );
+
+      results.forEach((r) => {
+        if (r.status === "fulfilled") {
+          r.value.forEach((v, k) => {
+            if (!freshMap.has(k)) freshMap.set(k, v);
+          });
+        }
+      });
     }
 
-    const pageNums = [];
-    for (let i = 2; i <= totalPages; i++) pageNums.push(i);
+    // 수강자수는 항상 최신으로 저장
+    saveCountCache(freshMap);
 
-    const results = await Promise.allSettled(
-      pageNums.map((n) => fetchPageMap(n, baseUrl))
-    );
+    // 안정 데이터는 만료됐을 때만 갱신
+    if (!stableCache) saveStableCache(freshMap);
 
-    results.forEach((r) => {
-      if (r.status === "fulfilled") {
-        r.value.forEach((v, k) => {
-          if (!merged.has(k)) merged.set(k, v);
-        });
-      }
-    });
+    if (onProgress) onProgress(freshMap);
 
-    saveCache(merged);
-
-    if (onProgress) onProgress(merged);
-
-    return merged;
+    // 안정 데이터: 캐시 있으면 캐시 우선, 없으면 새 데이터
+    return mergeStableAndCounts(stableCache ?? freshMap, new Map(
+      [...freshMap].map(([k, v]) => [k, { current: v.current, total: v.total }])
+    ));
   }
 
   // ── 이벤트 수집 ───────────────────────────────────────────────────────────
@@ -904,7 +972,9 @@
     onSearchSubmit = null,
     onSearchReset = null,
     isCollapsed = false,
-    onToggleCollapsed = null
+    onToggleCollapsed = null,
+    onRefresh = null,
+    isRefreshing = false
   ) {
     const { start, end, today, year, month } = getMonthRange(offset);
     const todayStr = toDateStr(today);
@@ -981,12 +1051,80 @@
 
     header.appendChild(navWrap);
 
+    const headerActions = document.createElement("div");
+    headerActions.className = "asm-panel-actions";
+
+    const infoWrap = document.createElement("div");
+    infoWrap.className = "asm-panel-info-wrap";
+
+    const infoBtn = document.createElement("button");
+    infoBtn.type = "button";
+    infoBtn.className = "asm-panel-info-btn";
+    infoBtn.textContent = "!";
+    infoBtn.title = "자동 갱신 안내";
+
+    const infoPopover = document.createElement("div");
+    infoPopover.className = "asm-panel-info-popover";
+    infoPopover.setAttribute("aria-hidden", "true");
+    infoPopover.innerHTML = `
+      <div class="asm-info-notice">
+        <div class="asm-info-notice-title">내가 신청한 멘토링 내역이 안 보인다면?</div>
+        <div class="asm-info-notice-body">접수 내역 페이지에 한 번 들렀다 오면 자동으로 반영됩니다.</div>
+      </div>
+      <div class="asm-info-divider"></div>
+      <div class="asm-info-title">자동 갱신 주기</div>
+      <table class="asm-info-table">
+        <tr><td>수강자수</td><td><b>5분</b></td></tr>
+        <tr><td>제목 · 시간 · 상태 · 장소</td><td><b>4시간</b></td></tr>
+      </table>
+      <div class="asm-info-divider"></div>
+      <div class="asm-info-subtitle">새로고침이 필요한 경우</div>
+      <ul class="asm-info-list">
+        <li>방금 신청했는데 수강자수가 아직 반영이 안 됐을 때</li>
+        <li>장소·시간이 변경됐다는 공지를 봤을 때</li>
+        <li>갱신 주기 전에 즉시 최신 정보가 필요할 때</li>
+      </ul>
+    `;
+
+    infoBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = infoPopover.classList.toggle("asm-panel-info-popover--open");
+      infoPopover.setAttribute("aria-hidden", String(!isOpen));
+    });
+
+    document.addEventListener("click", function closePopover(e) {
+      if (!infoWrap.contains(e.target)) {
+        infoPopover.classList.remove("asm-panel-info-popover--open");
+        infoPopover.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    infoWrap.appendChild(infoBtn);
+    infoWrap.appendChild(infoPopover);
+    headerActions.appendChild(infoWrap);
+
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "asm-panel-refresh";
+    refreshBtn.title = "새로고침";
+    const refreshIcon = document.createElement("span");
+    refreshIcon.className = "asm-refresh-icon" + (isRefreshing ? " asm-refresh-icon--spinning" : "");
+    refreshIcon.textContent = "↻";
+    refreshBtn.appendChild(refreshIcon);
+    refreshBtn.disabled = isRefreshing;
+    refreshBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      onRefresh && onRefresh();
+    });
+    headerActions.appendChild(refreshBtn);
+
     const toggleBtn = document.createElement("button");
     toggleBtn.type = "button";
     toggleBtn.className = "asm-panel-toggle";
     toggleBtn.textContent = isCollapsed ? "펼치기" : "접기";
+    headerActions.appendChild(toggleBtn);
 
-    header.appendChild(toggleBtn);
+    header.appendChild(headerActions);
     panel.appendChild(header);
 
     const body = document.createElement("div");
@@ -1180,6 +1318,7 @@
     let draftSearchKeyword = "";
 
     let isPanelCollapsed = false;
+    let isRefreshing = false;
 
     function getFilteredEvents() {
       const { start, end } = getMonthRange(currentOffset);
@@ -1233,7 +1372,9 @@
         handleSearchSubmit,
         handleSearchReset,
         isPanelCollapsed,
-        handleToggleCollapsed
+        handleToggleCollapsed,
+        handleRefresh,
+        isRefreshing
       );
 
       if (existing) {
@@ -1285,6 +1426,38 @@
       renderPanel(withLocations(getFilteredEvents()), false);
     }
 
+    async function handleRefresh() {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      renderPanel(withLocations(getFilteredEvents()), true);
+
+      try {
+        sessionStorage.removeItem(STABLE_CACHE_KEY);
+        sessionStorage.removeItem(COUNT_CACHE_KEY);
+        sessionStorage.removeItem(LOC_CACHE_KEY);
+        await new Promise((resolve) =>
+          chrome.storage.local.remove(
+            ["soma_mentoring_schedules", "soma_mentoring_schedules_ts"],
+            resolve
+          )
+        );
+
+        [personalSchedules, mentoringSchedules] = await Promise.all([
+          loadPersonalSchedules(),
+          loadMentoringSchedules(),
+        ]);
+
+        const completeMap = await buildCompleteEventMap();
+        allEvents = collectEvents(completeMap);
+        renderPanel(withLocations(getFilteredEvents()), true);
+
+        await fetchLocations(getFilteredEvents());
+      } finally {
+        isRefreshing = false;
+        renderPanel(withLocations(getFilteredEvents()), false);
+      }
+    }
+
     async function navigate(newOffset) {
       currentOffset = newOffset;
 
@@ -1302,7 +1475,7 @@
     ]);
     const initialMap = parseTableRows(document);
     allEvents = collectEvents(initialMap);
-    renderPanel(withLocations(getFilteredEvents()), !loadCache());
+    renderPanel(withLocations(getFilteredEvents()), !loadCountCache() || !loadStableCache());
 
     // ② 전체 페이지 fetch → 멘토/인원/상태 완성
     const completeMap = await buildCompleteEventMap();

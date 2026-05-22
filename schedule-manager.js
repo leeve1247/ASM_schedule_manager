@@ -886,7 +886,9 @@
         <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
       </div>
       <div class="calendar-actions">
-        <span class="alarm-info-icon" data-tooltip="멘토링 일정 1시간 전에 discord 메시지를 통해 알림 (개인일정은 알림 X)">!</span>
+        <div class="alarm-info-wrap">
+          <button id="btn-alarm-info" class="alarm-info-btn" type="button">!</button>
+        </div>
         <label class="alarm-toggle-container" for="btn-toggle-alarm">
           <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
           <span class="asm-switch">
@@ -898,6 +900,42 @@
       </div>
     `;
     calendarWrapper.appendChild(header);
+
+    // Alarm info popover
+    const alarmInfoBtn = header.querySelector('#btn-alarm-info');
+    const alarmInfoWrap = header.querySelector('.alarm-info-wrap');
+    const alarmInfoPopover = document.createElement('div');
+    alarmInfoPopover.className = 'alarm-info-popover';
+    alarmInfoPopover.setAttribute('aria-hidden', 'true');
+    alarmInfoPopover.innerHTML = `
+      <div class="alarm-info-notice">
+        <div class="alarm-info-notice-title">베타 버전 안내</div>
+        <div class="alarm-info-notice-body">현재 알림의 경우에는 베타 서비스로 운영 중입니다. 동시 사용자가 많아지거나 트래픽이 집중되면 Discord 알림이 일시적으로 차단될 수 있습니다.</div>
+      </div>
+      <div class="alarm-info-divider"></div>
+      <div class="alarm-info-title">알림 방식</div>
+      <div class="alarm-info-body">Discord 웹훅을 통해 멘토링 일정 시작 <b>1시간 전</b>에 알림 메시지를 전송합니다.</div>
+      <div class="alarm-info-divider"></div>
+      <div class="alarm-info-subtitle">알림 대상</div>
+      <table class="alarm-info-table">
+        <tr><td>멘토링 접수 일정</td><td><b>알림 있음</b></td></tr>
+        <tr><td>개인 일정</td><td>알림 없음</td></tr>
+      </table>
+    `;
+    alarmInfoWrap.appendChild(alarmInfoPopover);
+
+    alarmInfoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = alarmInfoPopover.classList.toggle('alarm-info-popover--open');
+      alarmInfoPopover.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!alarmInfoWrap.contains(e.target)) {
+        alarmInfoPopover.classList.remove('alarm-info-popover--open');
+        alarmInfoPopover.setAttribute('aria-hidden', 'true');
+      }
+    });
 
     // 2. Calendar Cells Grid
     const grid = document.createElement('div');

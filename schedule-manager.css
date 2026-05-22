@@ -98,70 +98,119 @@
   transform: translateX(22px);
 }
 
-/* Alarm Info Tooltip */
-#history-calendar .alarm-info-icon {
+/* Alarm Info Button & Popover */
+#history-calendar .alarm-info-wrap {
   position: relative;
-  cursor: help;
+}
+
+#history-calendar .alarm-info-btn {
+  background: #086DB7;
+  border: 1px solid #086DB7;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
   font-size: 12px;
-  font-weight: 800;
-  display: inline-flex;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  transition: all 0.2s ease;
 }
 
-#history-calendar .alarm-info-icon:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-  border-color: #94a3b8;
+#history-calendar .alarm-info-btn:hover {
+  background: #065a96;
+  border-color: #065a96;
 }
 
-#history-calendar .alarm-info-icon::after {
-  content: attr(data-tooltip);
+#history-calendar .alarm-info-popover {
+  display: none;
   position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: #1e293b;
-  color: #ffffff;
-  padding: 8px 12px;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 9999;
+  width: 270px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+#history-calendar .alarm-info-popover--open,
+#history-calendar .alarm-info-wrap:hover .alarm-info-popover {
+  display: block;
+}
+
+#history-calendar .alarm-info-notice {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-left: 4px solid #f59e0b;
   border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 100;
+  padding: 10px 12px;
+  margin-bottom: 2px;
 }
 
-#history-calendar .alarm-info-icon::before {
-  content: '';
-  position: absolute;
-  bottom: 115%;
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  border-width: 5px;
-  border-style: solid;
-  border-color: #1e293b transparent transparent transparent;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 100;
+#history-calendar .alarm-info-notice-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #92400e;
+  margin-bottom: 4px;
 }
 
-#history-calendar .alarm-info-icon:hover::after,
-#history-calendar .alarm-info-icon:hover::before {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
+#history-calendar .alarm-info-notice-body {
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+#history-calendar .alarm-info-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #1e293b;
+}
+
+#history-calendar .alarm-info-body {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 2px;
+}
+
+#history-calendar .alarm-info-divider {
+  border-top: 1px solid #e2e8f0;
+  margin: 10px 0;
+}
+
+#history-calendar .alarm-info-subtitle {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #1e293b;
+}
+
+#history-calendar .alarm-info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#history-calendar .alarm-info-table td {
+  padding: 3px 0;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+#history-calendar .alarm-info-table td:first-child {
+  color: #6b7280;
+}
+
+#history-calendar .alarm-info-table td:last-child {
+  text-align: right;
+  color: #1e293b;
 }
 
 #history-calendar .calendar-title-group h3 {
