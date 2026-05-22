@@ -1,6 +1,12 @@
 (function () {
   'use strict';
 
+  // Set to true to re-enable the Cloudflare D1 + Discord webhook alarm pipeline.
+  // When false this script is a no-op: globalThis.ASMAlarmFeature stays undefined,
+  // and callers (schedule-manager.js, etc.) already null-check via getAlarmFeature().
+  const ALARM_FEATURE_ENABLED = false;
+  if (!ALARM_FEATURE_ENABLED) return;
+
   const ALARM_SETTINGS_KEY = 'soma_alarm_sync_settings';
   const ALARM_SYNC_META_KEY = 'soma_alarm_sync_meta';
   const CENTRAL_WORKER_BASE_URL = 'https://asm-schedule-alarm.pa6764.workers.dev';

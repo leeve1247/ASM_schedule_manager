@@ -843,6 +843,42 @@
 .asm-card-link:hover { text-decoration: underline; }
 .asm-event-card.asm-card-gray .asm-card-link { color: #94a3b8; }
 
+/* 캘린더 내보내기 (Google Calendar / ICS) */
+.asm-card-export-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(226, 232, 240, 0.8);
+}
+
+.asm-card-export-row .asm-export-btn {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 0;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.asm-card-export-row .asm-export-btn:hover {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #c7d2fe;
+}
+
+.asm-event-card.asm-card-gray .asm-card-export-row .asm-export-btn {
+  opacity: 0.55;
+}
+
 /* 반응형 */
 @media (max-width: 1200px) {
   .asm-search-select {

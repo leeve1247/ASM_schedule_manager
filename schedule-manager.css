@@ -648,6 +648,39 @@
   border-color: rgba(226, 232, 240, 0.6);
 }
 
+#history-calendar .export-group {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+#history-calendar .export-group .asm-export-btn {
+  flex: 1;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 0;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+#history-calendar .export-group .asm-export-btn:hover {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #c7d2fe;
+}
+
+#history-calendar .calendar-lecture.ended .export-group .asm-export-btn {
+  opacity: 0.6;
+}
+
 /* 5. Sleek Modal Dialog for Add Personal Schedule */
 .modal-backdrop {
   position: fixed;

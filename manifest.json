@@ -19,7 +19,7 @@
       "matches": [
         "https://www.swmaestro.ai/*"
       ],
-      "js": ["content.js"],
+      "js": ["calendar-export.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
@@ -34,7 +34,7 @@
         "*://*.swmaestro.org/sw/mypage/mentoLec/view.do*",
         "*://*.swmaestro.ai/sw/mypage/mentoLec/view.do*"
       ],
-      "js": ["alarm-client.js", "schedule-manager.js"],
+      "js": ["calendar-export.js", "alarm-client.js", "schedule-manager.js"],
       "css": ["schedule-manager.css", "alarm-client.css"],
       "run_at": "document_idle"
     }
