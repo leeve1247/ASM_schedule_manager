@@ -94,7 +94,6 @@ async function fetchEventsFromGoogle(
     maxResults: '250',
   });
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`;
-  console.log('[ASM gcal] fetching events', timeMin, '→', timeMax);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -113,9 +112,7 @@ async function fetchEventsFromGoogle(
   }
 
   const data = (await res.json()) as { items?: GcalEvent[] };
-  const items = data.items ?? [];
-  console.log('[ASM gcal] events fetched:', items.length);
-  return items;
+  return data.items ?? [];
 }
 
 interface CacheEntry {
@@ -204,17 +201,5 @@ export async function matchLectures(
   for (const lecture of lectures) {
     matched[lecture.qustnrSn] = isLectureMatched(lecture, events);
   }
-  const trueCount = Object.values(matched).filter(Boolean).length;
-  console.log(
-    '[ASM gcal] match summary —',
-    'lectures:',
-    lectures.length,
-    'events:',
-    events.length,
-    'matched=true:',
-    trueCount,
-    'matched=false:',
-    lectures.length - trueCount
-  );
   return { connected: true, matched };
 }

@@ -75,10 +75,12 @@ schedule-manager.js 의 lax 버전 채택. 1-2자리 시/분, 분 옵셔널, 구
 - `alarm-client.ts` 는 현재 disabled. 활성화 시 추가 분할 검토.
 - `console.log` debug 출력이 schedule-manager.js 충돌 검사 영역에 다수 있음. 마이그레이션 시 유지하되 추후 정리 고려.
 
-## Google Calendar 연동 (commit `00eff9f`, `d8b525e`, `770ecdd`)
-- 팝업 OAuth 연동은 정상 (`✓ 연동됨` 표시 확인됨).
-- `🗓 미등록` 하이라이트가 안 뜸. 매칭 로직은 `qustnrSn=<id>` 엄격 매칭으로 단순화됨 (시간+swmaestro fallback 제거).
-- diagnostic 로그 `[ASM gcal]` prefix 로 content/background 양측에 깔아둠. 다음 세션 시작 시 사용자에게 로그 캡처 요청 후 원인 파악 필요.
-- 확인 포인트: `[ASM gcal] requesting match for N lectures` → `[ASM gcal] match response` → background 의 `[ASM gcal] fetching events`, `events fetched: N`, `match summary —` 로그가 차례로 찍히는지.
-- 의심 원인 후보: (a) Google Calendar 가 "primary" 가 아닌 다른 캘린더에 이벤트 보관 (현재 `calendars/primary/events` 만 조회), (b) 토큰은 받지만 events.list 401, (c) qustnrSn 매칭이 모든 강의에서 true 로 떨어짐 (사용자가 기존에 다 export 한 경우).
-- OAuth client_id 유형은 "Chrome 확장 프로그램" 으로 확인됨 (사용자 확인).
+## Google Calendar 연동 (정상 동작, 2026-05-23 확인)
+- 매칭 로직: `qustnrSn=<id>` 엄격 매칭. 시간+swmaestro fallback 없음.
+- 조회 범위: `calendars/primary/events` 만. 다른 캘린더에 export 했다면 매칭 실패.
+- extension ID 는 `manifest.json` 의 `key` 필드로 핀됨 (`hlfijhmnchjningkhadjffipkohejifg`, commit `4e5f389`). 개인키 `asm-ext-key.pem` 은 gitignore — 잃으면 ID 재발급 필요.
+- 디버깅 시: `[ASM gcal]` prefix 의 warn 로그만 남아있음 (성공경로 console.log 는 제거됨). 401/403/매칭 실패시 console 에 출력됨.
+
+### 과거 해결 이슈 (참고)
+- "bad client id": unpacked 확장 ID 가 PC 마다 달라져 GCP 등록 ID 와 불일치 → manifest `key` 로 고정해 해결.
+- `403 응답 오류`: GCP 프로젝트에서 Google Calendar API Library 활성화 안 됨 → 활성화로 해결.
