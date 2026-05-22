@@ -35,16 +35,20 @@ interface GcalMatchResponse {
 async function requestGcalMatch(
   schedules: { qustnrSn: string; dateStr: string; startTime: string; endTime: string; title: string }[]
 ): Promise<GcalMatchResponse> {
+  const valid = schedules.filter((s) => s.qustnrSn && s.dateStr && s.startTime && s.endTime);
+  console.log('[ASM gcal] requesting match for', valid.length, 'lectures', valid);
   try {
     const response = await chrome.runtime.sendMessage({
       type: 'asm-gcal-match',
-      lectures: schedules.filter((s) => s.qustnrSn && s.dateStr && s.startTime && s.endTime),
+      lectures: valid,
     });
+    console.log('[ASM gcal] match response:', response);
     if (response && typeof response === 'object' && 'connected' in response) {
       return response as GcalMatchResponse;
     }
+    console.warn('[ASM gcal] match response had unexpected shape', response);
   } catch (err) {
-    console.warn('SOMA Schedule Manager: gcal match failed', err);
+    console.warn('[ASM gcal] match failed:', err);
   }
   return { connected: false, matched: {} };
 }
