@@ -50,6 +50,61 @@
     return globalThis.ASMAlarmFeature || null;
   }
 
+  function hasChromeLocalStorage() {
+    return (
+      typeof chrome !== 'undefined' &&
+      chrome.storage &&
+      chrome.storage.local
+    );
+  }
+
+  function readLocalStorage(keys) {
+    return new Promise((resolve) => {
+      if (!hasChromeLocalStorage()) {
+        resolve({});
+        return;
+      }
+
+      chrome.storage.local.get(keys, (result) => {
+        if (chrome.runtime?.lastError) {
+          console.error('SOMA Schedule Manager: Failed to read local storage:', chrome.runtime.lastError);
+          resolve({});
+          return;
+        }
+
+        resolve(result || {});
+      });
+    });
+  }
+
+  function writeLocalStorage(values) {
+    return new Promise((resolve, reject) => {
+      if (!hasChromeLocalStorage()) {
+        reject(new Error('브라우저 로컬 저장소를 사용할 수 없습니다.'));
+        return;
+      }
+
+      chrome.storage.local.set(values, () => {
+        const error = chrome.runtime?.lastError;
+        if (error) {
+          reject(new Error(error.message || '브라우저 로컬 저장소 저장에 실패했습니다.'));
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }
+
+  async function loadPersonalSchedules() {
+    const res = await readLocalStorage(['soma_personal_schedules']);
+    return Array.isArray(res.soma_personal_schedules) ? res.soma_personal_schedules : [];
+  }
+
+  async function savePersonalSchedules(schedules) {
+    await writeLocalStorage({ soma_personal_schedules: schedules });
+  }
+
   // Helper: check if a lecture/schedule has ended
   function isLectureEnded(dateTimeText) {
     const parsed = parseLectureDateTimeText(dateTimeText);
@@ -711,11 +766,7 @@
         return;
       }
 
-      const currentList = await new Promise(resolve => {
-        chrome.storage.local.get(['soma_personal_schedules'], (res) => {
-          resolve(res.soma_personal_schedules || []);
-        });
-      });
+      const currentList = await loadPersonalSchedules();
 
       if (editingScheduleId) {
         const index = currentList.findIndex(item => item.id === editingScheduleId);
@@ -745,9 +796,13 @@
         currentList.push(newSchedule);
       }
 
-      await new Promise(resolve => {
-        chrome.storage.local.set({ soma_personal_schedules: currentList }, resolve);
-      });
+      try {
+        await savePersonalSchedules(currentList);
+      } catch (error) {
+        console.error('SOMA Schedule Manager: Failed to save personal schedule:', error);
+        alert(error.message || '개인 일정 저장에 실패했습니다.');
+        return;
+      }
 
       closeModal();
       form.reset();
@@ -756,7 +811,7 @@
       endSelect.value = '10:00';
 
       const lectures = await parseLecturesTable();
-      renderCalendar(lectures);
+      await renderCalendar(lectures);
     });
   }
 
@@ -859,11 +914,7 @@
     if (!targetContainer) return;
 
     // Load personal schedules
-    const personalSchedules = await new Promise(resolve => {
-      chrome.storage.local.get(['soma_personal_schedules'], (res) => {
-        resolve(res.soma_personal_schedules || []);
-      });
-    });
+    const personalSchedules = await loadPersonalSchedules();
     const alarmFeature = getAlarmFeature();
     const alarmSettings = alarmFeature
       ? await alarmFeature.loadSettings()
@@ -1112,19 +1163,19 @@
           btnDelete.addEventListener('click', async (e) => {
             e.preventDefault();
             if (confirm(`개인 일정 "${ps.title}"을(를) 삭제하시겠습니까?`)) {
-              const currentList = await new Promise(resolve => {
-                chrome.storage.local.get(['soma_personal_schedules'], (res) => {
-                  resolve(res.soma_personal_schedules || []);
-                });
-              });
+              const currentList = await loadPersonalSchedules();
               const updatedList = currentList.filter(item => item.id !== ps.id);
-              await new Promise(resolve => {
-                chrome.storage.local.set({ soma_personal_schedules: updatedList }, resolve);
-              });
+              try {
+                await savePersonalSchedules(updatedList);
+              } catch (error) {
+                console.error('SOMA Schedule Manager: Failed to delete personal schedule:', error);
+                alert(error.message || '개인 일정 삭제에 실패했습니다.');
+                return;
+              }
 
               // Re-render
               const freshLectures = await parseLecturesTable();
-              renderCalendar(freshLectures);
+              await renderCalendar(freshLectures);
             }
           });
 
@@ -1537,11 +1588,7 @@
     const detailText = `멘토링 시간: ${dateTimeText}`;
     
     // Load personal schedules
-    const personalSchedules = await new Promise(resolve => {
-      chrome.storage.local.get(['soma_personal_schedules'], (res) => {
-        resolve(res.soma_personal_schedules || []);
-      });
-    });
+    const personalSchedules = await loadPersonalSchedules();
     const mergedSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
     console.log('SOMA Schedule Manager: Loaded personal schedules:', mergedSchedules);
 

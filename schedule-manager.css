@@ -149,7 +149,6 @@
 #history-calendar .alarm-info-notice {
   background: #fffbeb;
   border: 1px solid #f59e0b;
-  border-left: 4px solid #f59e0b;
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 2px;
@@ -464,12 +463,17 @@
 
 /* Past Events styled with ended state */
 #history-calendar .calendar-lecture.ended {
-  opacity: 0.6;
+  opacity: 0.62;
   background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  filter: grayscale(35%);
 }
 
 #history-calendar .calendar-lecture.ended:hover {
-  opacity: 0.9;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
 }
 
 #history-calendar .calendar-lecture.ended .text-title::before {
@@ -477,13 +481,27 @@
 }
 
 #history-calendar .calendar-lecture.ended.event-personal {
-  opacity: 0.45;
-  background: #f1f5f9;
-  filter: grayscale(40%);
+  background: #f8fafc;
 }
 
 #history-calendar .calendar-lecture.ended.event-personal:hover {
-  opacity: 0.7;
+  opacity: 0.72;
+}
+
+#history-calendar .calendar-lecture.ended .text-title,
+#history-calendar .calendar-lecture.ended .info-row,
+#history-calendar .calendar-lecture.ended .info-row strong,
+#history-calendar .calendar-lecture.ended .info-meta {
+  color: #94a3b8;
+}
+
+#history-calendar .calendar-lecture.ended .text-type-badge {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+#history-calendar .calendar-lecture.ended .button-group button {
+  opacity: 0.75;
 }
 
 /* Card details styling */
@@ -763,15 +781,15 @@
 }
 
 #personal-schedule-form .btn-save {
-  background: linear-gradient(135deg, #90EA84 0%, #00D3A9 100%);
+  background: #085E9E;
   border: none;
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(144, 234, 132, 0.2);
+  box-shadow: 0 4px 10px rgba(8, 94, 158, 0.2);
 }
 
 #personal-schedule-form .btn-save:hover {
-  background: linear-gradient(135deg, #00D3A9 0%, #00B5C7 100%);
-  box-shadow: 0 4px 12px rgba(144, 234, 132, 0.3);
+  background: #064f86;
+  box-shadow: 0 4px 12px rgba(8, 94, 158, 0.3);
 }
 
 .location-type-row {
