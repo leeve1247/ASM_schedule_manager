@@ -7,3 +7,8 @@ dist/
 cloudflare/node_modules/
 cloudflare/.wrangler/
 cloudflare/wrangler.toml
+
+# Chrome extension signing key (do not commit — losing it changes the extension ID)
+asm-ext-key.pem
+asm-ext-pub.der
+asm-ext-pub.b64
