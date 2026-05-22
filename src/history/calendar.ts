@@ -25,6 +25,29 @@ function getAlarmFeature() {
   return globalThis.ASMAlarmFeature || null;
 }
 
+interface GcalMatchResponse {
+  connected: boolean;
+  matched: Record<string, boolean>;
+  error?: string;
+}
+
+async function requestGcalMatch(
+  schedules: { qustnrSn: string; dateStr: string; startTime: string; endTime: string; title: string }[]
+): Promise<GcalMatchResponse> {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'asm-gcal-match',
+      lectures: schedules.filter((s) => s.qustnrSn && s.dateStr && s.startTime && s.endTime),
+    });
+    if (response && typeof response === 'object' && 'connected' in response) {
+      return response as GcalMatchResponse;
+    }
+  } catch (err) {
+    console.warn('SOMA Schedule Manager: gcal match failed', err);
+  }
+  return { connected: false, matched: {} };
+}
+
 export async function updateAlarmButtonState(): Promise<void> {
   const btn = document.getElementById('btn-toggle-alarm') as HTMLInputElement | null;
   const txt = document.getElementById('alarm-toggle-text');
@@ -81,6 +104,8 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
     })
     .filter((ms): ms is MentoringSchedule => ms !== null);
   void saveMentoringSchedules(mentoringSchedules);
+
+  const gcalMatchResult = await requestGcalMatch(mentoringSchedules);
 
   const calendarWrapper = document.createElement('div');
   calendarWrapper.id = 'history-calendar';
@@ -367,9 +392,14 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
       } else {
         const lec = evt.data as Lecture;
         const card = document.createElement('div');
+        const missingFromGcal =
+          gcalMatchResult.connected &&
+          !evt.ended &&
+          lec.qustnrSn &&
+          gcalMatchResult.matched[lec.qustnrSn] === false;
         card.className = `calendar-lecture ${evt.ended ? 'ended' : ''} ${
           lec.type.includes('특강') ? 'special' : 'mentoring'
-        }`;
+        }${missingFromGcal ? ' not-in-gcal' : ''}`;
         card.title = lec.title;
 
         let timeStr = '';

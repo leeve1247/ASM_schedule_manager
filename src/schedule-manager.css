@@ -461,6 +461,27 @@
   background: #90EA84;
 }
 
+/* Highlights lectures that are NOT yet in the user's Google Calendar. */
+#history-calendar .calendar-lecture.not-in-gcal {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b inset;
+  position: relative;
+}
+
+#history-calendar .calendar-lecture.not-in-gcal::after {
+  content: '🗓 미등록';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
 /* Past Events styled with ended state */
 #history-calendar .calendar-lecture.ended {
   opacity: 0.62;
