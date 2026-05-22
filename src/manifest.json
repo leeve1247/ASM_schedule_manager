@@ -23,7 +23,7 @@
       "matches": [
         "https://www.swmaestro.ai/*"
       ],
-      "js": ["src/calendar-export.ts", "src/content.ts"],
+      "js": ["src/calendar-export.ts", "src/content/index.ts"],
       "css": ["src/content.css"],
       "run_at": "document_idle"
     },
