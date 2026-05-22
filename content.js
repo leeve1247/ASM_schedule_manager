@@ -48,7 +48,7 @@
 
       const dateTimeRaw = pcTds[2] ? pcTds[2].textContent : "";
       const dateMatch = dateTimeRaw.match(/(\d{4}-\d{2}-\d{2})/);
-      const timeMatch = dateTimeRaw.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/);
+      const timeMatch = dateTimeRaw.match(/(\d{2}:\d{2})\s*시?\s*~\s*(\d{2}:\d{2})\s*시?/);
 
       const capRaw = pcTds[3] ? pcTds[3].textContent : "";
       const capMatch = capRaw.match(/(\d+)\s*\/\s*(\d+)/);
@@ -227,11 +227,19 @@
             if (m) qustnrSn = m[1];
           }
 
-          const rawText = cells[5].innerHTML // cells[4]=접수기간, cells[5]=강의날짜(시간 포함)
-            .replace(/<br\s*\/?>/gi, " ")
-            .replace(/&nbsp;/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
+          // 날짜와 시간이 모두 포함된 셀을 자동 탐색 (강의날짜 컬럼 위치 무관)
+          let rawText = '';
+          for (let i = 2; i < cells.length; i++) {
+            const ct = cells[i].textContent.replace(/\s+/g, ' ').trim();
+            if (/\d{4}[-./]\d{2}[-./]\d{2}/.test(ct) && /\d{2}:\d{2}\s*시?\s*~\s*\d{2}:\d{2}/.test(ct)) {
+              rawText = cells[i].innerHTML
+                .replace(/<br\s*\/?>/gi, " ")
+                .replace(/&nbsp;/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+              break;
+            }
+          }
 
           // 취소된 접수 제외 (schedule-manager.js와 동일 로직)
           const status = cells[6] ? cells[6].textContent.trim() : "";
@@ -239,7 +247,9 @@
           const combined = `${status} ${approval}`;
           if (/취소/.test(combined) && !/취소불가/.test(combined)) return;
 
-          const dateMatch = rawText.match(/(\d{4}-\d{2}-\d{2})/);
+          if (!rawText) return;
+
+          const dateMatch = rawText.match(/(\d{4})[-./](\d{2})[-./](\d{2})/);
           const timeMatch = rawText.match(/(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/);
 
           if (!dateMatch || !timeMatch) return;
@@ -247,7 +257,7 @@
           schedules.push({
             qustnrSn,
             title,
-            dateStr: dateMatch[1],
+            dateStr: `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`,
             startTime: timeMatch[1],
             endTime: timeMatch[2],
           });
@@ -637,7 +647,7 @@
     const isGray = isPast || ev.isClosed;
 
     const card = document.createElement("div");
-    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}${(ev.hasPersonalConflict || ev.hasMentoringConflict) ? " asm-card-conflict" : ""}`;
+    card.className = `asm-event-card ${isGray ? "asm-card-gray" : "asm-card-open asm-cat-" + ev.category}${ev.hasMentoringConflict ? " asm-card-conflict" : ""}${ev.hasPersonalConflict ? " asm-card-personal-conflict" : ""}${ev.isEnrolled ? " asm-card-enrolled" : ""}`;
     card.setAttribute("role", "link");
     card.setAttribute("tabindex", "0");
 
@@ -680,8 +690,12 @@
 
     badges.appendChild(mkBadge(statusLabel, statusCls));
 
+    if (ev.isEnrolled) {
+      badges.appendChild(mkBadge("✓ 수강중", "asm-enrolled"));
+    }
+
     if (ev.hasPersonalConflict) {
-      badges.appendChild(mkBadge("개인일정 주의", "asm-conflict"));
+      badges.appendChild(mkBadge("개인일정주의", "asm-personal-conflict"));
     }
 
     if (ev.hasMentoringConflict) {
@@ -1180,6 +1194,7 @@
       return events.map((ev) => {
         const withConflict = hasPersonalScheduleConflict(ev, personalSchedules);
         const withMentoringConflict = hasMentoringScheduleConflict(ev, mentoringSchedules);
+        const isEnrolled = ev.sn ? mentoringSchedules.some((ms) => ms.qustnrSn === ev.sn) : false;
 
         if (ev.sn && cache.has(ev.sn)) {
           return {
@@ -1187,10 +1202,11 @@
             location: cache.get(ev.sn) || null,
             hasPersonalConflict: withConflict,
             hasMentoringConflict: withMentoringConflict,
+            isEnrolled,
           };
         }
 
-        return { ...ev, hasPersonalConflict: withConflict, hasMentoringConflict: withMentoringConflict };
+        return { ...ev, hasPersonalConflict: withConflict, hasMentoringConflict: withMentoringConflict, isEnrolled };
       });
     }
 

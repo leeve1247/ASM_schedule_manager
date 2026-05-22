@@ -550,8 +550,16 @@
 }
 
 .asm-event-card.asm-card-conflict {
-  border-color: #fca5a5;
+  border-color: #ff0000d1;
   box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.14);
+}
+.asm-event-card.asm-card-personal-conflict {
+  border-color: #ffa600d1;
+  box-shadow: inset 0 0 0 1px rgba(255, 165, 0, 0.3);
+}
+.asm-event-card.asm-card-enrolled {
+  border-color: #A78BFA;
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.3);
 }
 
 /* 배지 */
@@ -581,6 +589,8 @@
 .asm-badge.asm-closed  { background: #f1f5f9; color: #64748b; }
 .asm-badge.asm-done    { background: #f1f5f9; color: #94a3b8; }
 .asm-badge.asm-conflict { background: #fee2e2; color: #b91c1c; }
+.asm-badge.asm-personal-conflict { background: #FFF3E0; color: #D97706; }
+.asm-badge.asm-enrolled { background: #EDE9FE; color: #6D28D9; }
 
 .asm-cap {
   font-size: 11px;

@@ -776,15 +776,15 @@
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  background: #fffdfd;
-  border: 1px solid #fecaca;
-  /* border-left: 4px solid #ef4444; */
+  background: #FFFBF5;
+  border: 1px solid #FED7AA;
+  /* border-left: 4px solid #FFA500; */
   border-radius: 12px;
   padding: 20px 24px;
   margin: 0 0 24px;
   color: #1e293b;
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.05);
+  box-shadow: 0 10px 20px rgba(255, 165, 0, 0.05);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -804,7 +804,7 @@
 #soma-conflict-banner .conflict-title {
   font-weight: 700;
   font-size: 16px;
-  color: #991b1b;
+  color: #B45309;
   line-height: 1.35;
 }
 
@@ -819,8 +819,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: #fff5f5;
-  border: 1px solid #fee2e2;
+  background: #FFF8EE;
+  border: 1px solid #FED7AA;
   border-radius: 10px;
   padding: 16px 20px;
   margin: 12px 0;
@@ -866,9 +866,9 @@
 }
 
 #soma-conflict-banner .label-personal {
-  background: #edfce6;
-  color: #2a8020;
-  border: 1px solid #a8e898;
+  background: #FFF3E0;
+  color: #D97706;
+  border: 1px solid #FED7AA;
 }
 
 #soma-conflict-banner .timeline-value {
@@ -902,18 +902,18 @@
   min-height: 38px;
   padding: 0 16px;
   border-radius: 10px;
-  background: #ef4444;
+  background: #F97316;
   color: #fff !important;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.15);
+  box-shadow: 0 6px 14px rgba(255, 165, 0, 0.15);
   transition: all 0.2s ease;
 }
 
 #soma-conflict-banner .conflict-link-btn:hover {
-  background: #dc2626;
-  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.25);
+  background: #EA580C;
+  box-shadow: 0 8px 18px rgba(255, 165, 0, 0.25);
   transform: translateY(-1px);
 }
 
