@@ -945,6 +945,32 @@
 
     bottom.appendChild(linkEl);
     footer.appendChild(bottom);
+
+    if (ev.timeStart && ev.timeEnd && ev.date && globalThis.ASMCalendarExport) {
+      const exportRow = document.createElement("div");
+      exportRow.className = "asm-card-export-row";
+      globalThis.ASMCalendarExport.appendExportButtons(
+        exportRow,
+        () => {
+          const safeUrl = getSafeSomaUrl(ev.url);
+          const description = [
+            ev.categoryNm,
+            ev.author ? `${ev.author} 멘토` : "",
+            safeUrl ? `상세: ${safeUrl}` : ""
+          ].filter(Boolean).join("\n");
+          return {
+            title: ev.title,
+            description,
+            location: ev.location || "",
+            startsAt: globalThis.ASMCalendarExport.kstToIso(ev.date, ev.timeStart),
+            endsAt: globalThis.ASMCalendarExport.kstToIso(ev.date, ev.timeEnd)
+          };
+        },
+        ev.title
+      );
+      footer.appendChild(exportRow);
+    }
+
     card.appendChild(footer);
 
     return card;
