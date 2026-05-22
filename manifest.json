@@ -3,6 +3,12 @@
   "name": "소마 멘토링 캘린더 개선",
   "version": "1.0.0",
   "description": "소프트웨어 마에스트로 멘토링 신청 캘린더 UI 개선 및 멘토 필터링 기능 추가",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
     "storage"
   ],
@@ -39,5 +45,11 @@
       "run_at": "document_idle"
     }
   ],
-  "action": {}
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    },
+    "default_title": "소마 멘토링 캘린더 개선"
+  }
 }
