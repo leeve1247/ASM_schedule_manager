@@ -23,7 +23,13 @@ function getAuthTokenPromise(interactive: boolean): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.identity.getAuthToken({ interactive }, (token) => {
       const err = chrome.runtime.lastError;
-      if (err || !token) {
+      if (err) {
+        console.warn('[ASM gcal] getAuthToken error:', err.message, '(interactive:', interactive, ')');
+        resolve(null);
+        return;
+      }
+      if (!token) {
+        console.warn('[ASM gcal] getAuthToken returned no token (interactive:', interactive, ')');
         resolve(null);
         return;
       }
@@ -31,7 +37,10 @@ function getAuthTokenPromise(interactive: boolean): Promise<string | null> {
       if (typeof token === 'string') resolve(token);
       else if (token && typeof (token as { token?: string }).token === 'string') {
         resolve((token as { token: string }).token);
-      } else resolve(null);
+      } else {
+        console.warn('[ASM gcal] getAuthToken unexpected shape:', token);
+        resolve(null);
+      }
     });
   });
 }
@@ -85,22 +94,28 @@ async function fetchEventsFromGoogle(
     maxResults: '250',
   });
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`;
+  console.log('[ASM gcal] fetching events', timeMin, '→', timeMax);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (res.status === 401) {
-    // Token expired or revoked — drop the cache so the next call re-auths.
+    const body = await res.text();
+    console.warn('[ASM gcal] events.list 401:', body);
     await removeCachedAuthTokenPromise(token);
     throw new Error('인증이 만료되었습니다. 다시 연동해주세요.');
   }
 
   if (!res.ok) {
+    const body = await res.text();
+    console.warn('[ASM gcal] events.list error', res.status, body);
     throw new Error(`Google Calendar API 응답 오류 (${res.status})`);
   }
 
   const data = (await res.json()) as { items?: GcalEvent[] };
-  return data.items ?? [];
+  const items = data.items ?? [];
+  console.log('[ASM gcal] events fetched:', items.length);
+  return items;
 }
 
 interface CacheEntry {
@@ -189,5 +204,17 @@ export async function matchLectures(
   for (const lecture of lectures) {
     matched[lecture.qustnrSn] = isLectureMatched(lecture, events);
   }
+  const trueCount = Object.values(matched).filter(Boolean).length;
+  console.log(
+    '[ASM gcal] match summary —',
+    'lectures:',
+    lectures.length,
+    'events:',
+    events.length,
+    'matched=true:',
+    trueCount,
+    'matched=false:',
+    lectures.length - trueCount
+  );
   return { connected: true, matched };
 }
