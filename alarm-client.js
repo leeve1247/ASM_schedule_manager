@@ -330,7 +330,7 @@
     modal.innerHTML = `
       <div class="modal-content alarm-settings-modal-content">
         <div class="modal-header">
-          <h4>🔔 알림 설정</h4>
+          <h4>알림 설정</h4>
           <button type="button" class="close-modal-btn">&times;</button>
         </div>
         <form id="alarm-settings-form">
@@ -341,7 +341,7 @@
             </label>
             <label class="alarm-settings-field">
               <span>표시 이름</span>
-              <input type="text" name="userLabel" placeholder="예: 재민" value="${currentSettings.userLabel}">
+              <input type="text" name="userLabel" placeholder="예: 김소마" value="${currentSettings.userLabel}">
             </label>
             <label class="alarm-settings-field alarm-settings-field--full">
               <span>Discord Webhook URL</span>
@@ -451,6 +451,7 @@
 
   globalThis.ASMAlarmFeature = {
     loadSettings: loadAlarmSettings,
+    openSettings: openAlarmSettingsModal,
     toggleNotifications: toggleAlarmNotifications,
     syncAfterLocalChange: syncSchedulesAfterLocalChange,
     syncOnHistoryPageLoadIfConfigured: syncSchedulesOnHistoryPageLoadIfConfigured

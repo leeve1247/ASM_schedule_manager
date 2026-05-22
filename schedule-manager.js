@@ -192,7 +192,9 @@
     const isPast = isLectureEnded(dateTimeText);
     const now = Date.now();
 
-    const hasDetailCacheShape = cached && Object.prototype.hasOwnProperty.call(cached, 'approvalStatus');
+    const hasDetailCacheShape = cached &&
+      Object.prototype.hasOwnProperty.call(cached, 'approvalStatus') &&
+      Object.prototype.hasOwnProperty.call(cached, 'lectureDateTimeText');
 
     if (cached && hasDetailCacheShape) {
       if (isPast || (cached.timestamp && now - cached.timestamp < CACHE_TTL_MS)) {
@@ -201,7 +203,8 @@
           location: cached.location,
           people: cached.people,
           approvalStatus: cached.approvalStatus || '정보 없음',
-          deadlineStatus: cached.deadlineStatus || '정보 없음'
+          deadlineStatus: cached.deadlineStatus || '정보 없음',
+          lectureDateTimeText: cached.lectureDateTimeText || ''
         };
       }
     }
@@ -219,6 +222,7 @@
       let people = '';
       let approvalStatus = '';
       let deadlineStatus = '';
+      let lectureDateTimeText = '';
 
       const captureDetailField = (label, value) => {
         const normalizedLabel = label.replace(/\s+/g, '');
@@ -254,6 +258,11 @@
           !/승인/.test(normalizedLabel)
         ) {
           deadlineStatus = normalizedValue;
+          return;
+        }
+
+        if (!lectureDateTimeText && /강의날짜|강의일시|진행날짜|진행일시|교육일시/.test(normalizedLabel)) {
+          lectureDateTimeText = normalizedValue;
         }
       };
 
@@ -325,6 +334,7 @@
         people: finalPeople,
         approvalStatus: finalApprovalStatus,
         deadlineStatus: finalDeadlineStatus,
+        lectureDateTimeText,
         dateTimeText: dateTimeText,
         timestamp: Date.now()
       };
@@ -340,7 +350,8 @@
         location: finalLocation,
         people: finalPeople,
         approvalStatus: finalApprovalStatus,
-        deadlineStatus: finalDeadlineStatus
+        deadlineStatus: finalDeadlineStatus,
+        lectureDateTimeText
       };
     } catch (e) {
       console.error(`Failed to fetch details for lecture ${qustnrSn}:`, e);
@@ -484,16 +495,19 @@
         details = await fetchLectureDetails(raw.qustnrSn, raw.url, raw.dateTimeText);
       }
 
-      const ended = isLectureEnded(raw.dateTimeText);
+      // 상세 페이지의 강의날짜(시간 포함)를 우선 사용, 없으면 리스트 페이지 값 fallback
+      const resolvedDateTimeText = details.lectureDateTimeText || raw.dateTimeText;
+      const ended = isLectureEnded(resolvedDateTimeText);
 
       lectures.push({
         ...raw,
+        dateTimeText: resolvedDateTimeText,
         mentorName: details.mentorName === '정보 없음' ? raw.author : details.mentorName,
         location: details.location,
         people: formatPeopleSummary(details.people),
         approvalStatus: formatApprovalStatus(details.approvalStatus === '정보 없음' ? raw.approval : details.approvalStatus),
         deadlineStatus: formatDeadlineStatus(details.deadlineStatus, `${raw.status} ${raw.approval}`, ended),
-        cancelAllowed: raw.hasCancelButton && !ended && isLectureCancelable(raw.dateTimeText, details.location),
+        cancelAllowed: raw.hasCancelButton && !ended && isLectureCancelable(resolvedDateTimeText, details.location),
         cancelPolicyReason: getCancelPolicyReason(details.location)
       });
     }
@@ -839,6 +853,22 @@
 
     const mergedPersonalSchedules = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
 
+    // 멘토링 일정 충돌 감지를 위해 접수된 강의를 storage에 저장
+    const mentoringSchedules = lectures
+      .map(l => {
+        const parsed = parseLectureDateTimeText(l.dateTimeText);
+        if (!parsed || !l.dateStr) return null;
+        return {
+          qustnrSn: l.qustnrSn || '',
+          title: l.title || '',
+          dateStr: l.dateStr,
+          startTime: `${parsed.sh}:${parsed.sm}`,
+          endTime: `${parsed.eh}:${parsed.em}`
+        };
+      })
+      .filter(Boolean);
+    chrome.storage.local.set({ soma_mentoring_schedules: mentoringSchedules, soma_mentoring_schedules_ts: Date.now() });
+
     const calendarWrapper = document.createElement('div');
     calendarWrapper.id = 'history-calendar';
 
@@ -856,7 +886,9 @@
         <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
       </div>
       <div class="calendar-actions">
-        <span class="alarm-info-icon" data-tooltip="멘토링 일정 1시간 전에 discord 메시지를 통해 알림 (개인일정은 알림 X)">!</span>
+        <div class="alarm-info-wrap">
+          <button id="btn-alarm-info" class="alarm-info-btn" type="button">!</button>
+        </div>
         <label class="alarm-toggle-container" for="btn-toggle-alarm">
           <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
           <span class="asm-switch">
@@ -868,6 +900,42 @@
       </div>
     `;
     calendarWrapper.appendChild(header);
+
+    // Alarm info popover
+    const alarmInfoBtn = header.querySelector('#btn-alarm-info');
+    const alarmInfoWrap = header.querySelector('.alarm-info-wrap');
+    const alarmInfoPopover = document.createElement('div');
+    alarmInfoPopover.className = 'alarm-info-popover';
+    alarmInfoPopover.setAttribute('aria-hidden', 'true');
+    alarmInfoPopover.innerHTML = `
+      <div class="alarm-info-notice">
+        <div class="alarm-info-notice-title">베타 버전 안내</div>
+        <div class="alarm-info-notice-body">현재 알림의 경우에는 베타 서비스로 운영 중입니다. 동시 사용자가 많아지거나 트래픽이 집중되면 Discord 알림이 일시적으로 차단될 수 있습니다.</div>
+      </div>
+      <div class="alarm-info-divider"></div>
+      <div class="alarm-info-title">알림 방식</div>
+      <div class="alarm-info-body">Discord 웹훅을 통해 멘토링 일정 시작 <b>1시간 전</b>에 알림 메시지를 전송합니다.</div>
+      <div class="alarm-info-divider"></div>
+      <div class="alarm-info-subtitle">알림 대상</div>
+      <table class="alarm-info-table">
+        <tr><td>멘토링 접수 일정</td><td><b>알림 있음</b></td></tr>
+        <tr><td>개인 일정</td><td>알림 없음</td></tr>
+      </table>
+    `;
+    alarmInfoWrap.appendChild(alarmInfoPopover);
+
+    alarmInfoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = alarmInfoPopover.classList.toggle('alarm-info-popover--open');
+      alarmInfoPopover.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!alarmInfoWrap.contains(e.target)) {
+        alarmInfoPopover.classList.remove('alarm-info-popover--open');
+        alarmInfoPopover.setAttribute('aria-hidden', 'true');
+      }
+    });
 
     // 2. Calendar Cells Grid
     const grid = document.createElement('div');
@@ -1188,22 +1256,32 @@
     // Attempt 1: Search table rows with header labels
     for (const th of ths) {
       const headerText = th.textContent.trim();
+      const normalizedHeader = headerText.replace(/\s+/g, '');
       const td = th.nextElementSibling;
       if (!td) continue;
       const valueText = td.textContent.trim().replace(/\s+/g, ' ');
+
+      // 강의날짜 헤더를 최우선 처리 — 접수기간보다 먼저 반환
+      if (normalizedHeader.includes('강의날짜') || headerText.includes('강의일시') || headerText.includes('교육일시')) {
+        const match = parseLectureDateTimeText(valueText);
+        if (match) {
+          const { y, m, d, sh, sm, eh, em } = match;
+          return `${y}-${m}-${d} ${sh}:${sm} ~ ${eh}:${em}`;
+        }
+      }
 
       if (headerText.includes('일시') || headerText.includes('강의일시') || headerText.includes('교육일시')) {
         const match = valueText.match(/(\d{4})[-./](\d{2})[-./](\d{2})(?:\([^)]+\))?\s*(\d{2}):(\d{2})/);
         if (match) return valueText;
       }
-      
+
       if (headerText.includes('일자') || headerText.includes('날짜') || headerText.includes('교육일') || headerText.includes('강의일')) {
         const dateMatch = valueText.match(/(\d{4})[-./](\d{2})[-./](\d{2})/);
         if (dateMatch) {
           dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
         }
       }
-      
+
       if (headerText.includes('시간') || headerText.includes('교육시간') || headerText.includes('강의시간')) {
         const timeMatch = valueText.match(/(\d{2}):(\d{2})\s*~\s*(\d{2}):(\d{2})/);
         if (timeMatch) {
@@ -1241,6 +1319,7 @@
   function removeConflictBanners() {
     document.getElementById('soma-conflict-banner')?.remove();
     document.getElementById('soma-conflict-debug-banner')?.remove();
+    document.getElementById('soma-mentoring-conflict-banner')?.remove();
   }
 
   function findConflictBannerAnchor() {
@@ -1307,17 +1386,17 @@
       <div class="conflict-content">
         <div class="conflict-title">개인 일정과 중복되는 멘토링입니다</div>
         <div class="conflict-desc">
-          현재 선택하신 멘토링 시간대에 겹치는 개인 일정이 등록되어 있어 신청이 제한됩니다. 멘토링을 신청하시려면 개인 일정을 수정하거나 변경해 주세요.
+          현재 선택하신 멘토링 시간대에 겹치는 개인 일정이 등록되어 있습니다. 신청은 가능하지만 일정이 중복될 수 있으니 확인 후 신청해 주세요.
         </div>
         
         <div class="conflict-timeline">
           <div class="timeline-rows">
             <div class="timeline-row">
-              <span class="timeline-label label-mentoring">📅 멘토링 시간</span>
+              <span class="timeline-label label-mentoring">아래 멘토링 시간</span>
               <span class="timeline-value">${mentoringTime}</span>
             </div>
             <div class="timeline-row">
-              <span class="timeline-label label-personal">👤 개인 일정</span>
+              <span class="timeline-label label-personal">개인 일정</span>
               <span class="timeline-value">
                 <strong class="personal-title">"${schedule.title}"</strong>
                 <span class="personal-time">(${schedule.startTime} ~ ${schedule.endTime})</span>
@@ -1341,42 +1420,78 @@
     }
   }
 
-  function blockApplication(conflictingSchedule, detailText = '') {
-    console.log('SOMA Schedule Manager: blockApplication started.');
-    const targetElements = findApplicationTargets();
-    console.log('SOMA Schedule Manager: Target elements found to block:', targetElements);
+  function injectMentoringConflictBanner(conflictingLecture, detailText = '') {
+    const existing = document.getElementById('soma-mentoring-conflict-banner');
+    if (existing) existing.remove();
 
+    const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
+
+    const banner = document.createElement('div');
+    banner.id = 'soma-mentoring-conflict-banner';
+    // soma-conflict-banner 와 동일한 스타일 클래스 사용
+    banner.className = 'soma-mentoring-conflict-banner';
+    banner.innerHTML = `
+      <div class="conflict-icon">⚠️</div>
+      <div class="conflict-content">
+        <div class="conflict-title">멘토링 일정과 중복되는 멘토링입니다</div>
+        <div class="conflict-desc">
+          이미 접수한 멘토링 일정과 시간대가 겹쳐 신청이 제한됩니다. 기존 접수를 취소하거나 다른 멘토링을 선택해 주세요.
+        </div>
+        <div class="conflict-timeline">
+          <div class="timeline-rows">
+            <div class="timeline-row">
+              <span class="timeline-label label-mentoring">아래 멘토링 시간</span>
+              <span class="timeline-value">${mentoringTime}</span>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-label label-personal">기존 멘토링 시간</span>
+              <span class="timeline-value">
+                <strong class="personal-title">"${conflictingLecture.title}"</strong>
+                <span class="personal-time">(${conflictingLecture.startTime} ~ ${conflictingLecture.endTime})</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const anchor = findConflictBannerAnchor();
+    if (!anchor) return;
+
+    if (anchor.firstChild) {
+      anchor.insertBefore(banner, anchor.firstChild);
+    } else {
+      anchor.appendChild(banner);
+    }
+  }
+
+  function blockApplicationButtons(alertMsg) {
+    const targetElements = findApplicationTargets();
     targetElements.forEach(el => {
       if (!el.parentNode) return;
       if (el.dataset.somaConflictBlocked === 'true') return;
-      
-      // Clone the element to strip all page event listeners (jQuery, etc.)
+
       const clone = el.cloneNode(true);
       clone.dataset.somaConflictBlocked = 'true';
-      
+
       if (clone.tagName === 'INPUT' || clone.tagName === 'BUTTON') {
         clone.disabled = true;
       }
-      
-      // Override styles to signal disabled state
+
       clone.classList.add('soma-conflict-disabled');
       clone.style.opacity = '0.5';
       clone.style.cursor = 'not-allowed';
-      clone.removeAttribute('onclick'); // Remove inline onclick handler
+      clone.removeAttribute('onclick');
       clone.removeAttribute('href');
-      
-      // Extra protection capture handler
+
       clone.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        alert(`⚠️ 개인 일정 "${conflictingSchedule.title}"와 시간이 중복되어 신청할 수 없습니다.`);
+        alert(alertMsg);
       }, true);
-      
-      el.parentNode.replaceChild(clone, el);
-      console.log('SOMA Schedule Manager: Replaced element with blocked clone:', el, clone);
-    });
 
-    injectWarningBanner(conflictingSchedule, detailText);
+      el.parentNode.replaceChild(clone, el);
+    });
   }
 
   async function checkLectureConflict() {
@@ -1430,10 +1545,47 @@
     
     if (conflictingSchedule) {
       console.warn(`SOMA Schedule Manager: Overlap detected with personal schedule "${conflictingSchedule.title}"`);
-      blockApplication(conflictingSchedule, detailText);
+      injectWarningBanner(conflictingSchedule, detailText);
     } else {
       removeConflictBanners();
       console.log('SOMA Schedule Manager: No scheduling conflict detected.');
+    }
+
+    // 접수된 멘토링 일정과의 충돌 체크 → 신청 차단
+    const currentQustnrSn = new URL(window.location.href).searchParams.get('qustnrSn') || '';
+    const mentoringSchedules = await new Promise(resolve => {
+      chrome.storage.local.get(['soma_mentoring_schedules'], (res) => {
+        resolve(res.soma_mentoring_schedules || []);
+      });
+    });
+
+    let conflictingMentoring = null;
+    for (const ms of mentoringSchedules) {
+      if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) continue;
+      if (currentQustnrSn && ms.qustnrSn === currentQustnrSn) continue; // 자기 자신 제외
+
+      const [py, pm, pd] = ms.dateStr.split('-');
+      const [psh, psm] = ms.startTime.split(':');
+      const [peh, pem] = ms.endTime.split(':');
+
+      const msStart = new Date(parseInt(py, 10), parseInt(pm, 10) - 1, parseInt(pd, 10), parseInt(psh, 10), parseInt(psm, 10), 0);
+      const msEnd = new Date(parseInt(py, 10), parseInt(pm, 10) - 1, parseInt(pd, 10), parseInt(peh, 10), parseInt(pem, 10), 0);
+
+      if (lectureStart < msEnd && msStart < lectureEnd) {
+        conflictingMentoring = ms;
+        break;
+      }
+    }
+
+    const existingMentoringBanner = document.getElementById('soma-mentoring-conflict-banner');
+    if (conflictingMentoring) {
+      console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${conflictingMentoring.title}"`);
+      blockApplicationButtons(`⚠️ 이미 접수한 멘토링 "${conflictingMentoring.title}"와 시간이 중복되어 신청할 수 없습니다.`);
+      if (!existingMentoringBanner) {
+        injectMentoringConflictBanner(conflictingMentoring, detailText);
+      }
+    } else if (existingMentoringBanner) {
+      existingMentoringBanner.remove();
     }
   }
 
