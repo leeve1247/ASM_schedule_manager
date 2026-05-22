@@ -13,6 +13,7 @@ export interface RawLectureRow {
   status: string;
   approval: string;
   hasCancelButton: boolean;
+  mentorDeleted: boolean;
 }
 
 export interface LectureDetails {

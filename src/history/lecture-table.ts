@@ -57,6 +57,18 @@ export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): Ra
     // Cancel button only exists in live DOM of the current page
     const hasCancelButton = isCurrentPage ? !!row.querySelector('[onclick*="delDate"]') : false;
 
+    // Mentor-deleted lectures show plain "삭제" text in a trailing action cell
+    // (no button/anchor) — distinct from the user's own delDate cancel button.
+    let mentorDeleted = false;
+    for (let i = 8; i < cells.length; i++) {
+      const cellText = (cells[i].textContent || '').replace(/\s+/g, ' ').trim();
+      const hasInteractive = cells[i].querySelector('button, a, [onclick]');
+      if (!hasInteractive && /^삭제/.test(cellText)) {
+        mentorDeleted = true;
+        break;
+      }
+    }
+
     rawList.push({
       no,
       type,
@@ -70,6 +82,7 @@ export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): Ra
       status,
       approval,
       hasCancelButton,
+      mentorDeleted,
     });
   }
 
@@ -144,7 +157,9 @@ export async function parseLecturesTable(): Promise<Lecture[]> {
   const allRaw = await fetchAllRawRows();
 
   // Filter out cancelled registrations ("취소불가" = still active, must keep)
+  // and lectures the mentor has deleted (no longer in catalog).
   const rawList = allRaw.filter((raw) => {
+    if (raw.mentorDeleted) return false;
     const combined = `${raw.status} ${raw.approval}`;
     return !/취소/.test(combined) || /취소불가/.test(combined);
   });
