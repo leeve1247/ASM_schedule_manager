@@ -709,11 +709,11 @@
 }
 
 .asm-event-card.asm-card-conflict {
-  border-color: #ff0000d1;
+  border-color: #ff0000;
   box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.14);
 }
 .asm-event-card.asm-card-personal-conflict {
-  border-color: #ffa600d1;
+  border-color: #ffa600;
   box-shadow: inset 0 0 0 1px rgba(255, 165, 0, 0.3);
 }
 .asm-event-card.asm-card-enrolled {

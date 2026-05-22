@@ -442,17 +442,17 @@
 
 /* Dot Colors and pastel backgrounds depending on types */
 #history-calendar .calendar-lecture.special {
-  background: #e6eef8;
+  background: #e0faf4;
 }
 #history-calendar .calendar-lecture.special .text-title::before {
-  background: #086DB7;
+  background: #00D3A9;
 }
 
 #history-calendar .calendar-lecture.mentoring {
-  background: #e0faf4;
+  background: #e6eef8;
 }
 #history-calendar .calendar-lecture.mentoring .text-title::before {
-  background: #00D3A9;
+  background: #086DB7;
 }
 
 #history-calendar .calendar-lecture.event-personal {
@@ -520,13 +520,13 @@
 }
 
 #history-calendar .special .text-type-badge {
-  background: #ccd8f0;
-  color: #086DB7;
+  background: #b8f5e8;
+  color: #007a5e;
 }
 
 #history-calendar .mentoring .text-type-badge {
-  background: #b8f5e8;
-  color: #007a5e;
+  background: #ccd8f0;
+  color: #086DB7;
 }
 
 #history-calendar .personal-badge {
