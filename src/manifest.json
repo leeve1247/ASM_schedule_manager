@@ -8,12 +8,16 @@
     "128": "icon/128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "identity"
   ],
   "host_permissions": [
     "https://*.swmaestro.ai/*",
     "https://*.swmaestro.org/*",
-    "https://asm-schedule-alarm.pa6764.workers.dev/*"
+    "https://asm-schedule-alarm.pa6764.workers.dev/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*",
+    "https://accounts.google.com/*"
   ],
   "background": {
     "service_worker": "src/background.ts"
@@ -48,6 +52,13 @@
       "16": "icon/16.png",
       "32": "icon/32.png"
     },
-    "default_title": "소마 멘토링 캘린더 개선"
+    "default_title": "소마 멘토링 캘린더 개선",
+    "default_popup": "src/popup/popup.html"
+  },
+  "oauth2": {
+    "client_id": "801617669380-u1ln17rc0fe755mcfl6k1f08itushe26.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.events.readonly"
+    ]
   }
 }
