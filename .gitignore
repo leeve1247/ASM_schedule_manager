@@ -1,5 +1,8 @@
 .DS_Store
 .claude/
+node_modules/
+dist/
+*.local
 cloudflare/node_modules/
 cloudflare/.wrangler/
 cloudflare/wrangler.toml
