@@ -1,0 +1,67 @@
+// SOMA Schedule Manager - Schedule Manager Script
+// Automatically parses registration tables, renders a calendar, and manages
+// personal schedules with conflict checks.
+
+import { injectModalDOM, setOnPersonalScheduleSaved } from './modal';
+import { renderCalendar } from './calendar';
+import { parseLecturesTable } from './lecture-table';
+import { checkLectureConflictWithRetry } from './conflict-banner';
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+async function init(): Promise<void> {
+  const path = window.location.pathname;
+
+  if (path.includes('/mypage/userAnswer/history.do') || path.includes('/mypage/mentoLec/history.do')) {
+    try {
+      injectModalDOM();
+      const lectures = await parseLecturesTable();
+      setOnPersonalScheduleSaved(async () => {
+        const fresh = await parseLecturesTable();
+        await renderCalendar(fresh);
+      });
+      await renderCalendar(lectures);
+      const alarmFeature = globalThis.ASMAlarmFeature;
+      if (alarmFeature) {
+        await alarmFeature.syncOnHistoryPageLoadIfConfigured(lectures);
+      }
+    } catch (e) {
+      console.error('Failed to initialize history dashboard:', e);
+    }
+  } else if (path.includes('/mypage/mentoLec/view.do')) {
+    try {
+      let conflictCheckTimer: ReturnType<typeof setTimeout> | null = null;
+      let conflictCheckRunning = false;
+
+      const runConflictCheck = async () => {
+        if (conflictCheckRunning) return;
+        conflictCheckRunning = true;
+        try {
+          await checkLectureConflictWithRetry();
+        } catch (e) {
+          console.error('Failed to re-run scheduling conflict checker:', e);
+        } finally {
+          conflictCheckRunning = false;
+        }
+      };
+
+      await runConflictCheck();
+
+      const observer = new MutationObserver(() => {
+        if (conflictCheckTimer) clearTimeout(conflictCheckTimer);
+        conflictCheckTimer = setTimeout(runConflictCheck, 500);
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    } catch (e) {
+      console.error('Failed to run scheduling conflict checker:', e);
+    }
+  }
+}

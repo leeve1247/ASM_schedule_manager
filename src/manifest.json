@@ -38,7 +38,7 @@
         "*://*.swmaestro.org/sw/mypage/mentoLec/view.do*",
         "*://*.swmaestro.ai/sw/mypage/mentoLec/view.do*"
       ],
-      "js": ["src/calendar-export.ts", "src/alarm-client.ts", "src/schedule-manager.js"],
+      "js": ["src/calendar-export.ts", "src/alarm-client.ts", "src/history/index.ts"],
       "css": ["src/schedule-manager.css", "src/alarm-client.css"],
       "run_at": "document_idle"
     }
