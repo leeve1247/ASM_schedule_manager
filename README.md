@@ -2,49 +2,80 @@
 
 소프트웨어 마에스트로(AI·SW Maestro) 마이페이지 일정을 더 편하게 확인하고 관리할 수 있는 Chrome 확장 프로그램입니다.
 
-## 주요 기능
+# 주요 기능
 
-### 1. 자유 멘토링 / 멘토 특강 캘린더
-
-<img width="3348" height="3425" alt="자유 멘토링 및 멘토 특강 캘린더" src="https://github.com/user-attachments/assets/3ccf4cc2-7f97-4fca-9208-2fefdd004bd0" />
+## 1. 자유 멘토링 / 멘토 특강 캘린더
+<img width="3145" height="4123" alt="최종1" src="https://github.com/user-attachments/assets/1ca24e5d-837f-4019-9c07-bc7c918d8992" />
 
 - 자유 멘토링과 멘토 특강 일정을 달력 형태로 확인할 수 있습니다.
 - 기존 표 형태의 일정 데이터를 4주형 캘린더 카드로 보여줍니다.
 - 멘토링과 특강 일정을 구분해 표시합니다.
 
-#### 신청 중복 감지
+### 신청 중복 감지
+<img width="1569" height="497" alt="image" src="https://github.com/user-attachments/assets/fd806d19-6053-4a78-a3d0-6dcae9f89d27" />
 
-<img width="1560" height="413" alt="신청 중복 감지" src="https://github.com/user-attachments/assets/54b576d7-6e8a-47be-9434-9b9967c3c749" />
-
-- 멘토링/특강 신청 시간이 개인 일정과 겹치는지 확인합니다.
+- 멘토링/특강 신청 시간이 기존 멘토 일정과 겹치는지 확인합니다.
 - 시간이 겹치면 경고 배너를 표시합니다.
 - 중복 신청을 막기 위해 신청 버튼을 비활성화합니다.
 
+<img width="1563" height="496" alt="image" src="https://github.com/user-attachments/assets/fcd51319-cc87-4987-adb9-3b7088f12ec6" />
+
+- 멘토링/특강 신청 시간이 개인 일정 시간과 겹치는지 확인합니다. (개인 일정은 접수 내역 캘린더에서 관리)
+- 시간이 겹치면 경고 배너를 표시합니다.
+- 신청 버튼을 비활성화하지는 않았으나, 신청 시 개인의 주의가 필요합니다.
+
+<img width="526" height="372" alt="image" src="https://github.com/user-attachments/assets/6751f436-4f7c-4359-9015-f6b5f17e62fb" />
+
+- 본인이 신청한 강의는 수강중으로 표시합니다.
+
 ---
 
-### 2. 접수 내역 개인 캘린더
+## 2. 접수 내역 개인 캘린더
 
-<img width="3152" height="4116" alt="접수 내역 개인 캘린더" src="https://github.com/user-attachments/assets/b3f52c81-c467-4e7c-af0c-293035fb9980" />
+<img width="3187" height="3870" alt="screencapture-swmaestro-ai-busan-sw-mypage-userAnswer-history-do-2026-05-22-11_34_47" src="https://github.com/user-attachments/assets/8c699a5a-7d32-4f85-8ea1-bd2b74de589d" />
+
 
 - 접수 내역 페이지에서 개인 일정을 함께 관리할 수 있습니다.
 - `chrome.storage.local`을 사용해 개인 일정을 브라우저에 저장합니다.
-- 외부 서버나 DB를 사용하지 않습니다.
-- `➕ 개인 일정 추가` 버튼으로 일정을 등록할 수 있습니다.
-- 개인 일정 카드의 `🗑️ 삭제` 버튼으로 일정을 삭제할 수 있습니다.
+- `+ 개인 일정 추가` 버튼으로 일정을 등록할 수 있습니다.
+- 개인 일정 카드의 `삭제` 버튼으로 일정을 삭제할 수 있습니다.
+- 알림의 경우 cloudflare DB를 사용중입니다.
+  - 멘토링 일정만 저장되고, 개인 일정은 저장되지 않습니다.
+ 
+---
 
-#### 외부 캘린더 연동
+## 3. 사용 주의 사항
 
-- 일정 카드를 ICS 파일로 다운로드할 수 있습니다.
-- 구글 캘린더에 바로 등록할 수 있습니다.
-- Asia/Seoul 타임존을 기준으로 일정이 생성됩니다.
+### 자유 멘토링 / 멘토 특강 캘린더에서의 주의 사항
 
-#### 종료된 일정 숨기기
+<img width="271" height="443" alt="image" src="https://github.com/user-attachments/assets/db95f1b9-f248-449b-bb82-d7c25b9b45ac" />
 
-- 지난 일정을 숨기고 예정된 일정만 확인할 수 있습니다.
+- 위 설명과 같이, 내가 신청한 멘토링 내역이 안 보인다면 접수 내역 페이지에 들러서 데이터가 파싱되면 자동으로 반영됩니다.
+- 자동 갱신 주기
+  = 수강자수	5분
+  - 제목·시간·상태·장소	4시간
+- 새로고침이 필요한 경우
+  - 방금 신청했는데 수강자수가 아직 반영이 안 됐을 때
+  - 장소·시간이 변경됐다는 공지를 봤을 때
+  - 갱신 주기 전에 즉시 최신 정보가 필요할 때
+
+### 접수 내역 개인 캘린더
+
+<img width="269" height="397" alt="image" src="https://github.com/user-attachments/assets/f8a7a207-6a6f-458c-977e-5f308610cffe" />
+
+- 위 내용과 같이, 현재 알림의 경우에는 베타 서비스로 운영 중입니다. 동시 사용자가 많아지거나 트래픽이 집중되면 Discord 알림이 일시적으로 차단될 수 있습니다.
+  - Cloudflare 무료 DB를 사용중이므로, 양해 부탁드립니다.
+- 알림 방식
+  - Discord 웹훅을 통해 멘토링 일정 시작 1시간 전에 알림 메시지를 전송합니다.
+- 알림 대상
+  - 멘토링 접수 일정	알림 있음
+  - 개인 일정	알림 없음
+
+
 
 ---
 
-## 설치 방법
+## 사용 방법
 
 1. 저장소를 로컬에 복제합니다.
 
@@ -56,29 +87,27 @@ git clone https://github.com/woals00/ASM_schedule_manager.git
 3. 우측 상단의 `개발자 모드`를 켭니다.
 4. `압축해제된 확장 프로그램을 로드합니다` 버튼을 클릭합니다.
 5. 복제한 `ASM_schedule_manager` 폴더를 선택합니다.
+6. 확장 프로그램을 활성화한 뒤 소프트웨어 마에스트로 홈페이지에 접속합니다.
+
+※ 생각보다 적용이 쉬우니 사용을 추천드립니다!
+  - 이후 확장프로그램 등록까지 고려중입니다.
 
 ---
 
-## 사용 방법
+## 알림 사용 방법
 
-확장 프로그램을 활성화한 뒤 소프트웨어 마에스트로 홈페이지에 접속합니다.
+1. Discord 서버를 새로 생성합니다.
 
-### 1. 자유 멘토링 / 멘토 특강 캘린더 확인
+   <img width="896" height="824" alt="image" src="https://github.com/user-attachments/assets/1fb59805-826d-4b12-a07f-3cdb154c000b" />
 
-멘토링 또는 특강 관련 페이지에 접속하면 상단에 캘린더가 표시됩니다.
+2. 서버 설정을 누릅니다
 
-### 2. 접수 내역 개인 캘린더 확인
+   <img width="2546" height="1640" alt="image" src="https://github.com/user-attachments/assets/a9bbdedc-5147-4997-8408-6c22f91c7571" />
 
-마이페이지의 접수 내역 페이지에 접속하면 접수 일정과 개인 일정을 함께 확인할 수 있습니다.
+3. 연동에서 웹후크를 생성한 후, url을 복사합니다.
 
-### 3. 개인 일정 추가
+   <img width="2680" height="1634" alt="image" src="https://github.com/user-attachments/assets/d8ee1dd5-e510-4e66-9c78-b9f42c2be4ea" />
+   
+4. 알림 모달창에 입력합니다.
 
-`➕ 개인 일정 추가` 버튼을 클릭한 뒤 제목, 날짜, 시간, 설명을 입력해 저장합니다.
-
-### 4. 개인 일정 삭제
-
-개인 일정 카드의 `🗑️ 삭제` 버튼을 클릭하면 일정을 삭제할 수 있습니다.
-
-### 5. 중복 신청 확인
-
-개인 일정과 시간이 겹치는 멘토링/특강 신청 페이지에 접속하면 경고가 표시되고 신청 버튼이 비활성화됩니다.
+   <img width="680" height="345" alt="image" src="https://github.com/user-attachments/assets/3f0433f2-5d10-4757-b48b-6c089bdcbe92" />
