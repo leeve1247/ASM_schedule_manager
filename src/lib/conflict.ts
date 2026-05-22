@@ -8,12 +8,12 @@ interface TimedEvent {
   sn?: string | null;
 }
 
-interface DateRange {
+export interface DateRange {
   start: Date;
   end: Date;
 }
 
-function toDateRange(dateStr: string, startTime: string, endTime: string): DateRange | null {
+export function toDateRange(dateStr: string, startTime: string, endTime: string): DateRange | null {
   const [y, m, d] = dateStr.split('-').map(Number);
   const [sh, sm] = startTime.split(':').map(Number);
   const [eh, em] = endTime.split(':').map(Number);
