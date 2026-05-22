@@ -1,0 +1,166 @@
+// EventRecord assembly, search filter, and sort helpers for mentoLec list page.
+
+import type { EventInfo } from './list-cache';
+import { timeToMinutes } from '../lib/date-time';
+
+export interface EventRecord extends EventInfo {
+  sn: string | null;
+  category: string;
+  categoryNm: string;
+  url: string;
+  location?: string | null;
+  hasPersonalConflict?: boolean;
+  hasMentoringConflict?: boolean;
+  isEnrolled?: boolean;
+}
+
+export function normalizeText(text: string | undefined | null): string {
+  return (text || '').toString().trim().normalize('NFC').toLowerCase();
+}
+
+export function collectEvents(eventMap: Map<string, EventInfo>): EventRecord[] {
+  const events: EventRecord[] = [];
+  const seen = new Set<string>();
+
+  document
+    .querySelectorAll('.mypageCalendar .datepicker-days tbody td[data-date] ul li.category')
+    .forEach((li) => {
+      const td = li.closest('td[data-date]');
+      const date = td ? td.getAttribute('data-date') : null;
+
+      if (!date) return;
+
+      const anchor = li.querySelector<HTMLAnchorElement>('a[title]');
+      if (!anchor) return;
+
+      const title = anchor.getAttribute('title') || '';
+      const category = [...anchor.classList].find((c) => c.startsWith('MRC')) || '';
+      const popLink = li.querySelector<HTMLAnchorElement>('.calendarPop a.link');
+      const snMatch = popLink ? popLink.href.match(/qustnrSn=(\d+)/) : null;
+      const sn = snMatch ? snMatch[1] : null;
+      const url = popLink ? popLink.href : '#';
+
+      if (sn && seen.has(sn)) return;
+      if (sn) seen.add(sn);
+
+      const info: Partial<EventInfo> = (sn && eventMap.get(sn)) || {};
+
+      events.push({
+        sn,
+        date: info.date || date,
+        title,
+        category,
+        categoryNm: category === 'MRC010' ? '자유 멘토링' : '멘토 특강',
+        url,
+        isClosed: info.isClosed ?? false,
+        current: info.current || '',
+        total: info.total || '',
+        author: info.author || '',
+        timeStart: info.timeStart || '',
+        timeEnd: info.timeEnd || '',
+      });
+    });
+
+  eventMap.forEach((info, sn) => {
+    if (seen.has(sn) || !info.date) return;
+
+    const link = document.querySelector<HTMLAnchorElement>(
+      `a[href*="qustnrSn=${sn}"][href*="mentoLec/view"]`
+    );
+    const titleFromDom = link
+      ? (link.textContent ?? '').trim().replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, '')
+      : '';
+
+    const title = info.title || titleFromDom || `(번호 ${sn})`;
+    const titleRaw = link ? (link.textContent ?? '').trim() : info.title || '';
+    const category = titleRaw.startsWith('[자유 멘토링]') ? 'MRC010' : 'MRC020';
+    const url = link
+      ? link.href
+      : `${location.origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${sn}&menuNo=200046`;
+
+    events.push({
+      sn,
+      date: info.date,
+      title,
+      category,
+      categoryNm: category === 'MRC010' ? '자유 멘토링' : '멘토 특강',
+      url,
+      isClosed: info.isClosed,
+      current: info.current,
+      total: info.total,
+      author: info.author,
+      timeStart: info.timeStart,
+      timeEnd: info.timeEnd,
+    });
+  });
+
+  return events;
+}
+
+export function filterEventsBySearch(
+  events: EventRecord[],
+  searchType: 'title' | 'author',
+  searchKeyword: string
+): EventRecord[] {
+  const keyword = normalizeText(searchKeyword);
+  if (!keyword) return events;
+
+  return events.filter((ev) => {
+    const target = searchType === 'title' ? normalizeText(ev.title) : normalizeText(ev.author);
+    return target.includes(keyword);
+  });
+}
+
+function getEventStatusGroup(ev: EventRecord, todayStr: string): number {
+  const isPast = ev.date < todayStr;
+  const isClosed = ev.isClosed;
+  return isPast || isClosed ? 1 : 0;
+}
+
+function getComparableAuthor(author: string): string {
+  return (author || '').replace(/\s*멘토\s*$/g, '').trim().normalize('NFC');
+}
+
+function getComparableTitle(title: string): string {
+  return (title || '')
+    .replace(/^\s*\[(온라인|오프라인)\]\s*/g, '')
+    .replace(/^\s*\((온라인|오프라인)\)\s*/g, '')
+    .replace(/^\s*\[(자유 멘토링|멘토 특강)\]\s*/g, '')
+    .trim()
+    .normalize('NFC');
+}
+
+function compareKoreanText(aText: string, bText: string): number {
+  return aText.localeCompare(bText, 'ko-KR', {
+    usage: 'sort',
+    sensitivity: 'variant',
+    numeric: true,
+    ignorePunctuation: true,
+  });
+}
+
+export function sortEventsByStatusTimeAuthor(a: EventRecord, b: EventRecord, todayStr: string): number {
+  const groupA = getEventStatusGroup(a, todayStr);
+  const groupB = getEventStatusGroup(b, todayStr);
+
+  if (groupA !== groupB) return groupA - groupB;
+
+  const timeA = timeToMinutes(a.timeStart);
+  const timeB = timeToMinutes(b.timeStart);
+
+  if (timeA !== timeB) return timeA - timeB;
+
+  const authorA = getComparableAuthor(a.author);
+  const authorB = getComparableAuthor(b.author);
+
+  const authorCompare = compareKoreanText(authorA, authorB);
+  if (authorCompare !== 0) return authorCompare;
+
+  const titleA = getComparableTitle(a.title);
+  const titleB = getComparableTitle(b.title);
+
+  const titleCompare = compareKoreanText(titleA, titleB);
+  if (titleCompare !== 0) return titleCompare;
+
+  return String(a.sn || '').localeCompare(String(b.sn || ''), 'ko-KR', { numeric: true });
+}
