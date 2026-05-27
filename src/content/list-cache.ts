@@ -84,13 +84,15 @@ async function waitBeforeFullFetch(): Promise<void> {
 
 export async function fetchInBatches<T>(
   tasks: Array<() => Promise<T>>,
-  batchSize: number
+  batchSize: number,
+  onBatch?: (batchResults: PromiseSettledResult<T>[]) => void
 ): Promise<PromiseSettledResult<T>[]> {
   const results: PromiseSettledResult<T>[] = [];
   for (let i = 0; i < tasks.length; i += batchSize) {
     const batch = tasks.slice(i, i + batchSize);
     const batchResults = await Promise.allSettled(batch.map((fn) => fn()));
     results.push(...batchResults);
+    if (onBatch) onBatch(batchResults);
   }
   return results;
 }

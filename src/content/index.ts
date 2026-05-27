@@ -102,7 +102,7 @@ async function init(): Promise<void> {
     });
   }
 
-  function renderPanel(events: EventRecord[], loading: boolean, focusSearch = false): void {
+  function renderPanel(events: EventRecord[], loadingMessage: string | null, focusSearch = false): void {
     const existing = document.getElementById('asm-2week-panel');
 
     const searchDraft: SearchDraft = {
@@ -112,7 +112,7 @@ async function init(): Promise<void> {
 
     const { panel } = buildPanel(
       events,
-      loading,
+      loadingMessage,
       currentOffset,
       navigate,
       searchDraft,
@@ -157,7 +157,7 @@ async function init(): Promise<void> {
     appliedSearchType = nextType;
     appliedSearchKeyword = nextKeyword;
 
-    renderPanel(withLocations(getFilteredEvents()), false, true);
+    renderPanel(withLocations(getFilteredEvents()), null, true);
   }
 
   function handleSearchReset(): void {
@@ -166,18 +166,38 @@ async function init(): Promise<void> {
     appliedSearchType = 'title';
     appliedSearchKeyword = '';
 
-    renderPanel(withLocations(getFilteredEvents()), false, true);
+    renderPanel(withLocations(getFilteredEvents()), null, true);
   }
 
   function handleToggleCollapsed(): void {
     isPanelCollapsed = !isPanelCollapsed;
-    renderPanel(withLocations(getFilteredEvents()), false);
+    renderPanel(withLocations(getFilteredEvents()), null);
+  }
+
+  function locMessage(done: number, total: number): string {
+    return `장소 정보 가져오는 중… (${done}/${total})`;
+  }
+
+  // 패널 전체 리렌더 없이 헤더의 로딩 표시만 in-place로 갱신.
+  // fetchLocations 진행 중 매 배치마다 renderPanel을 부르면 day panel이 통째로 새로 만들어져 깜빡임.
+  function updateLoadingIndicator(msg: string | null): void {
+    const el = document.getElementById('asm-panel-loading');
+    if (!el) return;
+    el.innerHTML = '';
+    if (msg) {
+      const spinner = document.createElement('span');
+      spinner.className = 'asm-loading-spinner';
+      const text = document.createElement('span');
+      text.textContent = msg;
+      el.appendChild(spinner);
+      el.appendChild(text);
+    }
   }
 
   async function handleRefresh(): Promise<void> {
     if (isRefreshing) return;
     isRefreshing = true;
-    renderPanel(withLocations(getFilteredEvents()), true);
+    renderPanel(withLocations(getFilteredEvents()), '강의 목록 동기화 중…');
 
     try {
       await removeCacheEntries([STABLE_CACHE_KEY, COUNT_CACHE_KEY, LOC_CACHE_KEY]);
@@ -191,23 +211,27 @@ async function init(): Promise<void> {
 
       const completeMap = await buildCompleteEventMap();
       allEvents = collectEvents(completeMap);
-      renderPanel(withLocations(getFilteredEvents()), true);
+      renderPanel(withLocations(getFilteredEvents()), '장소 정보 가져오는 중…');
 
-      await fetchLocations(getFilteredEvents());
+      await fetchLocations(getFilteredEvents(), (done, total) => {
+        updateLoadingIndicator(locMessage(done, total));
+      });
     } finally {
       isRefreshing = false;
-      renderPanel(withLocations(getFilteredEvents()), false);
+      renderPanel(withLocations(getFilteredEvents()), null);
     }
   }
 
   async function navigate(newOffset: number): Promise<void> {
     currentOffset = newOffset;
 
-    renderPanel(withLocations(getFilteredEvents()), false);
+    renderPanel(withLocations(getFilteredEvents()), null);
 
-    await fetchLocations(getFilteredEvents());
+    await fetchLocations(getFilteredEvents(), (done, total) => {
+      updateLoadingIndicator(locMessage(done, total));
+    });
 
-    renderPanel(withLocations(getFilteredEvents()), false);
+    renderPanel(withLocations(getFilteredEvents()), null);
   }
 
   const [, stableCache, countCache] = await Promise.all([loadLocCache(), loadStableCache(), loadCountCache()]);
@@ -218,12 +242,17 @@ async function init(): Promise<void> {
   ]);
   const initialMap = parseTableRows(document);
   allEvents = collectEvents(initialMap);
-  renderPanel(withLocations(getFilteredEvents()), !(stableCache && countCache));
+  renderPanel(
+    withLocations(getFilteredEvents()),
+    stableCache && countCache ? null : '강의 목록 동기화 중…'
+  );
 
   const completeMap = await buildCompleteEventMap();
   allEvents = collectEvents(completeMap);
-  renderPanel(withLocations(getFilteredEvents()), true);
+  renderPanel(withLocations(getFilteredEvents()), '장소 정보 가져오는 중…');
 
-  await fetchLocations(getFilteredEvents());
-  renderPanel(withLocations(getFilteredEvents()), false);
+  await fetchLocations(getFilteredEvents(), (done, total) => {
+    updateLoadingIndicator(locMessage(done, total));
+  });
+  renderPanel(withLocations(getFilteredEvents()), null);
 }

@@ -55,17 +55,26 @@ export function parseLocationFromDoc(doc: Document): string | null {
   return null;
 }
 
-export async function fetchLocations(events: Array<{ sn: string | null; date: string }>): Promise<Map<string, string>> {
+export async function fetchLocations(
+  events: Array<{ sn: string | null; date: string }>,
+  onProgress?: (done: number, total: number) => void
+): Promise<Map<string, string>> {
   const locCache = await loadLocCache();
   const todayStr = toDateStr(new Date());
 
-  const missing = events.filter((ev) => ev.sn && !locCache.has(ev.sn) && ev.date >= todayStr);
+  // ascending sort: today comes first (past is filtered out), then future days in order.
+  // 월 이동 시에도 자동으로 그 달의 1일부터 순서대로 fetch됨.
+  const missing = events
+    .filter((ev) => ev.sn && !locCache.has(ev.sn) && ev.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   if (missing.length === 0) return locCache;
 
   const origin = location.origin;
+  const total = missing.length;
+  let done = 0;
 
-  const results = await fetchInBatches<{ sn: string | null; loc: string | null }>(
+  await fetchInBatches<{ sn: string | null; loc: string | null }>(
     missing.map((ev) => async () => {
       const url = `${origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${ev.sn}&menuNo=200046`;
       const res = await fetch(url, { credentials: 'include' });
@@ -77,14 +86,17 @@ export async function fetchLocations(events: Array<{ sn: string | null; date: st
 
       return { sn: ev.sn, loc: parseLocationFromDoc(doc) };
     }),
-    3
-  );
-
-  results.forEach((r) => {
-    if (r.status === 'fulfilled' && r.value.sn) {
-      locCache.set(r.value.sn, r.value.loc ?? '');
+    3,
+    (batchResults) => {
+      batchResults.forEach((r) => {
+        if (r.status === 'fulfilled' && r.value.sn) {
+          locCache.set(r.value.sn, r.value.loc ?? '');
+        }
+      });
+      done += batchResults.length;
+      if (onProgress) onProgress(done, total);
     }
-  });
+  );
 
   await saveLocCache(locCache);
 
