@@ -9,7 +9,7 @@ function renderEventPanel(
   dayEvents: EventRecord[],
   dateStr: string,
   todayStr: string,
-  isLoading: boolean
+  loadingMessage: string | null
 ): void {
   container.innerHTML = '';
 
@@ -30,10 +30,17 @@ function renderEventPanel(
   headerEl.appendChild(cntLabel);
   container.appendChild(headerEl);
 
-  if (isLoading) {
+  // 카드는 항상 표시 — 진행 상황은 패널 헤더의 asm-panel-loading에서 보여줌.
+  // 장소 등 부분 정보가 비어 있어도 카드 자체는 보이게 해서 "오늘 먼저" 효과를 살림.
+  if (dayEvents.length === 0 && loadingMessage) {
     const loadingRow = document.createElement('div');
     loadingRow.className = 'asm-cards-loading';
-    loadingRow.innerHTML = '<span class="asm-loading-spinner"></span><span>불러오는 중…</span>';
+    const spinner = document.createElement('span');
+    spinner.className = 'asm-loading-spinner';
+    const span = document.createElement('span');
+    span.textContent = loadingMessage;
+    loadingRow.appendChild(spinner);
+    loadingRow.appendChild(span);
     container.appendChild(loadingRow);
     return;
   }
@@ -58,7 +65,7 @@ export interface BuildPanelResult {
 
 export function buildPanel(
   events: EventRecord[],
-  isLoading: boolean,
+  loadingMessage: string | null,
   offset = 0,
   onNavigate: ((newOffset: number) => void) | null = null,
   searchDraft: SearchDraft = { type: 'title', keyword: '' },
@@ -95,11 +102,6 @@ export function buildPanel(
   titleWrap.className = 'asm-panel-title-wrap';
   titleWrap.innerHTML = `<span class="asm-panel-ico">📅</span><span class="asm-panel-title">${year}년 ${month + 1}월</span>`;
 
-  const loadingEl = document.createElement('span');
-  loadingEl.className = 'asm-panel-loading';
-  loadingEl.id = 'asm-panel-loading';
-
-  titleWrap.appendChild(loadingEl);
   header.appendChild(titleWrap);
 
   const navWrap = document.createElement('div');
@@ -190,6 +192,19 @@ export function buildPanel(
   infoWrap.appendChild(infoPopover);
   headerActions.appendChild(infoWrap);
 
+  const loadingEl = document.createElement('span');
+  loadingEl.className = 'asm-panel-loading';
+  loadingEl.id = 'asm-panel-loading';
+  if (loadingMessage) {
+    const spinner = document.createElement('span');
+    spinner.className = 'asm-loading-spinner';
+    const text = document.createElement('span');
+    text.textContent = loadingMessage;
+    loadingEl.appendChild(spinner);
+    loadingEl.appendChild(text);
+  }
+  headerActions.appendChild(loadingEl);
+
   const refreshBtn = document.createElement('button');
   refreshBtn.type = 'button';
   refreshBtn.className = 'asm-panel-refresh';
@@ -240,9 +255,17 @@ export function buildPanel(
   eventPanel.className = 'asm-event-panel';
 
   function showPlaceholder() {
-    if (isLoading) {
-      eventPanel.innerHTML =
-        '<div class="asm-event-panel-placeholder"><span class="asm-loading-spinner"></span><span>데이터 불러오는 중…</span></div>';
+    if (loadingMessage) {
+      eventPanel.innerHTML = '';
+      const ph = document.createElement('div');
+      ph.className = 'asm-event-panel-placeholder';
+      const spinner = document.createElement('span');
+      spinner.className = 'asm-loading-spinner';
+      const text = document.createElement('span');
+      text.textContent = loadingMessage;
+      ph.appendChild(spinner);
+      ph.appendChild(text);
+      eventPanel.appendChild(ph);
     } else {
       eventPanel.innerHTML =
         '<div class="asm-event-panel-placeholder"><span>날짜를 선택하면<br>일정이 표시됩니다</span></div>';
@@ -267,7 +290,7 @@ export function buildPanel(
 
     const sortedDayEvents = [...dayEvents].sort((a, b) => sortEventsByStatusTimeAuthor(a, b, todayStr));
 
-    renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr, isLoading);
+    renderEventPanel(eventPanel, sortedDayEvents, dateStr, todayStr, loadingMessage);
   }
 
   for (let i = 0; i < start.getDay(); i++) {

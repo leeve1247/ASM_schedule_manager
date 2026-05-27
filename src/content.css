@@ -37,8 +37,22 @@
 }
 
 .asm-panel-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: #94a3b8;
+  white-space: nowrap;
+}
+
+.asm-panel-loading:empty {
+  display: none;
+}
+
+.asm-panel-loading .asm-loading-spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
 }
 
 /* 이전달 / 오늘 / 다음달 위치 고정 */
