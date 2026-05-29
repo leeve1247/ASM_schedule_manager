@@ -22,6 +22,8 @@
 - `src/lib/` (공유), `src/content/` (목록 페이지), `src/history/` (접수 내역/상세 페이지) 로 디렉토리 분리.
 - 확장 ID 를 manifest `key` 필드로 고정 — PC 옮겨도 Google OAuth client 가 동일하게 동작.
 - UI 이모지를 **Lucide 아이콘 (SVG)** 으로 일괄 교체 — 폰트/플랫폼 차이로 인한 렌더링 불일치 제거.
+- 접수 내역 페이지 첫 로딩 시 헤더+스켈레톤을 즉시 표시하고 강의 상세 fetch 완료 후 캘린더로 교체 — 콜드 캐시 대기 시간 동안의 빈 화면 제거.
+- **자동 버전 관리** — `npm run build` 가 매 실행마다 `package.json` 의 patch 버전을 1 증가시키고, 그 값이 `dist/manifest.json` 의 `version` 으로 자동 주입됨 (`scripts/bump-version.mjs`).
 
 ---
 
@@ -111,12 +113,14 @@ git clone https://github.com/woals00/ASM_schedule_manager.git
 cd ASM_schedule_manager
 ```
 
-2. 의존성을 설치하고 빌드합니다. (Node.js 18+ 필요)
+2. 의존성을 설치하고 빌드합니다.
 
 ```bash
 npm install
 npm run build
 ```
+
+> `npm run build` 는 실행할 때마다 `package.json` 의 patch 버전을 자동으로 1 증가시킵니다 (예: `0.0.1` → `0.0.2`). 그 버전이 `dist/manifest.json` 에 그대로 들어가서, `chrome://extensions` 의 "업데이트" 가 빌드 단위로 식별 가능합니다.
 
 3. Chrome 주소창에 `chrome://extensions/`를 입력합니다.
 4. 우측 상단의 `개발자 모드`를 켭니다.

@@ -27,6 +27,86 @@ function alarmLabelHtml(isConfigured: boolean, notificationsEnabled: boolean): s
   return `${iconHtml('bellOff', { size: 14 })}<span>알림 받기</span>`;
 }
 
+interface HeaderHtmlOptions {
+  alarmEnabled: boolean;
+  alarmToggleLabel: string;
+  alarmChecked: boolean;
+  disabled: boolean;
+}
+
+function buildHeaderHtml(opts: HeaderHtmlOptions): string {
+  const { alarmEnabled, alarmToggleLabel, alarmChecked, disabled } = opts;
+  const d = disabled ? ' disabled' : '';
+  return `
+    <div class="calendar-title-group">
+      <h3>통합 일정 대시보드</h3>
+      <span class="calendar-subtitle">접수한 일정과 내 개인 일정을 함께 모아 관리합니다.</span>
+    </div>
+    <div class="calendar-nav-group">
+      <button id="btn-prev-weeks" class="control-btn nav-btn"${d}>‹ 2주 전</button>
+      <button id="btn-today" class="control-btn nav-btn nav-today"${d}>오늘</button>
+      <button id="btn-next-weeks" class="control-btn nav-btn"${d}>2주 후 ›</button>
+    </div>
+    <div class="calendar-actions">
+      ${
+        alarmEnabled
+          ? `
+      <div class="alarm-info-wrap">
+        <button id="btn-alarm-info" class="alarm-info-btn" type="button"${d}>!</button>
+      </div>
+      <label class="alarm-toggle-container" for="btn-toggle-alarm">
+        <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
+        <span class="asm-switch">
+          <input type="checkbox" id="btn-toggle-alarm" ${alarmChecked ? 'checked' : ''}${d}>
+          <span class="asm-slider"></span>
+        </span>
+      </label>
+      `
+          : ''
+      }
+      <button id="btn-refresh-lectures" class="control-btn nav-btn" title="최신 데이터로 새로고침"${d}>↻ 새로고침</button>
+      <button id="btn-add-personal" class="control-btn accent"${d}>+ 개인 일정 추가</button>
+    </div>
+  `;
+}
+
+// Skeleton dashboard rendered synchronously before lectures are fetched.
+// Buttons are disabled until renderCalendar() replaces this with the real one.
+export function renderCalendarSkeleton(): void {
+  const existing = document.getElementById('history-calendar');
+  if (existing) existing.remove();
+
+  const targetContainer = document.querySelector('.tabs-st1');
+  if (!targetContainer || !targetContainer.parentNode) return;
+
+  const alarmEnabled = Boolean(getAlarmFeature());
+
+  const calendarWrapper = document.createElement('div');
+  calendarWrapper.id = 'history-calendar';
+  calendarWrapper.classList.add('history-calendar-loading');
+
+  const header = document.createElement('div');
+  header.className = 'calendar-header';
+  header.innerHTML = buildHeaderHtml({
+    alarmEnabled,
+    alarmToggleLabel: alarmLabelHtml(false, false),
+    alarmChecked: false,
+    disabled: true,
+  });
+  calendarWrapper.appendChild(header);
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'calendar-loading-placeholder';
+  placeholder.innerHTML = `
+    <span class="calendar-loading-spinner" aria-hidden="true"></span>
+    <span class="calendar-loading-text">접수한 강의 정보를 불러오는 중입니다…</span>
+    <span class="calendar-loading-subtext">처음 로딩 시 강의 상세를 한 건씩 가져오느라 시간이 걸릴 수 있습니다.</span>
+  `;
+  calendarWrapper.appendChild(placeholder);
+
+  targetContainer.parentNode.insertBefore(calendarWrapper, targetContainer.nextSibling);
+}
+
 const CALENDAR_DAY_COUNT = 14;
 const CALENDAR_SHIFT_WEEKS = 2;
 
@@ -118,39 +198,12 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
   // 1. Calendar Header / Dashboard Toolbar
   const header = document.createElement('div');
   header.className = 'calendar-header';
-  header.innerHTML = `
-    <div class="calendar-title-group">
-      <h3>통합 일정 대시보드</h3>
-      <span class="calendar-subtitle">접수한 일정과 내 개인 일정을 함께 모아 관리합니다.</span>
-    </div>
-    <div class="calendar-nav-group">
-      <button id="btn-prev-weeks" class="control-btn nav-btn">‹ 2주 전</button>
-      <button id="btn-today" class="control-btn nav-btn nav-today">오늘</button>
-      <button id="btn-next-weeks" class="control-btn nav-btn">2주 후 ›</button>
-    </div>
-    <div class="calendar-actions">
-      ${
-        alarmEnabled
-          ? `
-      <div class="alarm-info-wrap">
-        <button id="btn-alarm-info" class="alarm-info-btn" type="button">!</button>
-      </div>
-      <label class="alarm-toggle-container" for="btn-toggle-alarm">
-        <span class="alarm-toggle-text" id="alarm-toggle-text">${alarmToggleLabel}</span>
-        <span class="asm-switch">
-          <input type="checkbox" id="btn-toggle-alarm" ${
-            isAlarmConfigured && alarmSettings.notificationsEnabled ? 'checked' : ''
-          }>
-          <span class="asm-slider"></span>
-        </span>
-      </label>
-      `
-          : ''
-      }
-      <button id="btn-refresh-lectures" class="control-btn nav-btn" title="최신 데이터로 새로고침">↻ 새로고침</button>
-      <button id="btn-add-personal" class="control-btn accent">+ 개인 일정 추가</button>
-    </div>
-  `;
+  header.innerHTML = buildHeaderHtml({
+    alarmEnabled,
+    alarmToggleLabel,
+    alarmChecked: isAlarmConfigured && alarmSettings.notificationsEnabled,
+    disabled: false,
+  });
   calendarWrapper.appendChild(header);
 
   // Alarm info popover (only when feature is loaded)
