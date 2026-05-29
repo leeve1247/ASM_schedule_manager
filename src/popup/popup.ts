@@ -1,5 +1,7 @@
 // Popup script — controls Google Calendar OAuth connect/disconnect UI.
 
+import { iconHtml } from '../lib/icons';
+
 interface GcalStatusResponse {
   connected: boolean;
 }
@@ -38,7 +40,7 @@ function setError(message: string | null): void {
 
 function renderConnected(): void {
   statusEl.className = 'status-row status-connected';
-  statusEl.innerHTML = '<span class="status-text">✓ 연동됨</span>';
+  statusEl.innerHTML = `<span class="status-text">${iconHtml('check', { size: 14 })}<span>연동됨</span></span>`;
   actionEl.innerHTML = '';
   const btn = document.createElement('button');
   btn.className = 'button button-secondary';
@@ -55,7 +57,7 @@ function renderDisconnected(): void {
   actionEl.innerHTML = '';
   const btn = document.createElement('button');
   btn.className = 'button button-primary';
-  btn.textContent = '🗓 연동하기';
+  btn.innerHTML = `${iconHtml('calendarDays', { size: 14 })}<span>연동하기</span>`;
   btn.addEventListener('click', () => {
     void handleConnect(btn);
   });

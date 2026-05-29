@@ -469,15 +469,19 @@
 }
 
 #history-calendar .calendar-lecture.not-in-gcal::after {
-  content: '🗓 미등록';
+  content: '미등록';
   position: absolute;
   top: -8px;
   right: 6px;
-  background: #f59e0b;
+  background-color: #f59e0b;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg%20class%3D%22lucide%20lucide-calendar-days%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20%3E%20%3Cpath%20d%3D%22M8%202v4%22%20%2F%3E%20%3Cpath%20d%3D%22M16%202v4%22%20%2F%3E%20%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%224%22%20rx%3D%222%22%20%2F%3E%20%3Cpath%20d%3D%22M3%2010h18%22%20%2F%3E%20%3Cpath%20d%3D%22M8%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M12%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M16%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M8%2018h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M12%2018h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M16%2018h.01%22%20%2F%3E%20%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: 5px center;
+  background-size: 10px 10px;
   color: #ffffff;
   font-size: 10px;
   font-weight: 600;
-  padding: 1px 6px;
+  padding: 1px 6px 1px 19px;
   border-radius: 8px;
   letter-spacing: 0.02em;
 }
@@ -571,6 +575,9 @@
 #history-calendar .personal-badge {
   background: #d4f7c4 !important;
   color: #2a8020 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 #history-calendar .info-row {
@@ -742,6 +749,9 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .close-modal-btn {
@@ -910,9 +920,10 @@
 }
 
 #soma-conflict-banner .conflict-icon {
-  font-size: 24px;
   line-height: 1.2;
   margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
 }
 
 #soma-conflict-banner .conflict-content {
@@ -1055,9 +1066,10 @@
 }
 
 #soma-mentoring-conflict-banner .conflict-icon {
-  font-size: 24px;
   line-height: 1.2;
   margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
 }
 
 #soma-mentoring-conflict-banner .conflict-content {

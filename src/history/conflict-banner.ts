@@ -17,6 +17,7 @@ import {
   findConflictingPersonalSchedule,
   type DateRange,
 } from '../lib/conflict';
+import { iconHtml } from '../lib/icons';
 
 export function findLectureDateTimeOnDetailPage(): string | null {
   const eventDateEl = document.querySelector('.eventDt');
@@ -186,7 +187,7 @@ function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void 
   const banner = document.createElement('div');
   banner.id = 'soma-conflict-banner';
   banner.innerHTML = `
-    <div class="conflict-icon">⚠️</div>
+    <div class="conflict-icon">${iconHtml('alertTriangle', { size: 24 })}</div>
     <div class="conflict-content">
       <div class="conflict-title">개인 일정과 중복되는 멘토링입니다</div>
       <div class="conflict-desc">
@@ -233,7 +234,7 @@ function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, de
   banner.id = 'soma-mentoring-conflict-banner';
   banner.className = 'soma-mentoring-conflict-banner';
   banner.innerHTML = `
-    <div class="conflict-icon">⚠️</div>
+    <div class="conflict-icon">${iconHtml('alertTriangle', { size: 24 })}</div>
     <div class="conflict-content">
       <div class="conflict-title">멘토링 일정과 중복되는 멘토링입니다</div>
       <div class="conflict-desc">
@@ -351,7 +352,7 @@ async function checkLectureConflict(): Promise<void> {
   if (conflictingMentoring) {
     console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${conflictingMentoring.title}"`);
     blockApplicationButtons(
-      `⚠️ 이미 접수한 멘토링 "${conflictingMentoring.title}"와 시간이 중복되어 신청할 수 없습니다.`
+      `이미 접수한 멘토링 "${conflictingMentoring.title}"와 시간이 중복되어 신청할 수 없습니다.`
     );
     if (!existingMentoringBanner) {
       injectMentoringConflictBanner(conflictingMentoring, detailText);

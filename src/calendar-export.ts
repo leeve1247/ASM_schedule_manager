@@ -4,6 +4,8 @@
 // callers; once all callers migrate to TS this surface can be replaced with ESM
 // imports.
 
+import { iconHtml } from './lib/icons';
+
 export interface ExportEvent {
   title: string;
   startsAt: string;
@@ -184,7 +186,7 @@ function appendExportButtons(
   filenameBase: string
 ): void {
   const btnGcal = createExportButton({
-    label: '📅 캘린더',
+    label: `${iconHtml('calendar')}<span>캘린더</span>`,
     title: 'Google 캘린더에 추가',
     className: 'asm-export-btn gcal-btn',
     onClick: () => {
@@ -193,7 +195,7 @@ function appendExportButtons(
     },
   });
   const btnIcs = createExportButton({
-    label: '💾 ICS',
+    label: `${iconHtml('save')}<span>ICS</span>`,
     title: 'ICS 파일 다운로드 (Outlook · Apple · Naver 등)',
     className: 'asm-export-btn ics-btn',
     onClick: () => {

@@ -52,6 +52,9 @@ h1 {
 .status-connected .status-text {
   color: #059669;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .status-disconnected .status-text {
@@ -68,6 +71,10 @@ h1 {
   cursor: pointer;
   transition: background 0.12s ease, opacity 0.12s ease;
   width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .button:disabled {

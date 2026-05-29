@@ -10,11 +10,22 @@ import {
   type PersonalSchedule,
 } from '../lib/personal-schedule';
 import { saveMentoringSchedules, type MentoringSchedule } from '../lib/mentoring-schedule';
+import { iconHtml } from '../lib/icons';
 import { openModalForEditing, openModalWithDate } from './modal';
 import { triggerCancellation } from './cancel';
 import { parseLecturesTable } from './lecture-table';
 import { clearLectureDetailCache } from './lecture-detail';
 import type { Lecture } from './types';
+
+function alarmLabelHtml(isConfigured: boolean, notificationsEnabled: boolean): string {
+  if (!isConfigured) {
+    return `${iconHtml('bell', { size: 14 })}<span>알림 받기</span>`;
+  }
+  if (notificationsEnabled) {
+    return `${iconHtml('bell', { size: 14 })}<span>알림 끄기</span>`;
+  }
+  return `${iconHtml('bellOff', { size: 14 })}<span>알림 받기</span>`;
+}
 
 const CALENDAR_DAY_COUNT = 14;
 const CALENDAR_SHIFT_WEEKS = 2;
@@ -60,13 +71,8 @@ export async function updateAlarmButtonState(): Promise<void> {
     ? await alarmFeature.loadSettings()
     : { userId: '', discordWebhookUrl: '', notificationsEnabled: false };
   const isAlarmConfigured = Boolean(alarmSettings.userId && alarmSettings.discordWebhookUrl);
-  const alarmToggleLabel = !isAlarmConfigured
-    ? '🔔 알림 받기'
-    : alarmSettings.notificationsEnabled
-    ? '🔔 알림 끄기'
-    : '🔕 알림 받기';
 
-  txt.textContent = alarmToggleLabel;
+  txt.innerHTML = alarmLabelHtml(isAlarmConfigured, alarmSettings.notificationsEnabled);
   btn.checked = isAlarmConfigured && alarmSettings.notificationsEnabled;
 }
 
@@ -84,11 +90,7 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
     ? await alarmFeature.loadSettings()
     : { userId: '', discordWebhookUrl: '', notificationsEnabled: false };
   const isAlarmConfigured = Boolean(alarmSettings.userId && alarmSettings.discordWebhookUrl);
-  const alarmToggleLabel = !isAlarmConfigured
-    ? '🔔 알림 받기'
-    : alarmSettings.notificationsEnabled
-    ? '🔔 알림 끄기'
-    : '🔕 알림 받기';
+  const alarmToggleLabel = alarmLabelHtml(isAlarmConfigured, alarmSettings.notificationsEnabled);
 
   const mergedPersonalSchedules: PersonalSchedule[] = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
 
@@ -308,14 +310,15 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
         card.className = `calendar-lecture ${evt.ended ? 'ended' : ''} event-personal`;
         card.title = ps.title;
 
-        const badgeText = ps.isFixedShared ? '📌 공통 일정' : '👤 개인 일정';
+        const badgeIcon = ps.isFixedShared ? iconHtml('pin', { size: 12 }) : iconHtml('user', { size: 12 });
+        const badgeLabel = ps.isFixedShared ? '공통 일정' : '개인 일정';
         const locationLabel =
           ps.locationType === 'offline' ? '오프라인' : ps.locationType === 'online' ? '온라인' : '';
         const locationDetail = ps.location ? ` · ${escapeHtml(ps.location)}` : '';
         card.innerHTML = `
           <div class="info-group">
             <div class="text-title" data-role="title">${escapeHtml(ps.title)}</div>
-            <div class="text-type-badge personal-badge">${escapeHtml(badgeText)}</div>
+            <div class="text-type-badge personal-badge">${badgeIcon}<span>${escapeHtml(badgeLabel)}</span></div>
             <div class="info-row" data-role="time"><strong>시간</strong> ${escapeHtml(ps.startTime)} ~ ${escapeHtml(ps.endTime)}</div>
             ${
               ps.locationType
@@ -442,7 +445,7 @@ export async function renderCalendar(lectures: Lecture[]): Promise<void> {
           });
         } else {
           btnCancel.className = 'cancel-btn unavailable';
-          btnCancel.innerHTML = '🚫 취소 불가';
+          btnCancel.innerHTML = `${iconHtml('ban', { size: 12 })}<span>취소 불가</span>`;
           btnCancel.title = evt.ended ? '종료된 일정이므로 취소 불가' : lec.cancelPolicyReason;
           btnCancel.disabled = true;
         }

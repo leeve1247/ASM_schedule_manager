@@ -1,11 +1,19 @@
 import type { EventRecord } from './events';
 import { classifyLocation } from '../lib/location';
 import { getSafeSomaUrl } from '../lib/safe-url';
+import { iconHtml, type IconName } from '../lib/icons';
 
 export function mkBadge(text: string, cls: string): HTMLSpanElement {
   const el = document.createElement('span');
   el.className = `asm-badge ${cls}`;
   el.textContent = text;
+  return el;
+}
+
+function mkIconBadge(icon: IconName, text: string, cls: string): HTMLSpanElement {
+  const el = document.createElement('span');
+  el.className = `asm-badge asm-badge-icon ${cls}`;
+  el.innerHTML = `${iconHtml(icon, { size: 12 })}<span>${text}</span>`;
   return el;
 }
 
@@ -61,7 +69,7 @@ export function makeCard(ev: EventRecord, todayStr: string): HTMLDivElement {
   badges.appendChild(mkBadge(statusLabel, statusCls));
 
   if (ev.isEnrolled) {
-    badges.appendChild(mkBadge('✓ 수강중', 'asm-enrolled'));
+    badges.appendChild(mkIconBadge('check', '수강중', 'asm-enrolled'));
   }
 
   if (ev.hasPersonalConflict) {
