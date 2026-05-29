@@ -5,6 +5,10 @@ import {
   savePersonalSchedules,
   type PersonalSchedule,
 } from '../lib/personal-schedule';
+import { iconHtml } from '../lib/icons';
+
+const ADD_HEADER_HTML = `${iconHtml('plus', { size: 16 })}<span>새 개인 일정 등록</span>`;
+const EDIT_HEADER_HTML = `${iconHtml('pencil', { size: 16 })}<span>개인 일정 수정</span>`;
 
 let editingScheduleId: string | null = null;
 let onSavedCallback: (() => Promise<void> | void) | null = null;
@@ -24,7 +28,7 @@ export function injectModalDOM(): void {
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
-        <h4>➕ 새 개인 일정 등록</h4>
+        <h4>${ADD_HEADER_HTML}</h4>
         <button type="button" class="close-modal-btn">&times;</button>
       </div>
       <form id="personal-schedule-form">
@@ -235,7 +239,7 @@ export function openModalWithDate(dateStr?: string): void {
 
   editingScheduleId = null;
   const headerTitle = modal.querySelector<HTMLElement>('.modal-header h4');
-  if (headerTitle) headerTitle.textContent = '➕ 새 개인 일정 등록';
+  if (headerTitle) headerTitle.innerHTML = ADD_HEADER_HTML;
 
   const dateInput = modal.querySelector<HTMLInputElement>('#schedule-date');
   if (dateInput) {
@@ -275,7 +279,7 @@ export function openModalForEditing(ps: PersonalSchedule): void {
 
   editingScheduleId = ps.id;
   const headerTitle = modal.querySelector<HTMLElement>('.modal-header h4');
-  if (headerTitle) headerTitle.textContent = '✏️ 개인 일정 수정';
+  if (headerTitle) headerTitle.innerHTML = EDIT_HEADER_HTML;
 
   // Populate existing values
   (modal.querySelector('#schedule-title') as HTMLInputElement).value = ps.title;

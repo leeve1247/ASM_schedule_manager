@@ -7,20 +7,21 @@
 이 레포는 [woals00/ASM_schedule_manager](https://github.com/woals00/ASM_schedule_manager) 의 `7e79490` (Polish history schedule interactions) 시점에서 분기했습니다. 이후 다음 변경이 추가됐습니다.
 
 ### 새 기능
-- **Google Calendar 연동** — 본인의 Google 캘린더에 등록되지 않은 멘토링/특강을 호박색으로 하이라이트해서 export 누락을 시각화 (`00eff9f`, `d8b525e`).
-- **로컬 ICS 익스포트** — 기존 Cloudflare 알림과 독립적으로 강의를 ICS 파일로 내려받아 다른 캘린더에 import 가능 (`1abaa6f`).
-- **history 페이지 새로고침 버튼** — 캐시 무효화 후 즉시 재파싱 (`d8b525e`).
+- **Google Calendar 연동** — 본인의 Google 캘린더에 등록되지 않은 멘토링/특강을 호박색으로 하이라이트해서 export 누락을 시각화.
+- **로컬 ICS 익스포트** — 기존 Cloudflare 알림과 독립적으로 강의를 ICS 파일로 내려받아 다른 캘린더에 import 가능.
+- **history 페이지 새로고침 버튼** — 캐시 무효화 후 즉시 재파싱.
 - **단계별 로딩 표시 + 오늘 우선 장소 fetch** — 자유 멘토링 캘린더 패널 헤더에 현재 단계(`강의 목록 동기화 중…`, `장소 정보 가져오는 중… (N/M)`)와 진행도를 표시. 강의 상세(`view.do`) fetch 순서를 오늘 → 미래 일자 순으로 정렬해, 사용자가 우선 보는 정보가 먼저 캐시에 채워지도록 함.
-- **Cloudflare 알림 게이트** — 알림 기능을 옵션화해 Cloudflare DB 없이도 캘린더만 사용 가능 (`1abaa6f`).
-- **확장 아이콘 추가** (`6e0b047`).
+- **Cloudflare 알림 게이트** — 알림 기능을 옵션화해 Cloudflare DB 없이도 캘린더만 사용 가능.
+- **확장 아이콘 추가**.
 
 ### 버그 수정
-- 멘토가 삭제한 강의가 history 캘린더에 잔존하던 문제 수정 (`15b9abf`).
+- 멘토가 삭제한 강의가 history 캘린더에 잔존하던 문제 수정.
 
 ### 내부 구조 변경
-- **Vite + TypeScript 빌드** 로 전환. 기존 단일 `.js` 파일을 모듈 분할 (`9402ce3` ~ `e2784e7`, Phase 1~7).
+- **Vite + TypeScript 빌드** 로 전환. 기존 단일 `.js` 파일을 모듈 분할.
 - `src/lib/` (공유), `src/content/` (목록 페이지), `src/history/` (접수 내역/상세 페이지) 로 디렉토리 분리.
-- 확장 ID 를 manifest `key` 필드로 고정 — PC 옮겨도 Google OAuth client 가 동일하게 동작 (`4e5f389`).
+- 확장 ID 를 manifest `key` 필드로 고정 — PC 옮겨도 Google OAuth client 가 동일하게 동작.
+- UI 이모지를 **Lucide 아이콘 (SVG)** 으로 일괄 교체 — 폰트/플랫폼 차이로 인한 렌더링 불일치 제거.
 
 ---
 

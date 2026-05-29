@@ -3,6 +3,7 @@ import { sortEventsByStatusTimeAuthor } from './events';
 import { makeCard } from './card';
 import { createSearchRow, type SearchCallback, type SearchDraft } from './search-row';
 import { DAY_KO, getMonthRange, toDateStr } from '../lib/date-time';
+import { iconHtml } from '../lib/icons';
 
 function renderEventPanel(
   container: HTMLElement,
@@ -100,7 +101,7 @@ export function buildPanel(
 
   const titleWrap = document.createElement('div');
   titleWrap.className = 'asm-panel-title-wrap';
-  titleWrap.innerHTML = `<span class="asm-panel-ico">📅</span><span class="asm-panel-title">${year}년 ${month + 1}월</span>`;
+  titleWrap.innerHTML = `<span class="asm-panel-ico">${iconHtml('calendar', { size: 16 })}</span><span class="asm-panel-title">${year}년 ${month + 1}월</span>`;
 
   header.appendChild(titleWrap);
 
