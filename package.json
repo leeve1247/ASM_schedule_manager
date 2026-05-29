@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/bump-version.mjs && tsc && vite build"
+    "build": "tsc && vite build && node scripts/bump-version.mjs"
   },
   "dependencies": {
     "lucide-static": "^1.17.0",

@@ -120,7 +120,7 @@ npm install
 npm run build
 ```
 
-> `npm run build` 는 실행할 때마다 `package.json` 의 patch 버전을 자동으로 1 증가시킵니다 (예: `0.0.1` → `0.0.2`). 그 버전이 `dist/manifest.json` 에 그대로 들어가서, `chrome://extensions` 의 "업데이트" 가 빌드 단위로 식별 가능합니다.
+> `npm run build` 가 **성공한 뒤** `package.json` 의 patch 버전이 자동으로 1 증가합니다 (예: `0.0.1` → `0.0.2`). 즉, 이번 빌드 산출물(`dist/manifest.json`)에는 빌드 직전 버전이 들어가고, 증가한 새 버전은 *다음* 빌드용으로 예약됩니다. tsc 나 vite 가 중간에 실패하면 버전은 올라가지 않아 실패한 빌드가 번호를 낭비하지 않습니다.
 
 3. Chrome 주소창에 `chrome://extensions/`를 입력합니다.
 4. 우측 상단의 `개발자 모드`를 켭니다.
