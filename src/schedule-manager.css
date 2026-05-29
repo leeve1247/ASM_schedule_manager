@@ -900,6 +900,56 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes asm-history-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Loading skeleton — shown while parseLecturesTable() is fetching detail pages. */
+#history-calendar.history-calendar-loading .control-btn:disabled,
+#history-calendar .control-btn:disabled,
+#history-calendar .alarm-info-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#history-calendar .calendar-loading-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 16px;
+  color: #475569;
+  text-align: center;
+}
+
+#history-calendar .calendar-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #cbd5e1;
+  border-top-color: #086DB7;
+  border-radius: 50%;
+  animation: asm-history-spin 0.9s linear infinite;
+}
+
+#history-calendar .calendar-loading-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+#history-calendar .calendar-loading-subtext {
+  font-size: 12px;
+  color: #64748b;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
 
 /* --- 6. DETAIL PAGE CONFLICT WARNING UI --- */
 

@@ -3,7 +3,7 @@
 // personal schedules with conflict checks.
 
 import { injectModalDOM, setOnPersonalScheduleSaved } from './modal';
-import { renderCalendar } from './calendar';
+import { renderCalendar, renderCalendarSkeleton } from './calendar';
 import { parseLecturesTable } from './lecture-table';
 import { checkLectureConflictWithRetry } from './conflict-banner';
 
@@ -19,6 +19,9 @@ async function init(): Promise<void> {
   if (path.includes('/mypage/userAnswer/history.do') || path.includes('/mypage/mentoLec/history.do')) {
     try {
       injectModalDOM();
+      // 강의 상세 fetch가 직렬이라 콜드 캐시면 N건만큼 대기 시간이 길어진다.
+      // 헤더+로딩 placeholder를 먼저 그려서 사용자에게 진행 중임을 알린다.
+      renderCalendarSkeleton();
       const lectures = await parseLecturesTable();
       setOnPersonalScheduleSaved(async () => {
         const fresh = await parseLecturesTable();
