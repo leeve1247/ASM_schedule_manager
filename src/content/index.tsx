@@ -1,0 +1,39 @@
+// SOMA mentoring board enhancement (content script for mentoLec list pages).
+// Thin shim: locate the SOMA calendar mount point, then mount <MentoLecPanel/>
+// inside a Shadow DOM with content.css injected at the boundary.
+
+import { mountReact } from '../lib/react-mount';
+import { MentoLecPanel } from './MentoLecPanel';
+import contentCss from '../content.css?inline';
+
+if (location.href.includes('mentoLec')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+}
+
+function init(): void {
+  const calWrap = document.querySelector('.mypageCalendar.wrap');
+  if (!calWrap) return;
+
+  if (document.getElementById('asm-mentolec-react-host')) return;
+
+  const host = document.createElement('div');
+  host.id = 'asm-mentolec-react-host';
+
+  const tabs = document.querySelector('.tabs-st1');
+  if (tabs && tabs.parentNode) {
+    tabs.parentNode.insertBefore(host, tabs.nextSibling);
+  } else if (calWrap.parentNode) {
+    calWrap.parentNode.insertBefore(host, calWrap);
+  } else {
+    return;
+  }
+
+  mountReact(host, <MentoLecPanel />, {
+    styles: [contentCss],
+    hostClass: 'asm-mentolec-host',
+  });
+}

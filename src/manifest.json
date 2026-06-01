@@ -28,8 +28,7 @@
       "matches": [
         "https://www.swmaestro.ai/*"
       ],
-      "js": ["src/calendar-export.ts", "src/content/index.ts"],
-      "css": ["src/content.css"],
+      "js": ["src/calendar-export.ts", "src/content/index.tsx"],
       "run_at": "document_idle"
     },
     {
