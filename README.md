@@ -7,24 +7,30 @@
 이 레포는 [woals00/ASM_schedule_manager](https://github.com/woals00/ASM_schedule_manager) 의 `7e79490` (Polish history schedule interactions) 시점에서 분기했습니다. 이후 다음 변경이 추가됐습니다.
 
 ### 새 기능
-- **Google Calendar 연동** — 본인의 Google 캘린더에 등록되지 않은 멘토링/특강을 호박색으로 하이라이트해서 export 누락을 시각화.
-- **로컬 ICS 익스포트** — 기존 Cloudflare 알림과 독립적으로 강의를 ICS 파일로 내려받아 다른 캘린더에 import 가능.
-- **history 페이지 새로고침 버튼** — 캐시 무효화 후 즉시 재파싱.
-- **단계별 로딩 표시 + 오늘 우선 장소 fetch** — 자유 멘토링 캘린더 패널 헤더에 현재 단계(`강의 목록 동기화 중…`, `장소 정보 가져오는 중… (N/M)`)와 진행도를 표시. 강의 상세(`view.do`) fetch 순서를 오늘 → 미래 일자 순으로 정렬해, 사용자가 우선 보는 정보가 먼저 캐시에 채워지도록 함.
-- **Cloudflare 알림 게이트** — 알림 기능을 옵션화해 Cloudflare DB 없이도 캘린더만 사용 가능.
+- **Google Calendar 연동** — `chrome.identity` OAuth 로 본인 Google 캘린더를 조회해, 아직 등록하지 않은 멘토링/특강 카드를 호박색 테두리와 `미등록` 리본으로 하이라이트합니다. (`qustnrSn` 정확 매칭)<br>
+<img width="400" height="300" alt="image" src="https://github.com/user-attachments/assets/c9c4fe05-f917-4513-b0ff-2c148211a360" /><br>
+<img width="400" height="450" alt="image" src="https://github.com/user-attachments/assets/cea20768-8fab-479f-ae5c-d075584bbbb2" /><br>
+- **로컬 캘린더 익스포트** — Cloudflare 알림과 독립적으로, 각 일정을 Google Calendar 등록 링크 또는 RFC 5545 `.ics` 파일로 내려받아 다른 캘린더에 import 할 수 있습니다. (서버 없이 클라이언트에서만 동작)<br>
+<img width="300" height="88" alt="image" src="https://github.com/user-attachments/assets/b6eb0c72-62c7-4391-b663-0515c063b20d" /><br>
+- **접수 내역 새로고침 버튼** — 강의 상세·캘린더 캐시를 비우고 즉시 재파싱합니다. (방금 신청한 내역이 아직 반영되지 않았을 때 유용)<br>
+<img width="300" height="80" alt="image" src="https://github.com/user-attachments/assets/e598bb95-930b-4e79-8c92-fdc85833030d" /><br>
+- **단계별 로딩 표시 + 오늘 우선 fetch** — 자유 멘토링 패널 헤더에 현재 단계(`강의 목록 동기화 중…`, `장소 정보 가져오는 중… (N/M)`)와 진행도를 표시합니다. 강의 상세 fetch 순서를 오늘 → 미래 일자 순으로 정렬해, 먼저 보는 정보가 먼저 캐시에 채워지도록 했습니다.<br>
+<img width="600" height="200" alt="스크린샷 2026-06-01 233953" src="https://github.com/user-attachments/assets/43e54eec-74dc-4e82-a2bb-5c4241d9b865" /><br>
+<img width="600" height="300" alt="스크린샷 2026-06-01 234306" src="https://github.com/user-attachments/assets/40e34311-1558-4506-ad39-5a532f7cf33f" /><br>
+- **접수 내역 로딩 스켈레톤** — 콜드 캐시 첫 로딩 시 헤더+스피너 placeholder 를 즉시 렌더해 빈 화면 대기 시간을 없앴습니다.<br>
+<img width="3069" height="782" alt="스크린샷 2026-06-01 223331" src="https://github.com/user-attachments/assets/f92cab58-7257-4b77-bab4-d34df0029ae9" /><br>
+- **Cloudflare 알림 게이트** — 알림 기능을 플래그로 옵션화해, Cloudflare DB 없이 캘린더 기능만으로도 사용할 수 있습니다.<br>
 - **확장 아이콘 추가**.
-
 ### 버그 수정
-- 멘토가 삭제한 강의가 history 캘린더에 잔존하던 문제 수정.
-
+- 멘토가 삭제한 강의(`삭제` 표시)가 접수 내역 캘린더에 `로딩 중…` 카드로 잔존하던 문제를 수정했습니다.
+- Google Calendar 매칭 false positive 제거 — 시간만 겹쳐도 매칭되던 fallback 을 없애고 `qustnrSn` 정확 매칭만 사용합니다.
+- 확장 ID 를 manifest `key` 로 고정 — 개발 PC 가 바뀌어도 동일한 ID 가 유지돼 Google OAuth client 바인딩이 깨지지 않습니다.
 ### 내부 구조 변경
-- **Vite + TypeScript 빌드** 로 전환. 기존 단일 `.js` 파일을 모듈 분할.
-- `src/lib/` (공유), `src/content/` (목록 페이지), `src/history/` (접수 내역/상세 페이지) 로 디렉토리 분리.
-- 확장 ID 를 manifest `key` 필드로 고정 — PC 옮겨도 Google OAuth client 가 동일하게 동작.
-- UI 이모지를 **Lucide 아이콘 (SVG)** 으로 일괄 교체 — 폰트/플랫폼 차이로 인한 렌더링 불일치 제거.
-- 접수 내역 페이지 첫 로딩 시 헤더+스켈레톤을 즉시 표시하고 강의 상세 fetch 완료 후 캘린더로 교체 — 콜드 캐시 대기 시간 동안의 빈 화면 제거.
-- **자동 버전 관리** — `npm run build` 가 매 실행마다 `package.json` 의 patch 버전을 1 증가시키고, 그 값이 `dist/manifest.json` 의 `version` 으로 자동 주입됨 (`scripts/bump-version.mjs`).
-
+- **Vite + TypeScript 빌드로 전환** — 기존 단일 `.js` 파일들을 모듈로 분할하고 산출물을 `dist/` 로 빌드합니다. 전체 소스(background · calendar-export · alarm-client · content · schedule-manager)를 TypeScript 로 마이그레이션했습니다.
+- **모듈 구조 재편** — 공유 로직을 `src/lib/`, 목록 페이지를 `src/content/`, 접수 내역·상세 페이지를 `src/history/` 로 분리했습니다.
+- **React + Shadow DOM 도입** — 충돌 배너 · 개인 일정 모달 · 접수 내역 캘린더 · 자유 멘토링 보드 · 확장 팝업을 명령형 `innerHTML` 에서 React 컴포넌트로 재작성했습니다. UI 를 Shadow DOM 안에 마운트하고 CSS 를 `?inline` 으로 주입해 SOMA 페이지 스타일과 양방향으로 격리하며, 이후 각 컴포넌트를 파일 단위로 나누고 CSS 를 컴포넌트 옆에 co-locate 했습니다.
+- **UI 이모지 → Lucide 아이콘(SVG)** — 폰트·플랫폼별 이모지 렌더링 불일치를 제거했습니다.
+- **자동 버전 관리** — `npm run build` 가 성공할 때마다 `package.json` 의 patch 버전을 1 증가시키고, 그 값을 `dist/manifest.json` 의 `version` 으로 주입합니다 (`scripts/bump-version.mjs`).
 ---
 
 # 주요 기능
@@ -109,7 +115,7 @@
 1. 저장소를 로컬에 복제합니다.
 
 ```bash
-git clone https://github.com/woals00/ASM_schedule_manager.git
+git clone https://github.com/leeve1247/ASM_schedule_manager.git
 cd ASM_schedule_manager
 ```
 
