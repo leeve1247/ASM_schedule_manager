@@ -9,6 +9,9 @@ import { ExportSlot } from '../lib/ExportSlot';
 import { parseLectureDateTimeText } from '../lib/date-time';
 import { getSafeSomaUrl } from '../lib/safe-url';
 import type { Lecture } from './types';
+import css from './LectureCard.css?inline';
+
+export const lectureCardCss = css;
 
 export interface LectureCardProps {
   lec: Lecture;

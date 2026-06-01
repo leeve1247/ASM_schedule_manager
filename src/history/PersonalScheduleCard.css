@@ -1,0 +1,52 @@
+/* Personal-schedule-card-only variants: green background + dot, the
+   ended.event-personal override, personal-badge, and edit/delete. */
+
+#history-calendar .calendar-lecture.event-personal {
+  background: #edfce6;
+}
+#history-calendar .calendar-lecture.event-personal .text-title::before {
+  background: #90EA84;
+}
+
+#history-calendar .calendar-lecture.ended.event-personal {
+  background: #f8fafc;
+}
+
+#history-calendar .calendar-lecture.ended.event-personal:hover {
+  opacity: 0.72;
+}
+
+#history-calendar .personal-badge {
+  background: #d4f7c4 !important;
+  color: #2a8020 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+
+/* Edit / delete actions — only rendered on personal-schedule cards. */
+#history-calendar .button-group .edit-btn {
+  background: #edfce6;
+  color: #2a8020;
+  border-color: #a8e898;
+}
+
+#history-calendar .button-group .edit-btn:hover:not(:disabled) {
+  background: #d4f7c4 !important;
+  color: #1a7010 !important;
+  border-color: #6edc80 !important;
+}
+
+#history-calendar .button-group .delete-btn {
+  background: #fff5f5;
+  color: #e53e3e;
+  border-color: #feb2b2;
+}
+
+#history-calendar .button-group .delete-btn:hover:not(:disabled) {
+  background: #fff5f5 !important;
+  color: #c53030 !important;
+  border-color: #fc8181 !important;
+}
+

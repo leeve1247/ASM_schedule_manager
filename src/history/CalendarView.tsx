@@ -22,14 +22,19 @@ import { triggerCancellation } from './cancel';
 import {
   CalendarHeader,
   EMPTY_ALARM_SETTINGS,
+  calendarHeaderCss,
   type AlarmSettings,
 } from './CalendarHeader';
 import {
   CalendarCell,
+  calendarCellCss,
   type EventEntry,
   type GcalMatchResponse,
 } from './CalendarCell';
 import type { Lecture } from './types';
+import baseCss from './CalendarView.css?inline';
+
+export const calendarCss = [baseCss, calendarHeaderCss, calendarCellCss].join('\n');
 
 const CALENDAR_DAY_COUNT = 14;
 const CALENDAR_SHIFT_WEEKS = 2;

@@ -3,8 +3,7 @@
 // migration is non-invasive at the integration point.
 
 import { mountReact, type MountHandle } from '../lib/react-mount';
-import { Calendar } from './CalendarView';
-import calendarStylesCss from './calendar-styles.css?inline';
+import { Calendar, calendarCss } from './CalendarView';
 import { parseLecturesTable } from './lecture-table';
 import { clearLectureDetailCache } from './lecture-detail';
 import type { Lecture } from './types';
@@ -45,7 +44,7 @@ function render(): void {
     const host = ensureHostMounted();
     if (!host) return;
     handle = mountReact(host, node, {
-      styles: [calendarStylesCss],
+      styles: [calendarCss],
       hostClass: 'asm-history-calendar-host',
     });
   } else {

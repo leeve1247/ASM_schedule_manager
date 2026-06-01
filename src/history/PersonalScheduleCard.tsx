@@ -6,6 +6,9 @@ import { Icon } from '../lib/Icon';
 import { cx } from '../lib/cx';
 import { ExportSlot } from '../lib/ExportSlot';
 import type { PersonalSchedule } from '../lib/personal-schedule';
+import css from './PersonalScheduleCard.css?inline';
+
+export const personalScheduleCardCss = css;
 
 export interface PersonalScheduleCardProps {
   ps: PersonalSchedule;

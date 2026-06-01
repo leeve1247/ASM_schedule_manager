@@ -3,10 +3,13 @@
 // entries.
 
 import { cx } from '../lib/cx';
-import { LectureCard } from './LectureCard';
-import { PersonalScheduleCard } from './PersonalScheduleCard';
+import { LectureCard, lectureCardCss } from './LectureCard';
+import { PersonalScheduleCard, personalScheduleCardCss } from './PersonalScheduleCard';
 import type { Lecture } from './types';
 import type { PersonalSchedule } from '../lib/personal-schedule';
+import css from './CalendarCell.css?inline';
+
+export const calendarCellCss = [css, lectureCardCss, personalScheduleCardCss].join('\n');
 
 export interface GcalMatchResponse {
   connected: boolean;

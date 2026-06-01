@@ -4,6 +4,9 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from '../lib/Icon';
 import { cx } from '../lib/cx';
+import css from './CalendarHeader.css?inline';
+
+export const calendarHeaderCss = css;
 
 export interface AlarmSettings {
   userId: string;

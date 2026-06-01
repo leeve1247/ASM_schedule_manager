@@ -1,0 +1,63 @@
+/* Lecture-card-only variants: special / mentoring backgrounds, the
+   not-in-gcal warning, type-badge colors, and the disabled cancel-btn. */
+
+/* Dot Colors and pastel backgrounds depending on types */
+#history-calendar .calendar-lecture.special {
+  background: #e0faf4;
+}
+#history-calendar .calendar-lecture.special .text-title::before {
+  background: #00D3A9;
+}
+
+#history-calendar .calendar-lecture.mentoring {
+  background: #e6eef8;
+}
+#history-calendar .calendar-lecture.mentoring .text-title::before {
+  background: #086DB7;
+}
+
+/* Highlights lectures that are NOT yet in the user's Google Calendar. */
+#history-calendar .calendar-lecture.not-in-gcal {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b inset;
+  position: relative;
+}
+
+#history-calendar .calendar-lecture.not-in-gcal::after {
+  content: '미등록';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background-color: #f59e0b;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg%20class%3D%22lucide%20lucide-calendar-days%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20%3E%20%3Cpath%20d%3D%22M8%202v4%22%20%2F%3E%20%3Cpath%20d%3D%22M16%202v4%22%20%2F%3E%20%3Crect%20width%3D%2218%22%20height%3D%2218%22%20x%3D%223%22%20y%3D%224%22%20rx%3D%222%22%20%2F%3E%20%3Cpath%20d%3D%22M3%2010h18%22%20%2F%3E%20%3Cpath%20d%3D%22M8%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M12%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M16%2014h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M8%2018h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M12%2018h.01%22%20%2F%3E%20%3Cpath%20d%3D%22M16%2018h.01%22%20%2F%3E%20%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: 5px center;
+  background-size: 10px 10px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px 1px 19px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
+
+#history-calendar .special .text-type-badge {
+  background: #b8f5e8;
+  color: #007a5e;
+}
+
+#history-calendar .mentoring .text-type-badge {
+  background: #ccd8f0;
+  color: #086DB7;
+}
+
+
+#history-calendar .button-group .cancel-btn.unavailable {
+  opacity: 0.5;
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: rgba(226, 232, 240, 0.6);
+}
+
