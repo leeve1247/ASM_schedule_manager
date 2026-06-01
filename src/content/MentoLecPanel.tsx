@@ -1,5 +1,8 @@
-// SOMA mentoLec board enhancement — React port of buildPanel + card +
-// search-row + the init() orchestrator that previously lived in content/index.ts.
+// SOMA mentoLec board enhancement — orchestrator. State (month offset,
+// search, collapsed, refresh, loadingMessage, selectedDate, infoOpen,
+// loc-cache version) lives here; the header / search row / info popover /
+// event grid / day events are split into their own files.
+//
 // Mounted once inside a Shadow DOM; content.css is injected at the boundary
 // so the existing global selectors keep working without a BEM rewrite.
 
@@ -10,7 +13,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import {
   STABLE_CACHE_KEY,
@@ -33,11 +35,9 @@ import {
   sortEventsByStatusTimeAuthor,
   type EventRecord,
 } from './events';
-import { DAY_KO, getMonthRange, toDateStr } from '../lib/date-time';
+import { getMonthRange, toDateStr } from '../lib/date-time';
 import { removeCacheEntries } from '../lib/cache';
 import { removeChromeStorage } from '../lib/storage';
-import { classifyLocation } from '../lib/location';
-import { getSafeSomaUrl } from '../lib/safe-url';
 import {
   loadPersonalSchedules,
   type PersonalSchedule,
@@ -51,16 +51,12 @@ import {
   hasPersonalScheduleConflict,
 } from '../lib/conflict';
 import { Icon } from '../lib/Icon';
-import type { IconName } from '../lib/icons';
 import { cx } from '../lib/cx';
+import { SearchRow, type SearchState } from './SearchRow';
+import { InfoPopover } from './InfoPopover';
+import { DayEventPanel } from './DayEventPanel';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-type SearchType = 'title' | 'author';
-interface SearchState {
-  type: SearchType;
-  keyword: string;
-}
 
 function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
@@ -86,354 +82,6 @@ function enrichEvent(
   }
   return { ...ev, hasPersonalConflict, hasMentoringConflict, isEnrolled };
 }
-
-// ─── Sub-components ─────────────────────────────────────────────────────
-
-function Badge({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className: string;
-}) {
-  return <span className={cx('asm-badge', className)}>{children}</span>;
-}
-
-function IconBadge({
-  icon,
-  text,
-  className,
-}: {
-  icon: IconName;
-  text: string;
-  className: string;
-}) {
-  return (
-    <span className={cx('asm-badge', 'asm-badge-icon', className)}>
-      <Icon name={icon} size={12} />
-      <span>{text}</span>
-    </span>
-  );
-}
-
-interface ExportSlotProps {
-  title: string;
-  description: string;
-  location: string;
-  startsAt: string | null;
-  endsAt: string | null;
-  filenameBase: string;
-}
-
-function ExportSlot(props: ExportSlotProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const propsRef = useRef(props);
-  propsRef.current = props;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const exporter = globalThis.ASMCalendarExport;
-    if (!exporter) return;
-
-    exporter.appendExportButtons(
-      el,
-      () => {
-        const p = propsRef.current;
-        if (!p.startsAt || !p.endsAt) return null;
-        return {
-          title: p.title,
-          description: p.description,
-          location: p.location,
-          startsAt: p.startsAt,
-          endsAt: p.endsAt,
-        };
-      },
-      props.filenameBase,
-    );
-
-    return () => {
-      el.innerHTML = '';
-    };
-  }, [props.filenameBase]);
-
-  return <div className="asm-card-export-row" ref={ref} />;
-}
-
-interface EventCardProps {
-  ev: EventRecord;
-  todayStr: string;
-}
-
-function EventCard({ ev, todayStr }: EventCardProps) {
-  const isPast = ev.date < todayStr;
-  const isGray = isPast || ev.isClosed;
-  const safeUrl = getSafeSomaUrl(ev.url);
-  const exporter = globalThis.ASMCalendarExport;
-  const locInfo = ev.location ? classifyLocation(ev.location) : null;
-
-  const openLecture = useCallback(() => {
-    if (safeUrl) window.open(safeUrl, '_blank', 'noopener');
-  }, [safeUrl]);
-
-  const handleKeyDown = useCallback(
-    (e: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openLecture();
-      }
-    },
-    [openLecture],
-  );
-
-  const statusLabel = isPast ? '진행완료' : ev.isClosed ? '마감' : '접수중';
-  const statusCls = isPast ? 'asm-done' : ev.isClosed ? 'asm-closed' : 'asm-open-badge';
-
-  const exportDescription = useMemo(() => {
-    const safe = getSafeSomaUrl(ev.url);
-    return [
-      ev.categoryNm,
-      ev.author ? `${ev.author} 멘토` : '',
-      safe ? `상세: ${safe}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-  }, [ev.categoryNm, ev.author, ev.url]);
-
-  return (
-    <div
-      className={cx(
-        'asm-event-card',
-        isGray ? 'asm-card-gray' : `asm-card-open asm-cat-${ev.category}`,
-        {
-          'asm-card-conflict': ev.hasMentoringConflict,
-          'asm-card-personal-conflict': ev.hasPersonalConflict,
-          'asm-card-enrolled': ev.isEnrolled,
-        },
-      )}
-      role="link"
-      tabIndex={0}
-      onClick={openLecture}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="asm-card-badges">
-        <span className={cx('asm-badge', 'asm-cat-badge', `asm-cat-${ev.category}`)}>
-          {ev.categoryNm}
-        </span>
-
-        {locInfo ? (
-          <Badge className={locInfo.type === 'online' ? 'asm-online' : 'asm-offline'}>
-            {locInfo.label}
-          </Badge>
-        ) : ev.title.includes('[온라인]') || ev.title.includes('(온라인)') ? (
-          <Badge className="asm-online">온라인</Badge>
-        ) : ev.title.includes('[오프라인]') || ev.title.includes('(오프라인)') ? (
-          <Badge className="asm-offline">오프라인</Badge>
-        ) : null}
-
-        <Badge className={statusCls}>{statusLabel}</Badge>
-
-        {ev.isEnrolled && <IconBadge icon="check" text="수강중" className="asm-enrolled" />}
-
-        {ev.hasPersonalConflict && (
-          <Badge className="asm-personal-conflict">개인일정주의</Badge>
-        )}
-
-        {ev.hasMentoringConflict && (
-          <Badge className="asm-conflict">멘토링일정주의</Badge>
-        )}
-      </div>
-
-      <div className="asm-card-title">{ev.title}</div>
-
-      <div className="asm-card-footer">
-        {ev.author && <div className="asm-card-author">{ev.author} 멘토</div>}
-        {ev.timeStart && (
-          <div className="asm-card-time">
-            {ev.timeStart} ~ {ev.timeEnd}
-          </div>
-        )}
-        <div className="asm-card-footer-bottom">
-          {ev.current !== '' && ev.total !== '' ? (
-            <span className="asm-cap">
-              {ev.current}/{ev.total}명
-            </span>
-          ) : (
-            <span />
-          )}
-          <a
-            className="asm-card-link"
-            href={safeUrl || '#'}
-            target="_blank"
-            rel="noopener"
-            onClick={(e) => e.stopPropagation()}
-          >
-            바로가기 →
-          </a>
-        </div>
-        {ev.timeStart && ev.timeEnd && ev.date && exporter && (
-          <ExportSlot
-            title={ev.title}
-            description={exportDescription}
-            location={ev.location || ''}
-            startsAt={exporter.kstToIso(ev.date, ev.timeStart)}
-            endsAt={exporter.kstToIso(ev.date, ev.timeEnd)}
-            filenameBase={ev.title}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface SearchRowProps {
-  draft: SearchState;
-  focusVersion: number;
-  onChange(next: SearchState): void;
-  onSubmit(next: SearchState): void;
-  onReset(): void;
-}
-
-function SearchRow({ draft, focusVersion, onChange, onSubmit, onReset }: SearchRowProps) {
-  const [isComposing, setIsComposing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (focusVersion === 0) return;
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus();
-    const len = input.value.length;
-    input.setSelectionRange(len, len);
-  }, [focusVersion]);
-
-  const handleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    // 한글 IME 조합 중 Enter 는 무시
-    if (e.nativeEvent.isComposing || isComposing || e.keyCode === 229) return;
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSubmit(draft);
-    }
-  };
-
-  return (
-    <div className="asm-search-row">
-      <select
-        className="asm-search-select"
-        value={draft.type}
-        onChange={(e) => onChange({ ...draft, type: e.target.value as SearchType })}
-      >
-        <option value="title">제목</option>
-        <option value="author">작성자</option>
-      </select>
-      <div className="asm-search-box">
-        <input
-          ref={inputRef}
-          className="asm-search-input"
-          type="text"
-          placeholder="검색어를 입력해주세요."
-          value={draft.keyword}
-          onChange={(e) => onChange({ ...draft, keyword: e.target.value })}
-          onCompositionStart={() => setIsComposing(true)}
-          onCompositionEnd={(e) => {
-            setIsComposing(false);
-            onChange({ ...draft, keyword: (e.target as HTMLInputElement).value });
-          }}
-          onKeyDown={handleKeyDown}
-        />
-        <button
-          type="button"
-          className="asm-search-btn"
-          onClick={(e) => {
-            e.preventDefault();
-            onSubmit(draft);
-          }}
-        >
-          검색
-        </button>
-      </div>
-      <button
-        type="button"
-        className="asm-search-reset"
-        onClick={(e) => {
-          e.preventDefault();
-          onReset();
-        }}
-      >
-        초기화
-      </button>
-    </div>
-  );
-}
-
-interface InfoPopoverProps {
-  open: boolean;
-  onToggle(): void;
-  onClose(): void;
-}
-
-function InfoPopover({ open, onToggle, onClose }: InfoPopoverProps) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const handler = (e: globalThis.MouseEvent) => {
-      const path = e.composedPath();
-      if (!path.includes(wrap)) onClose();
-    };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, [open, onClose]);
-
-  return (
-    <div className="asm-panel-info-wrap" ref={wrapRef}>
-      <button
-        type="button"
-        className="asm-panel-info-btn"
-        title="자동 갱신 안내"
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-      >
-        !
-      </button>
-      <div
-        className={cx('asm-panel-info-popover', { 'asm-panel-info-popover--open': open })}
-        aria-hidden={!open}
-      >
-        <div className="asm-info-title">자동 갱신 주기</div>
-        <table className="asm-info-table">
-          <tbody>
-            <tr>
-              <td>수강자수</td>
-              <td>
-                <b>5분</b>
-              </td>
-            </tr>
-            <tr>
-              <td>제목 · 시간 · 상태 · 장소</td>
-              <td>
-                <b>4시간</b>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="asm-info-divider" />
-        <div className="asm-info-subtitle">새로고침이 필요한 경우</div>
-        <ul className="asm-info-list">
-          <li>방금 신청했는데 수강자수가 아직 반영이 안 됐을 때</li>
-          <li>장소·시간이 변경됐다는 공지를 봤을 때</li>
-          <li>갱신 주기 전에 즉시 최신 정보가 필요할 때</li>
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main component ────────────────────────────────────────────────────
 
 export function MentoLecPanel() {
   const [currentOffset, setCurrentOffset] = useState(0);
@@ -832,40 +480,6 @@ export function MentoLecPanel() {
           )}
         </div>
       </div>
-
     </div>
-  );
-}
-
-interface DayEventPanelProps {
-  dateStr: string;
-  dayEvents: EventRecord[];
-  todayStr: string;
-  loadingMessage: string | null;
-}
-
-function DayEventPanel({ dateStr, dayEvents, todayStr, loadingMessage }: DayEventPanelProps) {
-  const d = new Date(dateStr + 'T00:00:00');
-  return (
-    <>
-      <div className="asm-event-panel-header">
-        <span className="asm-event-panel-date">
-          {d.getMonth() + 1}.{String(d.getDate()).padStart(2, '0')}({DAY_KO[d.getDay()]})
-        </span>
-        <span className="asm-event-panel-cnt">{dayEvents.length}건</span>
-      </div>
-      {dayEvents.length === 0 && loadingMessage ? (
-        <div className="asm-cards-loading">
-          <span className="asm-loading-spinner" />
-          <span>{loadingMessage}</span>
-        </div>
-      ) : (
-        <div className="asm-day-cards">
-          {dayEvents.map((ev, i) => (
-            <EventCard key={ev.sn || `${ev.title}-${i}`} ev={ev} todayStr={todayStr} />
-          ))}
-        </div>
-      )}
-    </>
   );
 }
