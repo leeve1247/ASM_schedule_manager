@@ -18,6 +18,18 @@ export default defineConfig({
     react(),
     webExtension({
       manifest: generateManifest,
+      // CSS-modules-as-string (`import css from './x.module.css?inline'`) still
+      // makes the plugin emit a `style.css` and auto-attach it to every
+      // content_script. We inject those styles into Shadow DOM ourselves, so
+      // strip the auto-attachment to keep the SOMA page free of our CSS.
+      transformManifest(manifest) {
+        for (const cs of manifest.content_scripts ?? []) {
+          if (Array.isArray(cs.css)) {
+            cs.css = cs.css.filter((p) => p !== "style.css");
+          }
+        }
+        return manifest;
+      },
     }),
   ],
 });

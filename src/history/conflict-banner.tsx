@@ -2,7 +2,6 @@
 // and mentoring schedules, and injects warning banners / blocks apply buttons.
 
 import { parseLectureDateTimeText } from '../lib/date-time';
-import { escapeHtml } from '../lib/escape';
 import {
   FIXED_SHARED_SCHEDULES,
   loadPersonalSchedules,
@@ -17,7 +16,11 @@ import {
   findConflictingPersonalSchedule,
   type DateRange,
 } from '../lib/conflict';
-import { iconHtml } from '../lib/icons';
+import { mountReact, type MountHandle } from '../lib/react-mount';
+import { ConflictBanner, conflictBannerCss } from './ConflictBanner';
+
+let personalBannerHandle: MountHandle | null = null;
+let mentoringBannerHandle: MountHandle | null = null;
 
 export function findLectureDateTimeOnDetailPage(): string | null {
   const eventDateEl = document.querySelector('.eventDt');
@@ -123,9 +126,11 @@ export function findLectureDateTimeOnDetailPage(): string | null {
 }
 
 function removeConflictBanners(): void {
-  document.getElementById('soma-conflict-banner')?.remove();
+  personalBannerHandle?.unmount();
+  personalBannerHandle = null;
+  mentoringBannerHandle?.unmount();
+  mentoringBannerHandle = null;
   document.getElementById('soma-conflict-debug-banner')?.remove();
-  document.getElementById('soma-mentoring-conflict-banner')?.remove();
 }
 
 function findConflictBannerAnchor(): Element | null {
@@ -145,7 +150,7 @@ function getPersonalScheduleManageUrl(): string {
 }
 
 function isApplicationTrigger(el: Element | null): boolean {
-  if (!el || el.id === 'soma-conflict-banner' || el.closest('#soma-conflict-banner')) {
+  if (!el || el.closest('.asm-conflict-banner-host')) {
     return false;
   }
 
@@ -179,93 +184,61 @@ function findApplicationTargets(): Element[] {
 }
 
 function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void {
-  document.getElementById('soma-conflict-banner')?.remove();
+  personalBannerHandle?.unmount();
+  personalBannerHandle = null;
+
+  const anchor = findConflictBannerAnchor();
+  if (!anchor) return;
 
   const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
   const manageUrl = getPersonalScheduleManageUrl();
 
-  const banner = document.createElement('div');
-  banner.id = 'soma-conflict-banner';
-  banner.innerHTML = `
-    <div class="conflict-icon">${iconHtml('alertTriangle', { size: 24 })}</div>
-    <div class="conflict-content">
-      <div class="conflict-title">개인 일정과 중복되는 멘토링입니다</div>
-      <div class="conflict-desc">
-        현재 선택하신 멘토링 시간대에 겹치는 개인 일정이 등록되어 있습니다. 신청은 가능하지만 일정이 중복될 수 있으니 확인 후 신청해 주세요.
-      </div>
-
-      <div class="conflict-timeline">
-        <div class="timeline-rows">
-          <div class="timeline-row">
-            <span class="timeline-label label-mentoring">아래 멘토링 시간</span>
-            <span class="timeline-value">${escapeHtml(mentoringTime)}</span>
-          </div>
-          <div class="timeline-row">
-            <span class="timeline-label label-personal">개인 일정</span>
-            <span class="timeline-value">
-              <strong class="personal-title">"${escapeHtml(schedule.title)}"</strong>
-              <span class="personal-time">(${escapeHtml(schedule.startTime)} ~ ${escapeHtml(schedule.endTime)})</span>
-            </span>
-          </div>
-        </div>
-        <div class="timeline-action">
-          <a class="conflict-link-btn" href="${escapeHtml(manageUrl)}">개인 일정 수정하기</a>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const anchor = findConflictBannerAnchor();
-  if (!anchor) return;
-
-  if (anchor.firstChild) {
-    anchor.insertBefore(banner, anchor.firstChild);
-  } else {
-    anchor.appendChild(banner);
-  }
+  personalBannerHandle = mountReact(
+    anchor,
+    (
+      <ConflictBanner
+        variant="personal"
+        mentoringTime={mentoringTime}
+        conflictTitle={schedule.title}
+        conflictStart={schedule.startTime}
+        conflictEnd={schedule.endTime}
+        manageUrl={manageUrl}
+      />
+    ),
+    {
+      styles: [conflictBannerCss],
+      hostClass: 'asm-conflict-banner-host',
+      insertAt: 'start',
+    },
+  );
 }
 
 function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, detailText = ''): void {
-  document.getElementById('soma-mentoring-conflict-banner')?.remove();
-
-  const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
-
-  const banner = document.createElement('div');
-  banner.id = 'soma-mentoring-conflict-banner';
-  banner.className = 'soma-mentoring-conflict-banner';
-  banner.innerHTML = `
-    <div class="conflict-icon">${iconHtml('alertTriangle', { size: 24 })}</div>
-    <div class="conflict-content">
-      <div class="conflict-title">멘토링 일정과 중복되는 멘토링입니다</div>
-      <div class="conflict-desc">
-        이미 접수한 멘토링 일정과 시간대가 겹쳐 신청이 제한됩니다. 기존 접수를 취소하거나 다른 멘토링을 선택해 주세요.
-      </div>
-      <div class="conflict-timeline">
-        <div class="timeline-rows">
-          <div class="timeline-row">
-            <span class="timeline-label label-mentoring">아래 멘토링 시간</span>
-            <span class="timeline-value">${escapeHtml(mentoringTime)}</span>
-          </div>
-          <div class="timeline-row">
-            <span class="timeline-label label-personal">기존 멘토링 시간</span>
-            <span class="timeline-value">
-              <strong class="personal-title">"${escapeHtml(conflictingLecture.title)}"</strong>
-              <span class="personal-time">(${escapeHtml(conflictingLecture.startTime)} ~ ${escapeHtml(conflictingLecture.endTime)})</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  mentoringBannerHandle?.unmount();
+  mentoringBannerHandle = null;
 
   const anchor = findConflictBannerAnchor();
   if (!anchor) return;
 
-  if (anchor.firstChild) {
-    anchor.insertBefore(banner, anchor.firstChild);
-  } else {
-    anchor.appendChild(banner);
-  }
+  const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
+
+  mentoringBannerHandle = mountReact(
+    anchor,
+    (
+      <ConflictBanner
+        variant="mentoring"
+        mentoringTime={mentoringTime}
+        conflictTitle={conflictingLecture.title}
+        conflictStart={conflictingLecture.startTime}
+        conflictEnd={conflictingLecture.endTime}
+      />
+    ),
+    {
+      styles: [conflictBannerCss],
+      hostClass: 'asm-conflict-banner-host',
+      insertAt: 'start',
+    },
+  );
 }
 
 function blockApplicationButtons(alertMsg: string): void {
@@ -348,17 +321,17 @@ async function checkLectureConflict(): Promise<void> {
     currentQustnrSn || undefined
   );
 
-  const existingMentoringBanner = document.getElementById('soma-mentoring-conflict-banner');
   if (conflictingMentoring) {
     console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${conflictingMentoring.title}"`);
     blockApplicationButtons(
       `이미 접수한 멘토링 "${conflictingMentoring.title}"와 시간이 중복되어 신청할 수 없습니다.`
     );
-    if (!existingMentoringBanner) {
+    if (!mentoringBannerHandle) {
       injectMentoringConflictBanner(conflictingMentoring, detailText);
     }
-  } else if (existingMentoringBanner) {
-    existingMentoringBanner.remove();
+  } else if (mentoringBannerHandle) {
+    mentoringBannerHandle.unmount();
+    mentoringBannerHandle = null;
   }
 }
 
