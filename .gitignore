@@ -12,3 +12,6 @@ cloudflare/wrangler.toml
 asm-ext-key.pem
 asm-ext-pub.der
 asm-ext-pub.b64
+
+# Private project notes (do not commit)
+CLAUDE.local.md
