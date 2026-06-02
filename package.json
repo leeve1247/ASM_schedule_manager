@@ -1,6 +1,6 @@
 {
   "name": "asm-schedule-manager",
-  "version": "0.0.21",
+  "version": "0.0.23",
   "private": true,
   "description": "소프트웨어 마에스트로 멘토링 신청 캘린더 UI 개선 및 멘토 필터링 기능 추가",
   "type": "module",

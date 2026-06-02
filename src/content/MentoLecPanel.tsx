@@ -58,7 +58,7 @@ import { DayEventPanel } from './DayEventPanel';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ENROLLMENT_LOADING_MESSAGE = '수강중·겹침 표시 확인 중…';
-const LIST_STATUS_LOADING_MESSAGE = '정원·마감 표시 확인 중…';
+const LIST_STATUS_LOADING_MESSAGE = '정원·마감 불러오는 중…';
 
 function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
@@ -100,6 +100,7 @@ export function MentoLecPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const [listLoadingMessage, setListLoadingMessage] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [locVersion, setLocVersion] = useState(0);
@@ -122,17 +123,21 @@ export function MentoLecPanel() {
       ]);
       setPersonalSchedules(ps);
       setMentoringSchedules(ms);
+      setLoadingMessage(null);
 
       const initialMap = parseTableRows(document);
       setAllEvents(collectEvents(initialMap));
-      if (!(stableCache && countCache)) {
-        setLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
-      } else {
-        setLoadingMessage(null);
+      const needsListStatusFetch = !(stableCache && countCache);
+      if (needsListStatusFetch) {
+        setListLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
       }
 
-      const completeMap = await buildCompleteEventMap();
-      setAllEvents(collectEvents(completeMap));
+      try {
+        const completeMap = await buildCompleteEventMap();
+        setAllEvents(collectEvents(completeMap));
+      } finally {
+        if (needsListStatusFetch) setListLoadingMessage(null);
+      }
       // Location fetch is kicked off by the effect that depends on allEvents+offset
     })();
   }, []);
@@ -247,8 +252,10 @@ export function MentoLecPanel() {
       setPersonalSchedules(ps);
       setMentoringSchedules(ms);
 
-      setLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
+      setLoadingMessage(null);
+      setListLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
       const completeMap = await buildCompleteEventMap();
+      setListLoadingMessage(null);
       const fresh = collectEvents(completeMap);
       setAllEvents(fresh);
 
@@ -268,6 +275,7 @@ export function MentoLecPanel() {
       lastFetchedOffsetRef.current = currentOffset;
       setIsRefreshing(false);
       setLoadingMessage(null);
+      setListLoadingMessage(null);
       setLocVersion((v) => v + 1);
     }
   }, [isRefreshing, currentOffset, startDateStr, endDateStr]);
@@ -280,6 +288,7 @@ export function MentoLecPanel() {
   }, [selectedDate, byDate, todayStr]);
 
   const bodyStyle: CSSProperties = isCollapsed ? { display: 'none' } : {};
+  const headerLoadingMessage = listLoadingMessage || loadingMessage;
 
   // ── Render ──
   return (
@@ -330,11 +339,11 @@ export function MentoLecPanel() {
             onClose={() => setInfoOpen(false)}
           />
 
-          <span className="asm-panel-loading" id="asm-panel-loading">
-            {loadingMessage && (
+          <span className="asm-panel-loading" id="asm-panel-loading" aria-live="polite">
+            {headerLoadingMessage && (
               <>
                 <span className="asm-loading-spinner" />
-                <span>{loadingMessage}</span>
+                <span>{headerLoadingMessage}</span>
               </>
             )}
           </span>
@@ -469,12 +478,12 @@ export function MentoLecPanel() {
               dateStr={selectedDate}
               dayEvents={selectedDayEvents}
               todayStr={todayStr}
-              loadingMessage={loadingMessage}
+              loadingMessage={headerLoadingMessage}
             />
-          ) : loadingMessage ? (
+          ) : headerLoadingMessage ? (
             <div className="asm-event-panel-placeholder">
               <span className="asm-loading-spinner" />
-              <span>{loadingMessage}</span>
+              <span>{headerLoadingMessage}</span>
             </div>
           ) : (
             <div className="asm-event-panel-placeholder">
