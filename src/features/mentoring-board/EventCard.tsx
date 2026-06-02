@@ -10,6 +10,19 @@ import { Icon } from '@shared/ui/Icon';
 import type { IconName } from '@shared/ui/icons';
 import { ExportSlot } from '@shared/ui/ExportSlot';
 import type { EventRecord } from './events';
+import styles from './EventCard.module.css';
+import css from './EventCard.module.css?inline';
+
+export const eventCardCss = css;
+
+const categoryClasses: Record<string, string> = {
+  MRC010: styles.asmCatMrc010,
+  MRC020: styles.asmCatMrc020,
+};
+
+function categoryClass(category: string): string | undefined {
+  return categoryClasses[category];
+}
 
 function Badge({
   children,
@@ -18,7 +31,7 @@ function Badge({
   children: React.ReactNode;
   className: string;
 }) {
-  return <span className={cx('asm-badge', className)}>{children}</span>;
+  return <span className={cx(styles.asmBadge, className)}>{children}</span>;
 }
 
 function IconBadge({
@@ -31,7 +44,7 @@ function IconBadge({
   className: string;
 }) {
   return (
-    <span className={cx('asm-badge', 'asm-badge-icon', className)}>
+    <span className={cx(styles.asmBadge, styles.asmBadgeIcon, className)}>
       <Icon name={icon} size={12} />
       <span>{text}</span>
     </span>
@@ -65,7 +78,12 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
   );
 
   const statusLabel = isPast ? '진행완료' : ev.isClosed ? '마감' : '접수중';
-  const statusCls = isPast ? 'asm-done' : ev.isClosed ? 'asm-closed' : 'asm-open-badge';
+  const statusCls = isPast
+    ? styles.asmDone
+    : ev.isClosed
+      ? styles.asmClosed
+      : styles.asmOpenBadge;
+  const eventCategoryClass = categoryClass(ev.category);
 
   const exportDescription = useMemo(() => {
     const safe = getSafeSomaUrl(ev.url);
@@ -81,12 +99,12 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
   return (
     <div
       className={cx(
-        'asm-event-card',
-        isGray ? 'asm-card-gray' : `asm-card-open asm-cat-${ev.category}`,
+        styles.asmEventCard,
+        isGray ? styles.asmCardGray : cx(styles.asmCardOpen, eventCategoryClass),
         {
-          'asm-card-conflict': ev.hasMentoringConflict,
-          'asm-card-personal-conflict': ev.hasPersonalConflict,
-          'asm-card-enrolled': ev.isEnrolled,
+          [styles.asmCardConflict]: ev.hasMentoringConflict,
+          [styles.asmCardPersonalConflict]: ev.hasPersonalConflict,
+          [styles.asmCardEnrolled]: ev.isEnrolled,
         },
       )}
       role="link"
@@ -94,53 +112,53 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
       onClick={openLecture}
       onKeyDown={handleKeyDown}
     >
-      <div className="asm-card-badges">
-        <span className={cx('asm-badge', 'asm-cat-badge', `asm-cat-${ev.category}`)}>
+      <div className={styles.asmCardBadges}>
+        <span className={cx(styles.asmBadge, styles.asmCatBadge, eventCategoryClass)}>
           {ev.categoryNm}
         </span>
 
         {locInfo ? (
-          <Badge className={locInfo.type === 'online' ? 'asm-online' : 'asm-offline'}>
+          <Badge className={locInfo.type === 'online' ? styles.asmOnline : styles.asmOffline}>
             {locInfo.label}
           </Badge>
         ) : ev.title.includes('[온라인]') || ev.title.includes('(온라인)') ? (
-          <Badge className="asm-online">온라인</Badge>
+          <Badge className={styles.asmOnline}>온라인</Badge>
         ) : ev.title.includes('[오프라인]') || ev.title.includes('(오프라인)') ? (
-          <Badge className="asm-offline">오프라인</Badge>
+          <Badge className={styles.asmOffline}>오프라인</Badge>
         ) : null}
 
         <Badge className={statusCls}>{statusLabel}</Badge>
 
-        {ev.isEnrolled && <IconBadge icon="check" text="수강중" className="asm-enrolled" />}
+        {ev.isEnrolled && <IconBadge icon="check" text="수강중" className={styles.asmEnrolled} />}
 
         {ev.hasPersonalConflict && (
-          <Badge className="asm-personal-conflict">개인일정주의</Badge>
+          <Badge className={styles.asmPersonalConflict}>개인일정주의</Badge>
         )}
 
         {ev.hasMentoringConflict && (
-          <Badge className="asm-conflict">멘토링일정주의</Badge>
+          <Badge className={styles.asmConflict}>멘토링일정주의</Badge>
         )}
       </div>
 
-      <div className="asm-card-title">{ev.title}</div>
+      <div className={styles.asmCardTitle}>{ev.title}</div>
 
-      <div className="asm-card-footer">
-        {ev.author && <div className="asm-card-author">{ev.author} 멘토</div>}
+      <div className={styles.asmCardFooter}>
+        {ev.author && <div className={styles.asmCardAuthor}>{ev.author} 멘토</div>}
         {ev.timeStart && (
-          <div className="asm-card-time">
+          <div className={styles.asmCardTime}>
             {ev.timeStart} ~ {ev.timeEnd}
           </div>
         )}
-        <div className="asm-card-footer-bottom">
+        <div className={styles.asmCardFooterBottom}>
           {ev.current !== '' && ev.total !== '' ? (
-            <span className="asm-cap">
+            <span className={styles.asmCap}>
               {ev.current}/{ev.total}명
             </span>
           ) : (
             <span />
           )}
           <a
-            className="asm-card-link"
+            className={styles.asmCardLink}
             href={safeUrl || '#'}
             target="_blank"
             rel="noopener"
@@ -151,7 +169,7 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
         </div>
         {ev.timeStart && ev.timeEnd && ev.date && exporter && (
           <ExportSlot
-            className="asm-card-export-row"
+            className={styles.asmCardExportRow}
             title={ev.title}
             description={exportDescription}
             location={ev.location || ''}

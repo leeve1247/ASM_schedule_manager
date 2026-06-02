@@ -2,28 +2,28 @@
    not-in-google-calendar warning, type-badge colors, and the disabled cancel-btn. */
 
 /* Dot Colors and pastel backgrounds depending on types */
-#registration-history-calendar .calendar-lecture.special {
+:global(#registration-history-calendar) .special {
   background: #e0faf4;
 }
-#registration-history-calendar .calendar-lecture.special .text-title::before {
+:global(#registration-history-calendar) .special [data-role="title"]::before {
   background: #00D3A9;
 }
 
-#registration-history-calendar .calendar-lecture.mentoring {
+:global(#registration-history-calendar) .mentoring {
   background: #e6eef8;
 }
-#registration-history-calendar .calendar-lecture.mentoring .text-title::before {
+:global(#registration-history-calendar) .mentoring [data-role="title"]::before {
   background: #086DB7;
 }
 
 /* Highlights lectures that are NOT yet in the user's Google Calendar. */
-#registration-history-calendar .calendar-lecture.not-in-google-calendar {
+:global(#registration-history-calendar) .not-in-google-calendar {
   border-color: #f59e0b;
   box-shadow: 0 0 0 1px #f59e0b inset;
   position: relative;
 }
 
-#registration-history-calendar .calendar-lecture.not-in-google-calendar::after {
+:global(#registration-history-calendar) .not-in-google-calendar::after {
   content: '미등록';
   position: absolute;
   top: -8px;
@@ -41,14 +41,14 @@
   letter-spacing: 0.02em;
 }
 
-#registration-history-calendar .calendar-lecture.google-calendar-just-registered {
+:global(#registration-history-calendar) .google-calendar-just-registered {
   border-color: #16a34a;
   box-shadow: 0 0 0 1px #16a34a inset;
   position: relative;
   animation: asm-google-calendar-registered-card 3.2s ease-out forwards;
 }
 
-#registration-history-calendar .calendar-lecture.google-calendar-just-registered::after {
+:global(#registration-history-calendar) .google-calendar-just-registered::after {
   content: '등록완료!';
   position: absolute;
   top: -8px;
@@ -88,18 +88,18 @@
 }
 
 
-#registration-history-calendar .special .text-type-badge {
+:global(#registration-history-calendar) .special [data-role="type"] {
   background: #b8f5e8;
   color: #007a5e;
 }
 
-#registration-history-calendar .mentoring .text-type-badge {
+:global(#registration-history-calendar) .mentoring [data-role="type"] {
   background: #ccd8f0;
   color: #086DB7;
 }
 
 
-#registration-history-calendar .button-group .cancel-btn.unavailable {
+:global(#registration-history-calendar) .cancel-btn.unavailable {
   opacity: 0.5;
   background: #f8fafc;
   color: #94a3b8;

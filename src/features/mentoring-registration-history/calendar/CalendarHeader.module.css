@@ -1,5 +1,5 @@
 /* 1. Dashboard Header Styling */
-#registration-history-calendar .calendar-header {
+:global(#registration-history-calendar) .calendar-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -9,7 +9,7 @@
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-#registration-history-calendar .calendar-actions {
+:global(#registration-history-calendar) .calendar-actions {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -17,7 +17,7 @@
 }
 
 /* Alarm Toggle Switch */
-#registration-history-calendar .alarm-toggle-container {
+:global(#registration-history-calendar) .alarm-toggle-container {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -30,18 +30,18 @@
   user-select: none;
 }
 
-#registration-history-calendar .alarm-toggle-container:hover {
+:global(#registration-history-calendar) .alarm-toggle-container:hover {
   background: #e2e8f0;
   border-color: #94a3b8;
 }
 
-#registration-history-calendar .alarm-toggle-text {
+:global(#registration-history-calendar) .alarm-toggle-text {
   font-size: 13px;
   font-weight: 600;
   color: #475569;
 }
 
-#registration-history-calendar .asm-switch {
+:global(#registration-history-calendar) .asm-switch {
   position: relative;
   display: inline-block;
   width: 44px;
@@ -49,13 +49,13 @@
   pointer-events: none;
 }
 
-#registration-history-calendar .asm-switch input {
+:global(#registration-history-calendar) .asm-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-#registration-history-calendar .asm-slider {
+:global(#registration-history-calendar) .asm-slider {
   position: absolute;
   top: 0;
   left: 0;
@@ -66,7 +66,7 @@
   border-radius: 22px;
 }
 
-#registration-history-calendar .asm-slider:before {
+:global(#registration-history-calendar) .asm-slider:before {
   position: absolute;
   content: "";
   height: 16px;
@@ -79,20 +79,20 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
-#registration-history-calendar .asm-switch input:checked + .asm-slider {
+:global(#registration-history-calendar) .asm-switch input:checked + .asm-slider {
   background-color: #086DB7;
 }
 
-#registration-history-calendar .asm-switch input:checked + .asm-slider:before {
+:global(#registration-history-calendar) .asm-switch input:checked + .asm-slider:before {
   transform: translateX(22px);
 }
 
 /* Alarm Info Button & Popover */
-#registration-history-calendar .alarm-info-wrap {
+:global(#registration-history-calendar) .alarm-info-wrap {
   position: relative;
 }
 
-#registration-history-calendar .alarm-info-btn {
+:global(#registration-history-calendar) .alarm-info-btn {
   background: #086DB7;
   border: 1px solid #086DB7;
   border-radius: 50%;
@@ -108,12 +108,12 @@
   justify-content: center;
 }
 
-#registration-history-calendar .alarm-info-btn:hover {
+:global(#registration-history-calendar) .alarm-info-btn:hover {
   background: #065a96;
   border-color: #065a96;
 }
 
-#registration-history-calendar .alarm-info-popover {
+:global(#registration-history-calendar) .alarm-info-popover {
   display: none;
   position: absolute;
   top: calc(100% + 8px);
@@ -130,12 +130,12 @@
   line-height: 1.6;
 }
 
-#registration-history-calendar .alarm-info-popover--open,
-#registration-history-calendar .alarm-info-wrap:hover .alarm-info-popover {
+:global(#registration-history-calendar) .alarm-info-popover--open,
+:global(#registration-history-calendar) .alarm-info-wrap:hover .alarm-info-popover {
   display: block;
 }
 
-#registration-history-calendar .alarm-info-notice {
+:global(#registration-history-calendar) .alarm-info-notice {
   background: #fffbeb;
   border: 1px solid #f59e0b;
   border-radius: 6px;
@@ -143,65 +143,65 @@
   margin-bottom: 2px;
 }
 
-#registration-history-calendar .alarm-info-notice-title {
+:global(#registration-history-calendar) .alarm-info-notice-title {
   font-weight: 700;
   font-size: 13px;
   color: #92400e;
   margin-bottom: 4px;
 }
 
-#registration-history-calendar .alarm-info-notice-body {
+:global(#registration-history-calendar) .alarm-info-notice-body {
   font-size: 13px;
   color: #78350f;
   line-height: 1.5;
 }
 
-#registration-history-calendar .alarm-info-title {
+:global(#registration-history-calendar) .alarm-info-title {
   font-weight: 700;
   font-size: 13px;
   margin-bottom: 4px;
   color: #1e293b;
 }
 
-#registration-history-calendar .alarm-info-body {
+:global(#registration-history-calendar) .alarm-info-body {
   font-size: 13px;
   color: #374151;
   margin-bottom: 2px;
 }
 
-#registration-history-calendar .alarm-info-divider {
+:global(#registration-history-calendar) .alarm-info-divider {
   border-top: 1px solid #e2e8f0;
   margin: 10px 0;
 }
 
-#registration-history-calendar .alarm-info-subtitle {
+:global(#registration-history-calendar) .alarm-info-subtitle {
   font-weight: 700;
   font-size: 13px;
   margin-bottom: 6px;
   color: #1e293b;
 }
 
-#registration-history-calendar .alarm-info-table {
+:global(#registration-history-calendar) .alarm-info-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-#registration-history-calendar .alarm-info-table td {
+:global(#registration-history-calendar) .alarm-info-table td {
   padding: 3px 0;
   vertical-align: middle;
   font-size: 13px;
 }
 
-#registration-history-calendar .alarm-info-table td:first-child {
+:global(#registration-history-calendar) .alarm-info-table td:first-child {
   color: #6b7280;
 }
 
-#registration-history-calendar .alarm-info-table td:last-child {
+:global(#registration-history-calendar) .alarm-info-table td:last-child {
   text-align: right;
   color: #1e293b;
 }
 
-#registration-history-calendar .calendar-title-group h3 {
+:global(#registration-history-calendar) .calendar-title-group h3 {
   font-size: 20px;
   font-weight: 700;
   color: #0f172a;
@@ -211,13 +211,13 @@
   gap: 8px;
 }
 
-#registration-history-calendar .calendar-subtitle {
+:global(#registration-history-calendar) .calendar-subtitle {
   font-size: 13px;
   color: #64748b;
 }
 
 /* Navigation Group: 2주 전 | 오늘 | 2주 후 */
-#registration-history-calendar .calendar-nav-group {
+:global(#registration-history-calendar) .calendar-nav-group {
   display: flex;
   align-items: center;
   border: 1px solid #d1d5db;
@@ -225,7 +225,7 @@
   overflow: hidden;
 }
 
-#registration-history-calendar .control-btn.nav-btn {
+:global(#registration-history-calendar) .control-btn.nav-btn {
   border: none;
   border-radius: 0;
   border-right: 1px solid #d1d5db;
@@ -238,26 +238,26 @@
   transition: background 0.15s;
 }
 
-#registration-history-calendar .control-btn.nav-btn:last-child {
+:global(#registration-history-calendar) .control-btn.nav-btn:last-child {
   border-right: none;
 }
 
-#registration-history-calendar .control-btn.nav-btn:hover {
+:global(#registration-history-calendar) .control-btn.nav-btn:hover {
   background: #f1f5f9;
   transform: none;
 }
 
-#registration-history-calendar .control-btn.nav-btn.nav-today {
+:global(#registration-history-calendar) .control-btn.nav-btn.nav-today {
   background: #e3f5fc;
   color: #086DB7;
   font-weight: 700;
 }
 
-#registration-history-calendar .control-btn.nav-btn.nav-today:hover {
+:global(#registration-history-calendar) .control-btn.nav-btn.nav-today:hover {
   background: #b8e5f7;
 }
 
-#registration-history-calendar .control-btn {
+:global(#registration-history-calendar) .control-btn {
   font-size: 13px;
   font-weight: 600;
   padding: 8px 16px;
@@ -273,31 +273,37 @@
   gap: 6px;
 }
 
-#registration-history-calendar .control-btn:hover {
+:global(#registration-history-calendar) .control-btn:hover {
   background: #f8fafc;
   border-color: #94a3b8;
   color: #0f172a;
   transform: translateY(-1px);
 }
 
-#registration-history-calendar .control-btn.secondary {
+:global(#registration-history-calendar) .control-btn:disabled,
+:global(#registration-history-calendar) .alarm-info-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:global(#registration-history-calendar) .control-btn.secondary {
   background: #f1f5f9;
   border: none;
   color: #475569;
 }
 
-#registration-history-calendar .control-btn.secondary:hover {
+:global(#registration-history-calendar) .control-btn.secondary:hover {
   background: #e2e8f0;
   color: #0f172a;
 }
 
-#registration-history-calendar .control-btn.accent {
+:global(#registration-history-calendar) .control-btn.accent {
   background: #086DB7;
   border: none;
   color: #ffffff;
 }
 
-#registration-history-calendar .control-btn.accent:hover {
+:global(#registration-history-calendar) .control-btn.accent:hover {
   background: #075e9e;
   color: #ffffff;
 }

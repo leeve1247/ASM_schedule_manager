@@ -4,6 +4,10 @@
 
 import { useEffect, useRef } from 'react';
 import { cx } from '@shared/ui/cx';
+import styles from './InfoPopover.module.css';
+import css from './InfoPopover.module.css?inline';
+
+export const infoPopoverCss = css;
 
 export interface InfoPopoverProps {
   open: boolean;
@@ -27,10 +31,10 @@ export function InfoPopover({ open, onToggle, onClose }: InfoPopoverProps) {
   }, [open, onClose]);
 
   return (
-    <div className="asm-panel-info-wrap" ref={wrapRef}>
+    <div className={styles.asmPanelInfoWrap} ref={wrapRef}>
       <button
         type="button"
-        className="asm-panel-info-btn"
+        className={styles.asmPanelInfoBtn}
         title="자동 갱신 안내"
         onClick={(e) => {
           e.stopPropagation();
@@ -40,11 +44,13 @@ export function InfoPopover({ open, onToggle, onClose }: InfoPopoverProps) {
         !
       </button>
       <div
-        className={cx('asm-panel-info-popover', { 'asm-panel-info-popover--open': open })}
+        className={cx(styles.asmPanelInfoPopover, {
+          [styles.asmPanelInfoPopoverOpen]: open,
+        })}
         aria-hidden={!open}
       >
-        <div className="asm-info-title">자동 갱신 주기</div>
-        <table className="asm-info-table">
+        <div className={styles.asmInfoTitle}>자동 갱신 주기</div>
+        <table className={styles.asmInfoTable}>
           <tbody>
             <tr>
               <td>수강자수</td>
@@ -60,9 +66,9 @@ export function InfoPopover({ open, onToggle, onClose }: InfoPopoverProps) {
             </tr>
           </tbody>
         </table>
-        <div className="asm-info-divider" />
-        <div className="asm-info-subtitle">새로고침이 필요한 경우</div>
-        <ul className="asm-info-list">
+        <div className={styles.asmInfoDivider} />
+        <div className={styles.asmInfoSubtitle}>새로고침이 필요한 경우</div>
+        <ul className={styles.asmInfoList}>
           <li>방금 신청했는데 수강자수가 아직 반영이 안 됐을 때</li>
           <li>장소·시간이 변경됐다는 공지를 봤을 때</li>
           <li>갱신 주기 전에 즉시 최신 정보가 필요할 때</li>

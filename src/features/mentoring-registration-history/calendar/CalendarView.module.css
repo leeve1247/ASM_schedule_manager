@@ -1,4 +1,4 @@
-#registration-history-calendar {
+:global(#registration-history-calendar) {
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   margin: 30px auto;
   padding: 24px;
@@ -15,14 +15,7 @@
 }
 
 /* Loading skeleton — shown while parseLecturesTable() is fetching detail pages. */
-#registration-history-calendar.registration-history-calendar-loading .control-btn:disabled,
-#registration-history-calendar .control-btn:disabled,
-#registration-history-calendar .alarm-info-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-#registration-history-calendar .calendar-loading-placeholder {
+:global(#registration-history-calendar) .calendar-loading-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -37,7 +30,7 @@
   text-align: center;
 }
 
-#registration-history-calendar .calendar-loading-spinner {
+:global(#registration-history-calendar) .calendar-loading-spinner {
   width: 28px;
   height: 28px;
   border: 3px solid #cbd5e1;
@@ -46,13 +39,13 @@
   animation: asm-registration-history-spin 0.9s linear infinite;
 }
 
-#registration-history-calendar .calendar-loading-text {
+:global(#registration-history-calendar) .calendar-loading-text {
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
 }
 
-#registration-history-calendar .calendar-loading-subtext {
+:global(#registration-history-calendar) .calendar-loading-subtext {
   font-size: 12px;
   color: #64748b;
   max-width: 360px;

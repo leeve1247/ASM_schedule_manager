@@ -3,8 +3,8 @@
 // loc-cache version) lives here; the header / search row / info popover /
 // event grid / day events are split into their own files.
 //
-// Mounted once inside a Shadow DOM; content.css is injected at the boundary
-// so the existing global selectors keep working without a BEM rewrite.
+// Mounted once inside a Shadow DOM; CSS module text is bundled here for
+// boundary injection while components keep their own module class exports.
 
 import {
   useCallback,
@@ -52,13 +52,27 @@ import {
 } from '@features/schedules/conflict';
 import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
-import { SearchRow, type SearchState } from './SearchRow';
-import { InfoPopover } from './InfoPopover';
-import { DayEventPanel } from './DayEventPanel';
+import { SearchRow, searchRowCss, type SearchState } from './SearchRow';
+import { InfoPopover, infoPopoverCss } from './InfoPopover';
+import { DayEventPanel, dayEventPanelCss } from './DayEventPanel';
+import { eventCardCss } from './EventCard';
+import styles from './MentoLecPanel.module.css';
+import css from './MentoLecPanel.module.css?inline';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ENROLLMENT_LOADING_MESSAGE = '수강중·겹침 표시 확인 중…';
 const LIST_STATUS_LOADING_MESSAGE = '정원·마감 불러오는 중…';
+export const mentoLecPanelCss = [
+  css,
+  infoPopoverCss,
+  searchRowCss,
+  dayEventPanelCss,
+  eventCardCss,
+].join('\n');
+const dotCategoryClasses: Record<string, string> = {
+  MRC010: styles.asmDotMrc010,
+  MRC020: styles.asmDotMrc020,
+};
 
 function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
@@ -295,20 +309,20 @@ export function MentoLecPanel() {
   // ── Render ──
   return (
     <div id="asm-2week-panel">
-      <div className="asm-panel-header">
-        <div className="asm-panel-title-wrap">
-          <span className="asm-panel-ico">
+      <div className={styles.asmPanelHeader}>
+        <div className={styles.asmPanelTitleWrap}>
+          <span className={styles.asmPanelIco}>
             <Icon name="calendar" size={16} />
           </span>
-          <span className="asm-panel-title">
+          <span className={styles.asmPanelTitle}>
             {monthRange.year}년 {monthRange.month + 1}월
           </span>
         </div>
 
-        <div className="asm-panel-nav">
+        <div className={styles.asmPanelNav}>
           <button
             type="button"
-            className="asm-panel-nav-btn"
+            className={styles.asmPanelNavBtn}
             title="이전 달"
             onClick={() => handleNavigate(currentOffset - 1)}
           >
@@ -316,8 +330,8 @@ export function MentoLecPanel() {
           </button>
           <button
             type="button"
-            className={cx('asm-panel-nav-btn', 'asm-nav-today', {
-              'asm-nav-today-current': currentOffset === 0,
+            className={cx(styles.asmPanelNavBtn, styles.asmNavToday, {
+              [styles.asmNavTodayCurrent]: currentOffset === 0,
             })}
             title="오늘이 포함된 달로 이동"
             onClick={() => handleNavigate(0)}
@@ -326,7 +340,7 @@ export function MentoLecPanel() {
           </button>
           <button
             type="button"
-            className="asm-panel-nav-btn"
+            className={styles.asmPanelNavBtn}
             title="다음 달"
             onClick={() => handleNavigate(currentOffset + 1)}
           >
@@ -334,17 +348,17 @@ export function MentoLecPanel() {
           </button>
         </div>
 
-        <div className="asm-panel-actions">
+        <div className={styles.asmPanelActions}>
           <InfoPopover
             open={infoOpen}
             onToggle={() => setInfoOpen((v) => !v)}
             onClose={() => setInfoOpen(false)}
           />
 
-          <span className="asm-panel-loading" id="asm-panel-loading" aria-live="polite">
+          <span className={styles.asmPanelLoading} id="asm-panel-loading" aria-live="polite">
             {headerLoadingMessage && (
               <>
-                <span className="asm-loading-spinner" />
+                <span className={styles.asmLoadingSpinner} />
                 <span>{headerLoadingMessage}</span>
               </>
             )}
@@ -352,7 +366,7 @@ export function MentoLecPanel() {
 
           <button
             type="button"
-            className="asm-panel-refresh"
+            className={styles.asmPanelRefresh}
             title="새로고침"
             disabled={isRefreshing}
             onClick={(e) => {
@@ -361,8 +375,8 @@ export function MentoLecPanel() {
             }}
           >
             <span
-              className={cx('asm-refresh-icon', {
-                'asm-refresh-icon--spinning': isRefreshing,
+              className={cx(styles.asmRefreshIcon, {
+                [styles.asmRefreshIconSpinning]: isRefreshing,
               })}
             >
               ↻
@@ -371,7 +385,7 @@ export function MentoLecPanel() {
 
           <button
             type="button"
-            className="asm-panel-toggle"
+            className={styles.asmPanelToggle}
             onClick={(e) => {
               e.preventDefault();
               handleToggleCollapsed();
@@ -382,8 +396,8 @@ export function MentoLecPanel() {
         </div>
       </div>
 
-      <div className="asm-panel-body" style={bodyStyle}>
-        <div className="asm-cal-area">
+      <div className={styles.asmPanelBody} style={bodyStyle}>
+        <div className={styles.asmCalArea}>
           <SearchRow
             draft={searchDraft}
             focusVersion={searchFocusVersion}
@@ -392,13 +406,13 @@ export function MentoLecPanel() {
             onReset={handleSearchReset}
           />
 
-          <div className="asm-cal-section">
-            <div className="asm-cal-weekdays">
+          <div className={styles.asmCalSection}>
+            <div className={styles.asmCalWeekdays}>
               {WEEKDAYS.map((wd, i) => (
                 <div
                   key={wd}
-                  className={cx('asm-cal-wd', {
-                    'asm-wd-weekend': i === 0 || i === 6,
+                  className={cx(styles.asmCalWd, {
+                    [styles.asmWdWeekend]: i === 0 || i === 6,
                   })}
                 >
                   {wd}
@@ -406,9 +420,9 @@ export function MentoLecPanel() {
               ))}
             </div>
 
-            <div className="asm-cal-grid">
+            <div className={styles.asmCalGrid}>
               {Array.from({ length: monthRange.start.getDay() }, (_, i) => (
-                <div key={`empty-${i}`} className="asm-cal-day asm-cal-empty" />
+                <div key={`empty-${i}`} className={cx(styles.asmCalDay, styles.asmCalEmpty)} />
               ))}
               {[...byDate.entries()].map(([dateStr, dayEvents]) => {
                 const d = new Date(dateStr + 'T00:00:00');
@@ -426,31 +440,33 @@ export function MentoLecPanel() {
                   <div
                     key={dateStr}
                     data-date={dateStr}
-                    className={cx('asm-cal-day', {
-                      'asm-cal-today': isToday,
-                      'asm-cal-past': isPast,
-                      'asm-cal-weekend': isWeekend,
-                      'asm-cal-has-events': hasEvents,
-                      'asm-cal-selected': isSelected,
+                    className={cx(styles.asmCalDay, {
+                      [styles.asmCalToday]: isToday,
+                      [styles.asmCalPast]: isPast,
+                      [styles.asmCalWeekend]: isWeekend,
+                      [styles.asmCalHasEvents]: hasEvents,
+                      [styles.asmCalSelected]: isSelected,
                     })}
                     onClick={() => {
                       if (!hasEvents) return;
                       setSelectedDate((cur) => (cur === dateStr ? null : dateStr));
                     }}
                   >
-                    <div className="asm-cal-daynum">{d.getDate()}</div>
+                    <div className={styles.asmCalDaynum}>{d.getDate()}</div>
                     {hasEvents && (
                       <>
-                        <div className="asm-cal-cnt">{sortedDay.length}건</div>
-                        <div className="asm-cal-dots">
+                        <div className={styles.asmCalCnt}>{sortedDay.length}건</div>
+                        <div className={styles.asmCalDots}>
                           {sortedDay.slice(0, maxDots).map((ev, i) => {
                             const isGray = ev.date < todayStr || ev.isClosed;
                             return (
                               <span
                                 key={`${ev.somaLectureId || i}-dot`}
                                 className={cx(
-                                  'asm-dot',
-                                  isGray ? 'asm-dot-gray' : `asm-dot-${ev.category}`,
+                                  styles.asmDot,
+                                  isGray
+                                    ? styles.asmDotGray
+                                    : dotCategoryClasses[ev.category],
                                 )}
                               />
                             );
@@ -464,17 +480,17 @@ export function MentoLecPanel() {
             </div>
           </div>
 
-          <div className="asm-calendar-notice">
-            <div className="asm-calendar-notice-title">
+          <div className={styles.asmCalendarNotice}>
+            <div className={styles.asmCalendarNoticeTitle}>
               내가 신청한 멘토링 내역이 반영되지 않았다면?
             </div>
-            <div className="asm-calendar-notice-body">
+            <div className={styles.asmCalendarNoticeBody}>
               접수 내역 페이지에 한 번 들렀다 오면 자동으로 반영됩니다.
             </div>
           </div>
         </div>
 
-        <div className="asm-event-panel">
+        <div className={styles.asmEventPanel}>
           {selectedDate && selectedDayEvents ? (
             <DayEventPanel
               dateStr={selectedDate}
@@ -483,12 +499,12 @@ export function MentoLecPanel() {
               loadingMessage={headerLoadingMessage}
             />
           ) : headerLoadingMessage ? (
-            <div className="asm-event-panel-placeholder">
-              <span className="asm-loading-spinner" />
+            <div className={styles.asmEventPanelPlaceholder}>
+              <span className={styles.asmLoadingSpinner} />
               <span>{headerLoadingMessage}</span>
             </div>
           ) : (
-            <div className="asm-event-panel-placeholder">
+            <div className={styles.asmEventPanelPlaceholder}>
               <span>
                 날짜를 선택하면
                 <br />

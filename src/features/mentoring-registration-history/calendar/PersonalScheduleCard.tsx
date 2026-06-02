@@ -6,7 +6,9 @@ import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
 import { ExportSlot } from '@shared/ui/ExportSlot';
 import type { PersonalSchedule } from '@features/schedules/personal-schedule';
-import css from './PersonalScheduleCard.css?inline';
+import cellStyles from './CalendarCell.module.css';
+import styles from './PersonalScheduleCard.module.css';
+import css from './PersonalScheduleCard.module.css?inline';
 
 export const personalScheduleCardCss = css;
 
@@ -33,28 +35,35 @@ export function PersonalScheduleCard({
 
   return (
     <div
-      className={cx('calendar-lecture', 'event-personal', { ended })}
+      className={cx(
+        cellStyles.calendarLecture,
+        styles.eventPersonal,
+        {
+          [cellStyles.ended]: ended,
+          [styles.ended]: ended,
+        },
+      )}
       title={ps.title}
     >
-      <div className="info-group">
-        <div className="text-title" data-role="title">
+      <div className={cellStyles.infoGroup}>
+        <div className={cellStyles.textTitle} data-role="title">
           {ps.title}
         </div>
-        <div className="text-type-badge personal-badge">
+        <div className={cx(cellStyles.textTypeBadge, styles.personalBadge)}>
           <Icon name={ps.isFixedShared ? 'pin' : 'user'} size={12} />
           <span>{ps.isFixedShared ? '공통 일정' : '개인 일정'}</span>
         </div>
-        <div className="info-row" data-role="time">
+        <div className={cellStyles.infoRow} data-role="time">
           <strong>시간</strong> {ps.startTime} ~ {ps.endTime}
         </div>
         {ps.locationType && (
-          <div className="info-row" data-role="location">
+          <div className={cellStyles.infoRow} data-role="location">
             <strong>장소</strong> {locationLabel}
             {ps.location ? ` · ${ps.location}` : ''}
           </div>
         )}
         {ps.description && (
-          <div className="info-row desc-row" data-role="desc">
+          <div className={cx(cellStyles.infoRow, cellStyles.descRow)} data-role="desc">
             <strong>메모</strong> {ps.description}
           </div>
         )}
@@ -62,7 +71,7 @@ export function PersonalScheduleCard({
 
       {exporter && (
         <ExportSlot
-          className="export-group"
+          className={cellStyles.exportGroup}
           uid={ps.id ? `personal-${ps.id}@asm-schedule-manager` : undefined}
           title={ps.title}
           description={ps.description || ''}
@@ -74,9 +83,9 @@ export function PersonalScheduleCard({
       )}
 
       {!ps.isFixedShared && (
-        <div className="button-group">
+        <div className={cellStyles.buttonGroup}>
           <button
-            className="edit-btn"
+            className={styles.editBtn}
             title="개인 일정 수정"
             onClick={(e) => {
               e.preventDefault();
@@ -86,7 +95,7 @@ export function PersonalScheduleCard({
             수정
           </button>
           <button
-            className="delete-btn"
+            className={styles.deleteBtn}
             title="개인 일정 삭제"
             onClick={(e) => {
               e.preventDefault();

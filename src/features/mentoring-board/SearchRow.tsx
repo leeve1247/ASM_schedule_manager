@@ -8,6 +8,10 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import styles from './SearchRow.module.css';
+import css from './SearchRow.module.css?inline';
+
+export const searchRowCss = css;
 
 export type SearchType = 'title' | 'author';
 
@@ -53,19 +57,19 @@ export function SearchRow({
   };
 
   return (
-    <div className="asm-search-row">
+    <div className={styles.asmSearchRow}>
       <select
-        className="asm-search-select"
+        className={styles.asmSearchSelect}
         value={draft.type}
         onChange={(e) => onChange({ ...draft, type: e.target.value as SearchType })}
       >
         <option value="title">제목</option>
         <option value="author">작성자</option>
       </select>
-      <div className="asm-search-box">
+      <div className={styles.asmSearchBox}>
         <input
           ref={inputRef}
-          className="asm-search-input"
+          className={styles.asmSearchInput}
           type="text"
           placeholder="검색어를 입력해주세요."
           value={draft.keyword}
@@ -79,7 +83,7 @@ export function SearchRow({
         />
         <button
           type="button"
-          className="asm-search-btn"
+          className={styles.asmSearchBtn}
           onClick={(e) => {
             e.preventDefault();
             onSubmit(draft);
@@ -90,7 +94,7 @@ export function SearchRow({
       </div>
       <button
         type="button"
-        className="asm-search-reset"
+        className={styles.asmSearchReset}
         onClick={(e) => {
           e.preventDefault();
           onReset();

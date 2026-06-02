@@ -3,6 +3,10 @@
 import { DAY_KO } from '@shared/date/date-time';
 import { EventCard } from './EventCard';
 import type { EventRecord } from './events';
+import styles from './DayEventPanel.module.css';
+import css from './DayEventPanel.module.css?inline';
+
+export const dayEventPanelCss = css;
 
 export interface DayEventPanelProps {
   dateStr: string;
@@ -20,19 +24,19 @@ export function DayEventPanel({
   const d = new Date(dateStr + 'T00:00:00');
   return (
     <>
-      <div className="asm-event-panel-header">
-        <span className="asm-event-panel-date">
+      <div className={styles.asmEventPanelHeader}>
+        <span className={styles.asmEventPanelDate}>
           {d.getMonth() + 1}.{String(d.getDate()).padStart(2, '0')}({DAY_KO[d.getDay()]})
         </span>
-        <span className="asm-event-panel-cnt">{dayEvents.length}건</span>
+        <span className={styles.asmEventPanelCnt}>{dayEvents.length}건</span>
       </div>
       {dayEvents.length === 0 && loadingMessage ? (
-        <div className="asm-cards-loading">
-          <span className="asm-loading-spinner" />
+        <div className={styles.asmCardsLoading}>
+          <span className={styles.asmLoadingSpinner} />
           <span>{loadingMessage}</span>
         </div>
       ) : (
-        <div className="asm-day-cards">
+        <div className={styles.asmDayCards}>
           {dayEvents.map((ev, i) => (
             <EventCard key={ev.somaLectureId || `${ev.title}-${i}`} ev={ev} todayStr={todayStr} />
           ))}

@@ -7,7 +7,8 @@ import { LectureCard, lectureCardCss } from './LectureCard';
 import { PersonalScheduleCard, personalScheduleCardCss } from './PersonalScheduleCard';
 import type { PersonalSchedule } from '@features/schedules/personal-schedule';
 import type { Lecture } from '../lectures/types';
-import css from './CalendarCell.css?inline';
+import styles from './CalendarCell.module.css';
+import css from './CalendarCell.module.css?inline';
 
 export const calendarCellCss = [css, lectureCardCss, personalScheduleCardCss].join('\n');
 
@@ -52,14 +53,17 @@ export function CalendarCell({
   onCancelLecture,
 }: CalendarCellProps) {
   return (
-    <div className={cx('calendar-cell', { 'past-day': isPast })} data-calendar-date={dateStr}>
-      <div className="calendar-date-header-row">
-        <div className="calendar-date-left">
-          {isToday && <span className="today-badge">오늘</span>}
-          <span className="calendar-date">{formattedDateText}</span>
+    <div
+      className={cx(styles.calendarCell, { [styles.pastDay]: isPast })}
+      data-calendar-date={dateStr}
+    >
+      <div className={styles.calendarDateHeaderRow}>
+        <div className={styles.calendarDateLeft}>
+          {isToday && <span className={styles.todayBadge}>오늘</span>}
+          <span className={styles.calendarDate}>{formattedDateText}</span>
         </div>
         <button
-          className="quick-add-cell-btn"
+          className={styles.quickAddCellBtn}
           title="이 날짜에 개인 일정 추가"
           onClick={(e) => {
             e.preventDefault();

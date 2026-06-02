@@ -4,6 +4,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Icon } from '@shared/ui/Icon';
+import { cx } from '@shared/ui/cx';
+import styles from './popup.module.css';
 
 interface GoogleCalendarStatusResponse {
   connected: boolean;
@@ -83,21 +85,21 @@ function Popup() {
   }, []);
 
   return (
-    <div className="container">
+    <div className={styles.container}>
       <h1>소마 멘토링 캘린더</h1>
-      <section className="google-calendar-section">
-        <div className="section-title">구글 캘린더 연동</div>
+      <section className={styles.googleCalendarSection}>
+        <div className={styles.sectionTitle}>구글 캘린더 연동</div>
 
         {status === 'loading' && (
-          <div className="status-row status-loading">
-            <span className="status-text">상태 확인 중…</span>
+          <div className={cx(styles.statusRow, styles.statusLoading)}>
+            <span className={styles.statusText}>상태 확인 중…</span>
           </div>
         )}
 
         {status === 'connected' && (
           <>
-            <div className="status-row status-connected">
-              <span className="status-text">
+            <div className={cx(styles.statusRow, styles.statusConnected)}>
+              <span className={styles.statusText}>
                 <Icon name="check" size={14} />
                 <span>연동됨</span>
               </span>
@@ -105,7 +107,7 @@ function Popup() {
             <div>
               <button
                 type="button"
-                className="button button-secondary"
+                className={cx(styles.button, styles.buttonSecondary)}
                 disabled={busyLabel !== null}
                 onClick={() => void handleDisconnect()}
               >
@@ -117,13 +119,13 @@ function Popup() {
 
         {status === 'disconnected' && (
           <>
-            <div className="status-row status-disconnected">
-              <span className="status-text">연동되지 않음</span>
+            <div className={cx(styles.statusRow, styles.statusDisconnected)}>
+              <span className={styles.statusText}>연동되지 않음</span>
             </div>
             <div>
               <button
                 type="button"
-                className="button button-primary"
+                className={cx(styles.button, styles.buttonPrimary)}
                 disabled={busyLabel !== null}
                 onClick={() => void handleConnect()}
               >
@@ -138,9 +140,9 @@ function Popup() {
           </>
         )}
 
-        {error && <div className="error-row">{error}</div>}
+        {error && <div className={styles.errorRow}>{error}</div>}
 
-        <p className="help">
+        <p className={styles.help}>
           연동하면 접수내역 캘린더에서 아직 구글 캘린더에 등록하지 않은 강의를 하이라이트합니다.
         </p>
       </section>

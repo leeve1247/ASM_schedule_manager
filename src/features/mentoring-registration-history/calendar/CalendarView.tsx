@@ -1,8 +1,7 @@
 // Two-week dashboard calendar — orchestrator. State (week offset, personal
 // schedules, alarm settings, Google Calendar match, refreshing) lives here; rendering
 // is split across CalendarHeader / CalendarCell / LectureCard /
-// PersonalScheduleCard. Keeps the existing global class names so
-// calendar-styles.css ports verbatim.
+// PersonalScheduleCard.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isLectureEnded, parseLectureDateTimeText } from '@shared/date/date-time';
@@ -32,7 +31,9 @@ import {
   type GoogleCalendarMatchResponse,
 } from './CalendarCell';
 import type { Lecture } from '../lectures/types';
-import baseCss from './CalendarView.css?inline';
+import baseStyles from './CalendarView.module.css';
+import cellStyles from './CalendarCell.module.css';
+import baseCss from './CalendarView.module.css?inline';
 
 export const calendarCss = [baseCss, calendarHeaderCss, calendarCellCss].join('\n');
 
@@ -336,10 +337,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   }, [startDate, today]);
 
   return (
-    <div
-      id="registration-history-calendar"
-      className={cx({ 'registration-history-calendar-loading': loading })}
-    >
+    <div id="registration-history-calendar">
       <CalendarHeader
         disabled={loading}
         alarmEnabled={alarmEnabled}
@@ -357,22 +355,22 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
       />
 
       {loading ? (
-        <div className="calendar-loading-placeholder">
-          <span className="calendar-loading-spinner" aria-hidden="true" />
-          <span className="calendar-loading-text">
+        <div className={baseStyles.calendarLoadingPlaceholder}>
+          <span className={baseStyles.calendarLoadingSpinner} aria-hidden="true" />
+          <span className={baseStyles.calendarLoadingText}>
             접수한 강의 정보를 불러오는 중입니다…
           </span>
-          <span className="calendar-loading-subtext">
+          <span className={baseStyles.calendarLoadingSubtext}>
             처음 로딩 시 강의 상세를 한 건씩 가져오느라 시간이 걸릴 수 있습니다.
           </span>
         </div>
       ) : (
-        <div className="calendar-grid">
+        <div className={cellStyles.calendarGrid}>
           {DAY_KOREAN.map((wd, idx) => (
             <div
               key={`wd-${wd}`}
-              className={cx('calendar-weekday-header', {
-                weekend: idx === 0 || idx === 6,
+              className={cx(cellStyles.calendarWeekdayHeader, {
+                [cellStyles.weekend]: idx === 0 || idx === 6,
               })}
             >
               {wd}

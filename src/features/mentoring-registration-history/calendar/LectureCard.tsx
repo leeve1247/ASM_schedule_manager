@@ -9,7 +9,9 @@ import { ExportSlot } from '@shared/ui/ExportSlot';
 import { parseLectureDateTimeText } from '@shared/date/date-time';
 import { getSafeSomaUrl } from '@shared/soma/safe-url';
 import type { Lecture } from '../lectures/types';
-import css from './LectureCard.css?inline';
+import cellStyles from './CalendarCell.module.css';
+import styles from './LectureCard.module.css';
+import css from './LectureCard.module.css?inline';
 
 export const lectureCardCss = css;
 
@@ -65,45 +67,45 @@ export function LectureCard({
   return (
     <div
       className={cx(
-        'calendar-lecture',
-        isSpecial ? 'special' : 'mentoring',
+        cellStyles.calendarLecture,
+        isSpecial ? styles.special : styles.mentoring,
         {
-          ended,
-          'not-in-google-calendar': missingFromGoogleCalendar,
-          'google-calendar-just-registered': justRegistered,
+          [cellStyles.ended]: ended,
+          [styles.notInGoogleCalendar]: missingFromGoogleCalendar,
+          [styles.googleCalendarJustRegistered]: justRegistered,
         },
       )}
       title={lec.title}
     >
-      <a className="info-group" href={safeUrl}>
-        <div className="text-title" data-role="title">
+      <a className={cellStyles.infoGroup} href={safeUrl}>
+        <div className={cellStyles.textTitle} data-role="title">
           {lec.title}
         </div>
-        <div className="text-type-badge">{lec.type}</div>
-        <div className="info-row" data-role="mentor">
+        <div className={cellStyles.textTypeBadge} data-role="type">{lec.type}</div>
+        <div className={cellStyles.infoRow} data-role="mentor">
           <strong>멘토</strong> {lec.mentorName}
         </div>
-        <div className="info-row" data-role="time">
+        <div className={cellStyles.infoRow} data-role="time">
           <strong>시간</strong> {timeStr}
         </div>
-        <div className="info-row" data-role="location">
+        <div className={cellStyles.infoRow} data-role="location">
           <strong>장소</strong> {lec.location}
         </div>
-        <div className="info-row" data-role="people">
+        <div className={cellStyles.infoRow} data-role="people">
           <strong>신청인원</strong> {lec.people}
         </div>
-        <div className="info-row" data-role="approval">
+        <div className={cellStyles.infoRow} data-role="approval">
           <strong>개설승인</strong> {lec.approvalStatus}
         </div>
-        <div className="info-row" data-role="status">
+        <div className={cellStyles.infoRow} data-role="status">
           <strong>상태</strong> {lec.deadlineStatus}
         </div>
       </a>
 
-      <div className="button-group">
+      <div className={cellStyles.buttonGroup}>
         {lec.cancelAllowed ? (
           <button
-            className="cancel-btn"
+            className={styles.cancelBtn}
             title="신청 취소"
             onClick={(e) => {
               e.preventDefault();
@@ -114,7 +116,7 @@ export function LectureCard({
           </button>
         ) : (
           <button
-            className="cancel-btn unavailable"
+            className={cx(styles.cancelBtn, styles.unavailable)}
             title={ended ? '종료된 일정이므로 취소 불가' : lec.cancelPolicyReason}
             disabled
           >
@@ -126,7 +128,7 @@ export function LectureCard({
 
       {exporter && (
         <ExportSlot
-          className="export-group"
+          className={cellStyles.exportGroup}
           uid={lec.somaLectureId ? `lecture-${lec.somaLectureId}@asm-schedule-manager` : undefined}
           title={lec.title}
           description={description}

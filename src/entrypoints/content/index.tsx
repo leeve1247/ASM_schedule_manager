@@ -2,8 +2,10 @@
 // Thin shim: locate the SOMA calendar mount point, then mount <MentoLecPanel/>
 // inside a Shadow DOM with feature CSS injected at the boundary.
 
-import { MentoLecPanel } from '@features/mentoring-board/MentoLecPanel';
-import contentCss from '@features/mentoring-board/mentoring-board.css?inline';
+import {
+  MentoLecPanel,
+  mentoLecPanelCss,
+} from '@features/mentoring-board/MentoLecPanel';
 import { mountReact } from '@shared/dom/react-mount';
 
 if (location.href.includes('mentoLec')) {
@@ -33,7 +35,7 @@ function init(): void {
   }
 
   mountReact(host, <MentoLecPanel />, {
-    styles: [contentCss],
+    styles: [mentoLecPanelCss],
     hostClass: 'asm-mentolec-host',
   });
 }

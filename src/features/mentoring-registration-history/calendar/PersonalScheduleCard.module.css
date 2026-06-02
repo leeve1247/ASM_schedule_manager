@@ -1,22 +1,22 @@
 /* Personal-schedule-card-only variants: green background + dot, the
    ended.event-personal override, personal-badge, and edit/delete. */
 
-#registration-history-calendar .calendar-lecture.event-personal {
+:global(#registration-history-calendar) .event-personal {
   background: #edfce6;
 }
-#registration-history-calendar .calendar-lecture.event-personal .text-title::before {
+:global(#registration-history-calendar) .event-personal [data-role="title"]::before {
   background: #90EA84;
 }
 
-#registration-history-calendar .calendar-lecture.ended.event-personal {
+:global(#registration-history-calendar) .event-personal.ended {
   background: #f8fafc;
 }
 
-#registration-history-calendar .calendar-lecture.ended.event-personal:hover {
+:global(#registration-history-calendar) .event-personal.ended:hover {
   opacity: 0.72;
 }
 
-#registration-history-calendar .personal-badge {
+:global(#registration-history-calendar) .personal-badge {
   background: #d4f7c4 !important;
   color: #2a8020 !important;
   display: inline-flex;
@@ -26,25 +26,25 @@
 
 
 /* Edit / delete actions — only rendered on personal-schedule cards. */
-#registration-history-calendar .button-group .edit-btn {
+:global(#registration-history-calendar) .edit-btn {
   background: #edfce6;
   color: #2a8020;
   border-color: #a8e898;
 }
 
-#registration-history-calendar .button-group .edit-btn:hover:not(:disabled) {
+:global(#registration-history-calendar) .edit-btn:hover:not(:disabled) {
   background: #d4f7c4 !important;
   color: #1a7010 !important;
   border-color: #6edc80 !important;
 }
 
-#registration-history-calendar .button-group .delete-btn {
+:global(#registration-history-calendar) .delete-btn {
   background: #fff5f5;
   color: #e53e3e;
   border-color: #feb2b2;
 }
 
-#registration-history-calendar .button-group .delete-btn:hover:not(:disabled) {
+:global(#registration-history-calendar) .delete-btn:hover:not(:disabled) {
   background: #fff5f5 !important;
   color: #c53030 !important;
   border-color: #fc8181 !important;

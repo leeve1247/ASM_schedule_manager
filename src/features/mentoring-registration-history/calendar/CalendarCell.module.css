@@ -4,7 +4,7 @@
    LectureCard and PersonalScheduleCard. */
 
 /* 2. Calendar Grid — cross/table style */
-#registration-history-calendar .calendar-grid {
+:global(#registration-history-calendar) .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0;
@@ -13,7 +13,7 @@
 }
 
 /* Weekday Header Row */
-#registration-history-calendar .calendar-weekday-header {
+:global(#registration-history-calendar) .calendar-weekday-header {
   text-align: center;
   font-size: 12px;
   font-weight: 700;
@@ -25,13 +25,13 @@
   letter-spacing: 0.5px;
 }
 
-#registration-history-calendar .calendar-weekday-header.weekend {
+:global(#registration-history-calendar) .calendar-weekday-header.weekend {
   color: #ef4444;
   background: #f8fafc;
 }
 
 /* Calendar Cells */
-#registration-history-calendar .calendar-cell {
+:global(#registration-history-calendar) .calendar-cell {
   background: #ffffff;
   border-right: 1.5px solid #e2e8f0;
   border-bottom: 1.5px solid #e2e8f0;
@@ -44,41 +44,41 @@
   transition: background 0.15s;
 }
 
-#registration-history-calendar .calendar-cell:hover {
+:global(#registration-history-calendar) .calendar-cell:hover {
   background: #f8fafc;
 }
 
-#registration-history-calendar .calendar-cell.past-day {
+:global(#registration-history-calendar) .calendar-cell.past-day {
   background: #f1f5f9;
 }
 
-#registration-history-calendar .calendar-cell.past-day:hover {
+:global(#registration-history-calendar) .calendar-cell.past-day:hover {
   background: #e2e8f0;
 }
 
-#registration-history-calendar .calendar-cell.past-day .calendar-date {
+:global(#registration-history-calendar) .calendar-cell.past-day .calendar-date {
   color: #94a3b8;
 }
 
-#registration-history-calendar .calendar-cell.past-day .calendar-lecture,
-#registration-history-calendar .calendar-cell.past-day .asm-event-card {
+:global(#registration-history-calendar) .calendar-cell.past-day .calendar-lecture,
+:global(#registration-history-calendar) .calendar-cell.past-day .asm-event-card {
   opacity: 0.75;
 }
 
 /* Today Cell Highlight */
-#registration-history-calendar .calendar-date {
+:global(#registration-history-calendar) .calendar-date {
   font-size: 12px;
   font-weight: 700;
   color: #475569;
 }
 
-#registration-history-calendar .calendar-date-left {
+:global(#registration-history-calendar) .calendar-date-left {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-#registration-history-calendar .today-badge {
+:global(#registration-history-calendar) .today-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -91,7 +91,7 @@
   line-height: 16px;
 }
 
-#registration-history-calendar .today-badge::before {
+:global(#registration-history-calendar) .today-badge::before {
   content: '';
   display: inline-block;
   width: 6px;
@@ -101,7 +101,7 @@
 }
 
 /* 3. Event Cards */
-#registration-history-calendar .calendar-lecture {
+:global(#registration-history-calendar) .calendar-lecture {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 5px;
@@ -113,12 +113,12 @@
   gap: 4px;
 }
 
-#registration-history-calendar .calendar-lecture:hover {
+:global(#registration-history-calendar) .calendar-lecture:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* 카테고리 닷 인디케이터 */
-#registration-history-calendar .calendar-lecture .text-title::before {
+:global(#registration-history-calendar) .calendar-lecture .text-title::before {
   content: '';
   display: inline-block;
   width: 7px;
@@ -132,7 +132,7 @@
 /* Dot Colors and pastel backgrounds depending on types */
 
 /* Past Events styled with ended state — shared by both card variants. */
-#registration-history-calendar .calendar-lecture.ended {
+:global(#registration-history-calendar) .calendar-lecture.ended {
   opacity: 0.62;
   background: #f8fafc;
   border-color: #e2e8f0;
@@ -140,35 +140,35 @@
   filter: grayscale(35%);
 }
 
-#registration-history-calendar .calendar-lecture.ended:hover {
+:global(#registration-history-calendar) .calendar-lecture.ended:hover {
   opacity: 0.72;
   transform: none;
   box-shadow: none;
 }
 
-#registration-history-calendar .calendar-lecture.ended .text-title::before {
+:global(#registration-history-calendar) .calendar-lecture.ended .text-title::before {
   background: #94a3b8;
 }
 
 
-#registration-history-calendar .calendar-lecture.ended .text-title,
-#registration-history-calendar .calendar-lecture.ended .info-row,
-#registration-history-calendar .calendar-lecture.ended .info-row strong,
-#registration-history-calendar .calendar-lecture.ended .info-meta {
+:global(#registration-history-calendar) .calendar-lecture.ended .text-title,
+:global(#registration-history-calendar) .calendar-lecture.ended .info-row,
+:global(#registration-history-calendar) .calendar-lecture.ended .info-row strong,
+:global(#registration-history-calendar) .calendar-lecture.ended .info-meta {
   color: #94a3b8;
 }
 
-#registration-history-calendar .calendar-lecture.ended .text-type-badge {
+:global(#registration-history-calendar) .calendar-lecture.ended .text-type-badge {
   background: #e2e8f0;
   color: #64748b;
 }
 
-#registration-history-calendar .calendar-lecture.ended .button-group button {
+:global(#registration-history-calendar) .calendar-lecture.ended .button-group button {
   opacity: 0.75;
 }
 
 /* Card primitives shared between LectureCard and PersonalScheduleCard. */
-#registration-history-calendar .info-group {
+:global(#registration-history-calendar) .info-group {
   text-decoration: none !important;
   color: inherit !important;
   display: flex;
@@ -176,7 +176,7 @@
   gap: 2px;
 }
 
-#registration-history-calendar .text-title {
+:global(#registration-history-calendar) .text-title {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
@@ -188,7 +188,7 @@
   overflow: hidden;
 }
 
-#registration-history-calendar .text-type-badge {
+:global(#registration-history-calendar) .text-type-badge {
   display: inline-block;
   align-self: flex-start;
   font-size: 10px;
@@ -201,7 +201,7 @@
 }
 
 
-#registration-history-calendar .info-row {
+:global(#registration-history-calendar) .info-row {
   color: #475569;
   font-size: 11px;
   white-space: nowrap;
@@ -210,14 +210,14 @@
   max-width: 100%;
 }
 
-#registration-history-calendar .info-footer {
+:global(#registration-history-calendar) .info-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-#registration-history-calendar .info-meta {
+:global(#registration-history-calendar) .info-meta {
   min-width: 0;
   flex: 1;
   white-space: nowrap;
@@ -225,7 +225,7 @@
   text-overflow: ellipsis;
 }
 
-#registration-history-calendar .desc-row {
+:global(#registration-history-calendar) .desc-row {
   white-space: normal;
   color: #64748b;
   font-style: italic;
@@ -234,7 +234,7 @@
 }
 
 /* 4. Action Buttons Inside Cards — shared button-group + export-group. */
-#registration-history-calendar .button-group {
+:global(#registration-history-calendar) .button-group {
   display: flex;
   gap: 3px;
   margin-top: 3px;
@@ -242,7 +242,7 @@
   padding-top: 4px;
 }
 
-#registration-history-calendar .button-group button {
+:global(#registration-history-calendar) .button-group button {
   flex: 1;
   font-size: 9px;
   font-weight: 600;
@@ -259,20 +259,20 @@
   gap: 2px;
 }
 
-#registration-history-calendar .button-group button:hover:not(:disabled) {
+:global(#registration-history-calendar) .button-group button:hover:not(:disabled) {
   background: #f1f5f9;
   color: #0f172a;
   border-color: #cbd5e1;
 }
 
 
-#registration-history-calendar .export-group {
+:global(#registration-history-calendar) .export-group {
   display: flex;
   gap: 3px;
   margin-top: 3px;
 }
 
-#registration-history-calendar .export-group .asm-export-btn {
+:global(#registration-history-calendar) .export-group :global(.asm-export-btn) {
   flex: 1;
   font-size: 9px;
   font-weight: 600;
@@ -289,19 +289,19 @@
   gap: 2px;
 }
 
-#registration-history-calendar .export-group .asm-export-btn:hover {
+:global(#registration-history-calendar) .export-group :global(.asm-export-btn):hover {
   background: #eef2ff;
   color: #1e3a8a;
   border-color: #c7d2fe;
 }
 
-#registration-history-calendar .calendar-lecture.ended .export-group .asm-export-btn {
+:global(#registration-history-calendar) .calendar-lecture.ended .export-group :global(.asm-export-btn) {
   opacity: 0.6;
 }
 
 
 /* Quick Add Cell Button in Calendar Cell */
-#registration-history-calendar .calendar-date-header-row {
+:global(#registration-history-calendar) .calendar-date-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -310,7 +310,7 @@
   margin-bottom: 4px;
 }
 
-#registration-history-calendar .quick-add-cell-btn {
+:global(#registration-history-calendar) .quick-add-cell-btn {
   background: none;
   border: none;
   color: #2a8020;
@@ -323,7 +323,7 @@
   border-radius: 4px;
 }
 
-#registration-history-calendar .quick-add-cell-btn:hover {
+:global(#registration-history-calendar) .quick-add-cell-btn:hover {
   background: rgba(144, 234, 132, 0.15);
   transform: scale(1.2);
 }

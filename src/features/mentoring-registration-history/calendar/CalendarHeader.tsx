@@ -4,7 +4,8 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
-import css from './CalendarHeader.css?inline';
+import styles from './CalendarHeader.module.css';
+import css from './CalendarHeader.module.css?inline';
 
 export const calendarHeaderCss = css;
 
@@ -23,20 +24,20 @@ export const EMPTY_ALARM_SETTINGS: AlarmSettings = {
 function AlarmInfoPopoverBody() {
   return (
     <>
-      <div className="alarm-info-notice">
-        <div className="alarm-info-notice-title">베타 버전 안내</div>
-        <div className="alarm-info-notice-body">
+      <div className={styles.alarmInfoNotice}>
+        <div className={styles.alarmInfoNoticeTitle}>베타 버전 안내</div>
+        <div className={styles.alarmInfoNoticeBody}>
           현재 알림의 경우에는 베타 서비스로 운영 중입니다. 동시 사용자가 많아지거나 트래픽이 집중되면 Discord 알림이 일시적으로 차단될 수 있습니다.
         </div>
       </div>
-      <div className="alarm-info-divider" />
-      <div className="alarm-info-title">알림 방식</div>
-      <div className="alarm-info-body">
+      <div className={styles.alarmInfoDivider} />
+      <div className={styles.alarmInfoTitle}>알림 방식</div>
+      <div className={styles.alarmInfoBody}>
         Discord 웹훅을 통해 멘토링 일정 시작 <b>1시간 전</b>에 알림 메시지를 전송합니다.
       </div>
-      <div className="alarm-info-divider" />
-      <div className="alarm-info-subtitle">알림 대상</div>
-      <table className="alarm-info-table">
+      <div className={styles.alarmInfoDivider} />
+      <div className={styles.alarmInfoSubtitle}>알림 대상</div>
+      <table className={styles.alarmInfoTable}>
         <tbody>
           <tr>
             <td>멘토링 접수 일정</td>
@@ -139,34 +140,42 @@ export function CalendarHeader({
   }, [alarmInfoOpen, onCloseAlarmInfo]);
 
   return (
-    <div className="calendar-header">
-      <div className="calendar-title-group">
+    <div className={styles.calendarHeader}>
+      <div className={styles.calendarTitleGroup}>
         <h3>통합 일정 대시보드</h3>
-        <span className="calendar-subtitle">
+        <span className={styles.calendarSubtitle}>
           접수한 일정과 내 개인 일정을 함께 모아 관리합니다.
         </span>
       </div>
-      <div className="calendar-nav-group">
-        <button className="control-btn nav-btn" disabled={disabled} onClick={onPrevWeeks}>
+      <div className={styles.calendarNavGroup}>
+        <button
+          className={cx(styles.controlBtn, styles.navBtn)}
+          disabled={disabled}
+          onClick={onPrevWeeks}
+        >
           ‹ 2주 전
         </button>
         <button
-          className="control-btn nav-btn nav-today"
+          className={cx(styles.controlBtn, styles.navBtn, styles.navToday)}
           disabled={disabled}
           onClick={onToday}
         >
           오늘
         </button>
-        <button className="control-btn nav-btn" disabled={disabled} onClick={onNextWeeks}>
+        <button
+          className={cx(styles.controlBtn, styles.navBtn)}
+          disabled={disabled}
+          onClick={onNextWeeks}
+        >
           2주 후 ›
         </button>
       </div>
-      <div className="calendar-actions">
+      <div className={styles.calendarActions}>
         {alarmEnabled && (
           <>
-            <div className="alarm-info-wrap" ref={alarmInfoWrapRef}>
+            <div className={styles.alarmInfoWrap} ref={alarmInfoWrapRef}>
               <button
-                className="alarm-info-btn"
+                className={styles.alarmInfoBtn}
                 type="button"
                 disabled={disabled}
                 onClick={(e) => {
@@ -177,22 +186,22 @@ export function CalendarHeader({
                 !
               </button>
               <div
-                className={cx('alarm-info-popover', {
-                  'alarm-info-popover--open': alarmInfoOpen,
+                className={cx(styles.alarmInfoPopover, {
+                  [styles.alarmInfoPopoverOpen]: alarmInfoOpen,
                 })}
                 aria-hidden={!alarmInfoOpen}
               >
                 <AlarmInfoPopoverBody />
               </div>
             </div>
-            <label className="alarm-toggle-container">
-              <span className="alarm-toggle-text">
+            <label className={styles.alarmToggleContainer}>
+              <span className={styles.alarmToggleText}>
                 <AlarmLabel
                   isConfigured={isAlarmConfigured}
                   notificationsEnabled={alarmSettings.notificationsEnabled}
                 />
               </span>
-              <span className="asm-switch">
+              <span className={styles.asmSwitch}>
                 <input
                   type="checkbox"
                   checked={alarmChecked}
@@ -201,13 +210,13 @@ export function CalendarHeader({
                     void onToggleAlarm();
                   }}
                 />
-                <span className="asm-slider" />
+                <span className={styles.asmSlider} />
               </span>
             </label>
           </>
         )}
         <button
-          className="control-btn nav-btn"
+          className={cx(styles.controlBtn, styles.navBtn)}
           title="최신 데이터로 새로고침"
           disabled={disabled || refreshing}
           onClick={() => void onRefresh()}
@@ -215,7 +224,7 @@ export function CalendarHeader({
           {refreshing ? '↻ 새로고침 중…' : '↻ 새로고침'}
         </button>
         <button
-          className="control-btn accent"
+          className={cx(styles.controlBtn, styles.accent)}
           disabled={disabled}
           onClick={onAddPersonal}
         >
