@@ -5,8 +5,8 @@
 import { cx } from '@shared/ui/cx';
 import { LectureCard, lectureCardCss } from './LectureCard';
 import { PersonalScheduleCard, personalScheduleCardCss } from './PersonalScheduleCard';
-import type { Lecture } from './types';
 import type { PersonalSchedule } from '@features/schedules/personal-schedule';
+import type { Lecture } from '../lectures/types';
 import css from './CalendarCell.css?inline';
 
 export const calendarCellCss = [css, lectureCardCss, personalScheduleCardCss].join('\n');

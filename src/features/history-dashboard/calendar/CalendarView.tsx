@@ -17,8 +17,8 @@ import {
   type MentoringSchedule,
 } from '@features/schedules/mentoring-schedule';
 import { cx } from '@shared/ui/cx';
-import { openModalForEditing, openModalWithDate } from './modal';
-import { triggerCancellation } from './cancel';
+import { triggerCancellation } from '../lectures/cancel';
+import { openModalForEditing, openModalWithDate } from '../personal-schedules/modal';
 import {
   CalendarHeader,
   EMPTY_ALARM_SETTINGS,
@@ -31,7 +31,7 @@ import {
   type EventEntry,
   type GcalMatchResponse,
 } from './CalendarCell';
-import type { Lecture } from './types';
+import type { Lecture } from '../lectures/types';
 import baseCss from './CalendarView.css?inline';
 
 export const calendarCss = [baseCss, calendarHeaderCss, calendarCellCss].join('\n');

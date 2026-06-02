@@ -8,7 +8,7 @@ import { cx } from '@shared/ui/cx';
 import { ExportSlot } from '@shared/ui/ExportSlot';
 import { parseLectureDateTimeText } from '@shared/date/date-time';
 import { getSafeSomaUrl } from '@shared/soma/safe-url';
-import type { Lecture } from './types';
+import type { Lecture } from '../lectures/types';
 import css from './LectureCard.css?inline';
 
 export const lectureCardCss = css;

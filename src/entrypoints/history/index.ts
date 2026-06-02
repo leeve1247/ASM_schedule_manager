@@ -3,9 +3,9 @@
 // personal schedules with conflict checks.
 
 import { checkLectureConflictWithRetry } from '@features/conflict-check/detail-page-conflict';
-import { injectModalDOM, setOnPersonalScheduleSaved } from '@features/history-dashboard/modal';
-import { renderCalendar, renderCalendarSkeleton } from '@features/history-dashboard/calendar';
-import { parseLecturesTable } from '@features/history-dashboard/lecture-table';
+import { renderCalendar, renderCalendarSkeleton } from '@features/history-dashboard/calendar/calendar';
+import { parseLecturesTable } from '@features/history-dashboard/lectures/lecture-table';
+import { injectModalDOM, setOnPersonalScheduleSaved } from '@features/history-dashboard/personal-schedules/modal';
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

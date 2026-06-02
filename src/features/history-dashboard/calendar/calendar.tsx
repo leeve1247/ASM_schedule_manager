@@ -4,9 +4,9 @@
 
 import { mountReact, type MountHandle } from '@shared/dom/react-mount';
 import { Calendar, calendarCss } from './CalendarView';
-import { parseLecturesTable } from './lecture-table';
-import { clearLectureDetailCache } from './lecture-detail';
-import type { Lecture } from './types';
+import { clearLectureDetailCache } from '../lectures/lecture-detail';
+import { parseLecturesTable } from '../lectures/lecture-table';
+import type { Lecture } from '../lectures/types';
 
 let handle: MountHandle | null = null;
 let currentLectures: Lecture[] = [];
