@@ -21,14 +21,14 @@
     "https://accounts.google.com/*"
   ],
   "background": {
-    "service_worker": "src/background.ts"
+    "service_worker": "src/entrypoints/background.ts"
   },
   "content_scripts": [
     {
       "matches": [
         "https://www.swmaestro.ai/*"
       ],
-      "js": ["src/calendar-export.ts", "src/content/index.tsx"],
+      "js": ["src/entrypoints/calendar-export.ts", "src/entrypoints/content/index.tsx"],
       "run_at": "document_idle"
     },
     {
@@ -42,8 +42,15 @@
         "*://*.swmaestro.org/sw/mypage/mentoLec/view.do*",
         "*://*.swmaestro.ai/sw/mypage/mentoLec/view.do*"
       ],
-      "js": ["src/calendar-export.ts", "src/alarm-client.ts", "src/history/index.ts"],
-      "css": ["src/schedule-manager.css", "src/alarm-client.css"],
+      "js": [
+        "src/entrypoints/calendar-export.ts",
+        "src/entrypoints/alarm-client.ts",
+        "src/entrypoints/history/index.ts"
+      ],
+      "css": [
+        "src/features/history-dashboard/schedule-manager.css",
+        "src/features/alarm-sync/alarm-client.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -53,7 +60,7 @@
       "32": "icon/32.png"
     },
     "default_title": "소마 멘토링 캘린더 개선",
-    "default_popup": "src/popup/popup.html"
+    "default_popup": "src/entrypoints/popup/popup.html"
   },
   "oauth2": {
     "client_id": "801617669380-u1ln17rc0fe755mcfl6k1f08itushe26.apps.googleusercontent.com",

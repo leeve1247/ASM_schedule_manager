@@ -27,10 +27,10 @@
 - 확장 ID 를 manifest `key` 로 고정 — 개발 PC 가 바뀌어도 동일한 ID 가 유지돼 Google OAuth client 바인딩이 깨지지 않습니다.
 ### 내부 구조 변경
 - **Vite + TypeScript 빌드로 전환** — 기존 단일 `.js` 파일들을 모듈로 분할하고 산출물을 `dist/` 로 빌드합니다. 전체 소스(background · calendar-export · alarm-client · content · schedule-manager)를 TypeScript 로 마이그레이션했습니다.
-- **모듈 구조 재편** — 공유 로직을 `src/lib/`, 목록 페이지를 `src/content/`, 접수 내역·상세 페이지를 `src/history/` 로 분리했습니다.
+- **모듈 구조 재편** — manifest 가 직접 로드하는 코드는 `src/entrypoints/`, 기능 단위 구현은 `src/features/`, 공용 UI·DOM·스토리지·날짜 유틸은 `src/shared/` 로 분리했습니다.
 - **React + Shadow DOM 도입** — 충돌 배너 · 개인 일정 모달 · 접수 내역 캘린더 · 자유 멘토링 보드 · 확장 팝업을 명령형 `innerHTML` 에서 React 컴포넌트로 재작성했습니다. UI 를 Shadow DOM 안에 마운트하고 CSS 를 `?inline` 으로 주입해 SOMA 페이지 스타일과 양방향으로 격리하며, 이후 각 컴포넌트를 파일 단위로 나누고 CSS 를 컴포넌트 옆에 co-locate 했습니다.
 - **UI 이모지 → Lucide 아이콘(SVG)** — 폰트·플랫폼별 이모지 렌더링 불일치를 제거했습니다.
-- **자동 버전 관리** — `npm run build` 가 성공할 때마다 `package.json` 의 patch 버전을 1 증가시키고, 그 값을 `dist/manifest.json` 의 `version` 으로 주입합니다 (`scripts/bump-version.mjs`).
+- **명시적 버전 관리** — `package.json` 의 version 을 `dist/manifest.json` 에 주입하되, `npm run build` 는 patch 버전을 자동으로 올리지 않습니다.
 ---
 
 # 주요 기능
