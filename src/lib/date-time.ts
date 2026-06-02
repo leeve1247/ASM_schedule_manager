@@ -41,13 +41,13 @@ export function timeToMinutes(time: string): number {
 
 // Accepts SOMA's lecture date-time strings in several formats, e.g.:
 //   "2026-03-05(목) 14:00 시 ~ 16:00 시", "2026/03/05 14:00 ~ 16:00",
-//   "2026.03.05 14 ~ 16"
+//   "2026.03.05 14 ~ 16", "2026-03-05(목) 14:00:00 ~ 16:00:00"
 export function parseLectureDateTimeText(dateTimeText: string | undefined | null): ParsedLectureDateTime | null {
   if (!dateTimeText) return null;
 
   const normalized = dateTimeText.replace(/\s+/g, ' ').trim();
   const match = normalized.match(
-    /(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:\([^)]+\))?\s*(\d{1,2})(?::(\d{2}))?\s*시?\s*~\s*(\d{1,2})(?::(\d{2}))?\s*시?/
+    /(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:\([^)]+\))?\s*(\d{1,2})(?::(\d{2})(?::\d{2})?)?\s*시?\s*~\s*(\d{1,2})(?::(\d{2})(?::\d{2})?)?\s*시?/
   );
 
   if (!match) return null;

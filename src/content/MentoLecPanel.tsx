@@ -57,6 +57,8 @@ import { InfoPopover } from './InfoPopover';
 import { DayEventPanel } from './DayEventPanel';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const ENROLLMENT_LOADING_MESSAGE = '수강중·겹침 표시 확인 중…';
+const LIST_STATUS_LOADING_MESSAGE = '정원·마감 표시 확인 중…';
 
 function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
@@ -113,6 +115,7 @@ export function MentoLecPanel() {
         loadStableCache(),
         loadCountCache(),
       ]);
+      setLoadingMessage(ENROLLMENT_LOADING_MESSAGE);
       const [ps, ms] = await Promise.all([
         loadPersonalSchedules(),
         loadMentoringSchedules(),
@@ -123,7 +126,9 @@ export function MentoLecPanel() {
       const initialMap = parseTableRows(document);
       setAllEvents(collectEvents(initialMap));
       if (!(stableCache && countCache)) {
-        setLoadingMessage('강의 목록 동기화 중…');
+        setLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
+      } else {
+        setLoadingMessage(null);
       }
 
       const completeMap = await buildCompleteEventMap();
@@ -234,6 +239,7 @@ export function MentoLecPanel() {
       clearLocCacheMemory();
       await removeChromeStorage(['soma_mentoring_schedules', 'soma_mentoring_schedules_ts']);
 
+      setLoadingMessage(ENROLLMENT_LOADING_MESSAGE);
       const [ps, ms] = await Promise.all([
         loadPersonalSchedules(),
         loadMentoringSchedules(),
@@ -241,6 +247,7 @@ export function MentoLecPanel() {
       setPersonalSchedules(ps);
       setMentoringSchedules(ms);
 
+      setLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
       const completeMap = await buildCompleteEventMap();
       const fresh = collectEvents(completeMap);
       setAllEvents(fresh);
