@@ -31,6 +31,7 @@ export interface CalendarCellProps {
   formattedDateText: string;
   events: EventEntry[];
   gcalMatch: GcalMatchResponse;
+  registeredFeedbackIds: Set<string>;
   onAddPersonal(dateStr: string): void;
   onEditPersonal(ps: PersonalSchedule): void;
   onDeletePersonal(ps: PersonalSchedule): void | Promise<void>;
@@ -44,6 +45,7 @@ export function CalendarCell({
   formattedDateText,
   events,
   gcalMatch,
+  registeredFeedbackIds,
   onAddPersonal,
   onEditPersonal,
   onDeletePersonal,
@@ -88,12 +90,17 @@ export function CalendarCell({
           !evt.ended &&
           Boolean(lec.qustnrSn) &&
           gcalMatch.matched[lec.qustnrSn] === false;
+        const justRegistered =
+          !missingFromGcal &&
+          Boolean(lec.qustnrSn) &&
+          registeredFeedbackIds.has(lec.qustnrSn);
         return (
           <LectureCard
             key={`l-${lec.qustnrSn || idx}`}
             lec={lec}
             ended={evt.ended}
             missingFromGcal={missingFromGcal}
+            justRegistered={justRegistered}
             onCancel={() => onCancelLecture(lec.qustnrSn)}
           />
         );

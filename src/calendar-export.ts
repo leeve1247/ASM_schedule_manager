@@ -28,6 +28,8 @@ export interface ASMCalendarExportAPI {
   ): void;
 }
 
+const GCAL_OPENED_EVENT = 'asm:gcal-opened';
+
 function kstToIso(dateStr: string, timeStr: string): string {
   if (!dateStr || !timeStr) return '';
   const [y, m, d] = String(dateStr).split('-').map(Number);
@@ -132,6 +134,7 @@ function openGoogleCalendar(event: ExportEvent): void {
     alert('일정 시간을 변환할 수 없어 Google 캘린더에 추가할 수 없습니다.');
     return;
   }
+  window.dispatchEvent(new CustomEvent(GCAL_OPENED_EVENT));
   window.open(url, '_blank', 'noopener');
 }
 

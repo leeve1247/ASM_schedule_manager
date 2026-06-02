@@ -17,10 +17,17 @@ export interface LectureCardProps {
   lec: Lecture;
   ended: boolean;
   missingFromGcal: boolean;
+  justRegistered: boolean;
   onCancel(): void;
 }
 
-export function LectureCard({ lec, ended, missingFromGcal, onCancel }: LectureCardProps) {
+export function LectureCard({
+  lec,
+  ended,
+  missingFromGcal,
+  justRegistered,
+  onCancel,
+}: LectureCardProps) {
   const timeStr = useMemo(() => {
     const m = lec.dateTimeText.match(
       /(\d{2}):(\d{2})(?::\d{2})?\s*~\s*(\d{2}):(\d{2})(?::\d{2})?/,
@@ -60,7 +67,11 @@ export function LectureCard({ lec, ended, missingFromGcal, onCancel }: LectureCa
       className={cx(
         'calendar-lecture',
         isSpecial ? 'special' : 'mentoring',
-        { ended, 'not-in-gcal': missingFromGcal },
+        {
+          ended,
+          'not-in-gcal': missingFromGcal,
+          'gcal-just-registered': justRegistered,
+        },
       )}
       title={lec.title}
     >

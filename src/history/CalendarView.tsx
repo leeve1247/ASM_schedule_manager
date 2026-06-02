@@ -4,7 +4,7 @@
 // PersonalScheduleCard. Keeps the existing global class names so
 // calendar-styles.css ports verbatim.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isLectureEnded, parseLectureDateTimeText } from '../lib/date-time';
 import {
   FIXED_SHARED_SCHEDULES,
@@ -39,6 +39,9 @@ export const calendarCss = [baseCss, calendarHeaderCss, calendarCellCss].join('\
 const CALENDAR_DAY_COUNT = 14;
 const CALENDAR_SHIFT_WEEKS = 2;
 const DAY_KOREAN = ['일', '월', '화', '수', '목', '금', '토'];
+const GCAL_OPENED_EVENT = 'asm:gcal-opened';
+const GCAL_RETURN_RETRY_DELAYS_MS = [0, 2000, 5000];
+const GCAL_REGISTERED_FEEDBACK_MS = 3200;
 
 function getAlarmFeature() {
   return globalThis.ASMAlarmFeature || null;
@@ -63,6 +66,17 @@ async function requestGcalMatch(
     console.warn('[ASM gcal] match failed:', err);
   }
   return { connected: false, matched: {} };
+}
+
+async function requestFreshGcalMatch(
+  schedules: MentoringSchedule[],
+): Promise<GcalMatchResponse> {
+  try {
+    await chrome.runtime.sendMessage({ type: 'asm-gcal-clear-cache' });
+  } catch {
+    // Best-effort: a normal match still works if cache clearing fails.
+  }
+  return requestGcalMatch(schedules);
 }
 
 function buildMentoringSchedules(lectures: Lecture[]): MentoringSchedule[] {
@@ -106,6 +120,13 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   const [alarmInfoOpen, setAlarmInfoOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [registeredFeedbackIds, setRegisteredFeedbackIds] = useState<Set<string>>(new Set());
+  const mentoringSchedulesRef = useRef<MentoringSchedule[]>([]);
+  const gcalMatchRef = useRef<GcalMatchResponse>({
+    connected: false,
+    matched: {},
+  });
+  const feedbackTimersRef = useRef<number[]>([]);
 
   const alarmFeature = getAlarmFeature();
   const alarmEnabled = Boolean(alarmFeature);
@@ -125,10 +146,106 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   );
 
   useEffect(() => {
+    mentoringSchedulesRef.current = mentoringSchedules;
+  }, [mentoringSchedules]);
+
+  const applyGcalMatch = useCallback((next: GcalMatchResponse) => {
+    const previous = gcalMatchRef.current;
+    const completedIds = mentoringSchedulesRef.current
+      .map((schedule) => schedule.qustnrSn)
+      .filter(
+        (id) =>
+          id &&
+          previous.connected &&
+          previous.matched[id] === false &&
+          next.connected &&
+          next.matched[id] === true,
+      );
+
+    gcalMatchRef.current = next;
+    setGcalMatch(next);
+
+    if (completedIds.length === 0) return;
+
+    setRegisteredFeedbackIds((prev) => {
+      const merged = new Set(prev);
+      completedIds.forEach((id) => merged.add(id));
+      return merged;
+    });
+
+    const timer = window.setTimeout(() => {
+      setRegisteredFeedbackIds((prev) => {
+        const nextIds = new Set(prev);
+        completedIds.forEach((id) => nextIds.delete(id));
+        return nextIds;
+      });
+    }, GCAL_REGISTERED_FEEDBACK_MS);
+    feedbackTimersRef.current.push(timer);
+  }, []);
+
+  useEffect(() => {
     if (loading) return;
     void saveMentoringSchedules(mentoringSchedules);
-    void requestGcalMatch(mentoringSchedules).then(setGcalMatch);
-  }, [loading, mentoringSchedules]);
+    void requestGcalMatch(mentoringSchedules).then(applyGcalMatch);
+  }, [applyGcalMatch, loading, mentoringSchedules]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    let pending = false;
+    let syncVersion = 0;
+    const timers: number[] = [];
+
+    const clearTimers = () => {
+      while (timers.length > 0) {
+        const timer = timers.pop();
+        if (timer !== undefined) window.clearTimeout(timer);
+      }
+    };
+
+    const runPendingSync = () => {
+      if (!pending || document.visibilityState === 'hidden') return;
+      pending = false;
+      syncVersion += 1;
+      const currentSync = syncVersion;
+      let latestAppliedAttempt = -1;
+      clearTimers();
+
+      GCAL_RETURN_RETRY_DELAYS_MS.forEach((delay, attemptIndex) => {
+        const timer = window.setTimeout(() => {
+          if (currentSync !== syncVersion) return;
+          void requestFreshGcalMatch(mentoringSchedulesRef.current).then((next) => {
+            if (currentSync !== syncVersion || attemptIndex < latestAppliedAttempt) return;
+            latestAppliedAttempt = attemptIndex;
+            applyGcalMatch(next);
+          });
+        }, delay);
+        timers.push(timer);
+      });
+    };
+
+    const handleGoogleCalendarOpened = () => {
+      pending = true;
+    };
+
+    window.addEventListener(GCAL_OPENED_EVENT, handleGoogleCalendarOpened);
+    window.addEventListener('focus', runPendingSync);
+    document.addEventListener('visibilitychange', runPendingSync);
+
+    return () => {
+      syncVersion += 1;
+      clearTimers();
+      window.removeEventListener(GCAL_OPENED_EVENT, handleGoogleCalendarOpened);
+      window.removeEventListener('focus', runPendingSync);
+      document.removeEventListener('visibilitychange', runPendingSync);
+    };
+  }, [applyGcalMatch, loading]);
+
+  useEffect(() => {
+    return () => {
+      feedbackTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, []);
 
   const handleToggleAlarm = useCallback(async () => {
     const feature = getAlarmFeature();
@@ -298,6 +415,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
                 formattedDateText={day.formattedDateText}
                 events={events}
                 gcalMatch={gcalMatch}
+                registeredFeedbackIds={registeredFeedbackIds}
                 onAddPersonal={openModalWithDate}
                 onEditPersonal={openModalForEditing}
                 onDeletePersonal={handleDeletePersonal}

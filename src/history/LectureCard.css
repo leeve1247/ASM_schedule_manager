@@ -41,6 +41,52 @@
   letter-spacing: 0.02em;
 }
 
+#history-calendar .calendar-lecture.gcal-just-registered {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 1px #16a34a inset;
+  position: relative;
+  animation: asm-gcal-registered-card 3.2s ease-out forwards;
+}
+
+#history-calendar .calendar-lecture.gcal-just-registered::after {
+  content: '등록완료!';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background-color: #16a34a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+  animation: asm-gcal-registered-badge 3.2s ease-out forwards;
+}
+
+@keyframes asm-gcal-registered-card {
+  0%,
+  70% {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 1px #16a34a inset;
+  }
+  100% {
+    border-color: #e2e8f0;
+    box-shadow: 0 0 0 1px rgba(22, 163, 74, 0) inset;
+  }
+}
+
+@keyframes asm-gcal-registered-badge {
+  0%,
+  62% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 
 #history-calendar .special .text-type-badge {
   background: #b8f5e8;
@@ -60,4 +106,3 @@
   cursor: not-allowed;
   border-color: rgba(226, 232, 240, 0.6);
 }
-
