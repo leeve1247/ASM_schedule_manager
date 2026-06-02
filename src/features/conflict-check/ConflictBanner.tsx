@@ -46,40 +46,40 @@ export function ConflictBanner({
   return (
     <div
       className={cx(styles.banner, {
-        [styles['banner--personal']]: variant === 'personal',
-        [styles['banner--mentoring']]: variant === 'mentoring',
+        [styles.bannerPersonal]: variant === 'personal',
+        [styles.bannerMentoring]: variant === 'mentoring',
       })}
     >
-      <div className={styles.banner__icon}>
+      <div className={styles.bannerIcon}>
         <Icon name="alertTriangle" size={24} />
       </div>
-      <div className={styles.banner__content}>
-        <div className={styles.banner__title}>{copy.title}</div>
-        <div className={styles.banner__desc}>{copy.desc}</div>
+      <div className={styles.bannerContent}>
+        <div className={styles.bannerTitle}>{copy.title}</div>
+        <div className={styles.bannerDesc}>{copy.desc}</div>
 
-        <div className={styles.banner__timeline}>
-          <div className={styles.banner__rows}>
-            <div className={styles.banner__row}>
-              <span className={cx(styles.banner__label, styles['banner__label--mentoring'])}>
+        <div className={styles.bannerTimeline}>
+          <div className={styles.bannerRows}>
+            <div className={styles.bannerRow}>
+              <span className={cx(styles.bannerLabel, styles.bannerLabelMentoring)}>
                 아래 멘토링 시간
               </span>
-              <span className={styles.banner__value}>{mentoringTime}</span>
+              <span className={styles.bannerValue}>{mentoringTime}</span>
             </div>
-            <div className={styles.banner__row}>
-              <span className={cx(styles.banner__label, styles['banner__label--personal'])}>
+            <div className={styles.bannerRow}>
+              <span className={cx(styles.bannerLabel, styles.bannerLabelPersonal)}>
                 {copy.conflictLabel}
               </span>
-              <span className={styles.banner__value}>
-                <strong className={styles['banner__value-title']}>"{conflictTitle}"</strong>
-                <span className={styles['banner__value-time']}>
+              <span className={styles.bannerValue}>
+                <strong className={styles.bannerValueTitle}>"{conflictTitle}"</strong>
+                <span className={styles.bannerValueTime}>
                   ({conflictStart} ~ {conflictEnd})
                 </span>
               </span>
             </div>
           </div>
           {variant === 'personal' && manageUrl && (
-            <div className={styles.banner__action}>
-              <a className={styles.banner__link} href={manageUrl}>
+            <div className={styles.bannerAction}>
+              <a className={styles.bannerLink} href={manageUrl}>
                 개인 일정 수정하기
               </a>
             </div>

@@ -15,6 +15,11 @@ function generateManifest() {
 }
 
 export default defineConfig({
+  css: {
+    modules: {
+      localsConvention: "camelCase",
+    },
+  },
   resolve: {
     alias: {
       "@entrypoints": fileURLToPath(new URL("./src/entrypoints", import.meta.url)),

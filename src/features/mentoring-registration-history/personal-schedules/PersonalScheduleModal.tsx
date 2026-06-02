@@ -164,7 +164,7 @@ export function PersonalScheduleModal({
             <label className={styles.label} htmlFor="psm-date">
               날짜 *
             </label>
-            <div className={styles['date-row']}>
+            <div className={styles.dateRow}>
               <input
                 id="psm-date"
                 className={styles.input}
@@ -176,14 +176,14 @@ export function PersonalScheduleModal({
               <div className={styles.presets}>
                 <button
                   type="button"
-                  className={styles['preset-btn']}
+                  className={styles.presetBtn}
                   onClick={() => setDateStr(formatDate(0))}
                 >
                   오늘
                 </button>
                 <button
                   type="button"
-                  className={styles['preset-btn']}
+                  className={styles.presetBtn}
                   onClick={() => setDateStr(formatDate(1))}
                 >
                   내일
@@ -192,7 +192,7 @@ export function PersonalScheduleModal({
             </div>
           </div>
 
-          <div className={styles['row-split']}>
+          <div className={styles.rowSplit}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="psm-start">
                 시작 시간 *
@@ -236,11 +236,11 @@ export function PersonalScheduleModal({
 
           <div className={styles.field}>
             <label className={styles.label}>장소 (선택)</label>
-            <div className={styles['loc-type-row']}>
+            <div className={styles.locTypeRow}>
               <button
                 type="button"
-                className={cx(styles['loc-type-btn'], {
-                  [styles['loc-type-btn--active']]: locationType === 'online',
+                className={cx(styles.locTypeBtn, {
+                  [styles.locTypeBtnActive]: locationType === 'online',
                 })}
                 onClick={() => setLocationType('online')}
               >
@@ -248,8 +248,8 @@ export function PersonalScheduleModal({
               </button>
               <button
                 type="button"
-                className={cx(styles['loc-type-btn'], {
-                  [styles['loc-type-btn--active']]: locationType === 'offline',
+                className={cx(styles.locTypeBtn, {
+                  [styles.locTypeBtnActive]: locationType === 'offline',
                 })}
                 onClick={() => setLocationType('offline')}
               >
@@ -257,7 +257,7 @@ export function PersonalScheduleModal({
               </button>
             </div>
             <input
-              className={cx(styles.input, styles['loc-input'])}
+              className={cx(styles.input, styles.locInput)}
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -282,14 +282,14 @@ export function PersonalScheduleModal({
           <div className={styles.actions}>
             <button
               type="button"
-              className={cx(styles.btn, styles['btn--cancel'])}
+              className={cx(styles.btn, styles.btnCancel)}
               onClick={onClose}
             >
               취소
             </button>
             <button
               type="submit"
-              className={cx(styles.btn, styles['btn--save'])}
+              className={cx(styles.btn, styles.btnSave)}
               disabled={saving}
             >
               {saving ? '저장 중…' : '저장'}
