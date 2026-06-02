@@ -5,11 +5,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Icon } from '@shared/ui/Icon';
 
-interface GcalStatusResponse {
+interface GoogleCalendarStatusResponse {
   connected: boolean;
 }
 
-interface GcalConnectResponse {
+interface GoogleCalendarConnectResponse {
   connected: boolean;
   error?: string;
 }
@@ -37,8 +37,8 @@ function Popup() {
   useEffect(() => {
     void (async () => {
       try {
-        const res = await sendBackgroundMessage<GcalStatusResponse>({
-          type: 'asm-gcal-status',
+        const res = await sendBackgroundMessage<GoogleCalendarStatusResponse>({
+          type: 'asm-google-calendar-status',
         });
         setStatus(res.connected ? 'connected' : 'disconnected');
       } catch (err) {
@@ -52,8 +52,8 @@ function Popup() {
     setError(null);
     setBusyLabel('인증 중…');
     try {
-      const res = await sendBackgroundMessage<GcalConnectResponse>({
-        type: 'asm-gcal-connect',
+      const res = await sendBackgroundMessage<GoogleCalendarConnectResponse>({
+        type: 'asm-google-calendar-connect',
       });
       if (res.connected) {
         setStatus('connected');
@@ -73,7 +73,7 @@ function Popup() {
     setError(null);
     setBusyLabel('해제 중…');
     try {
-      await sendBackgroundMessage({ type: 'asm-gcal-disconnect' });
+      await sendBackgroundMessage({ type: 'asm-google-calendar-disconnect' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '연결 해제 중 오류가 발생했습니다.');
     } finally {
@@ -85,7 +85,7 @@ function Popup() {
   return (
     <div className="container">
       <h1>소마 멘토링 캘린더</h1>
-      <section className="gcal-section">
+      <section className="google-calendar-section">
         <div className="section-title">구글 캘린더 연동</div>
 
         {status === 'loading' && (

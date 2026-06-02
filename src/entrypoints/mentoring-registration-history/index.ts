@@ -3,9 +3,9 @@
 // personal schedules with conflict checks.
 
 import { checkLectureConflictWithRetry } from '@features/conflict-check/detail-page-conflict';
-import { renderCalendar, renderCalendarSkeleton } from '@features/history-dashboard/calendar/calendar';
-import { parseLecturesTable } from '@features/history-dashboard/lectures/lecture-table';
-import { injectModalDOM, setOnPersonalScheduleSaved } from '@features/history-dashboard/personal-schedules/modal';
+import { renderCalendar, renderCalendarSkeleton } from '@features/mentoring-registration-history/calendar/calendar';
+import { parseLecturesTable } from '@features/mentoring-registration-history/lectures/lecture-table';
+import { injectModalDOM, setOnPersonalScheduleSaved } from '@features/mentoring-registration-history/personal-schedules/modal';
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
@@ -30,10 +30,10 @@ async function init(): Promise<void> {
       await renderCalendar(lectures);
       const alarmFeature = globalThis.ASMAlarmFeature;
       if (alarmFeature) {
-        await alarmFeature.syncOnHistoryPageLoadIfConfigured(lectures);
+        await alarmFeature.syncOnRegistrationHistoryPageLoadIfConfigured(lectures);
       }
     } catch (e) {
-      console.error('Failed to initialize history dashboard:', e);
+      console.error('Failed to initialize mentoring registration history dashboard:', e);
     }
   } else if (path.includes('/mypage/mentoLec/view.do')) {
     try {

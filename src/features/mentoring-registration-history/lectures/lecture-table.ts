@@ -1,4 +1,4 @@
-// Parse SOMA userAnswer history list, fetch additional pages, merge details.
+// Parse SOMA mentoring registration history list, fetch additional pages, merge details.
 
 import { isLectureEnded } from '@shared/date/date-time';
 import { getCancelPolicyReason } from '@shared/soma/location';
@@ -34,10 +34,10 @@ export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): Ra
     const title = titleLink ? (titleLink.textContent || '').trim() : (cells[2].textContent || '').trim();
     const url = titleLink ? titleLink.getAttribute('href') || '' : '';
 
-    let qustnrSn = '';
+    let somaLectureId = '';
     if (url) {
       const match = url.match(/[?&]qustnrSn=(\d+)/);
-      if (match) qustnrSn = match[1];
+      if (match) somaLectureId = match[1];
     }
 
     const author = (cells[3].textContent || '').trim();
@@ -74,7 +74,7 @@ export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): Ra
       type,
       title,
       url,
-      qustnrSn,
+      somaLectureId,
       author,
       dateTimeText,
       dateStr,
@@ -143,12 +143,12 @@ async function fetchAllRawRows(): Promise<RawLectureRow[]> {
     }
   }
 
-  // Deduplicate by qustnrSn — same lecture can appear across multiple pages
-  const seenQustnrSn = new Set<string>();
+  // Deduplicate by SOMA lecture id — same lecture can appear across multiple pages
+  const seenSomaLectureIds = new Set<string>();
   return rawList.filter((raw) => {
-    if (!raw.qustnrSn) return true;
-    if (seenQustnrSn.has(raw.qustnrSn)) return false;
-    seenQustnrSn.add(raw.qustnrSn);
+    if (!raw.somaLectureId) return true;
+    if (seenSomaLectureIds.has(raw.somaLectureId)) return false;
+    seenSomaLectureIds.add(raw.somaLectureId);
     return true;
   });
 }
@@ -168,8 +168,8 @@ export async function parseLecturesTable(): Promise<Lecture[]> {
 
   for (const raw of rawList) {
     let details: LectureDetails = { ...LOADING_DETAILS };
-    if (raw.qustnrSn && raw.url) {
-      details = await fetchLectureDetails(raw.qustnrSn, raw.url, raw.dateTimeText);
+    if (raw.somaLectureId && raw.url) {
+      details = await fetchLectureDetails(raw.somaLectureId, raw.url, raw.dateTimeText);
     }
 
     // 상세 페이지의 강의날짜(시간 포함)를 우선 사용, 없으면 리스트 페이지 값 fallback

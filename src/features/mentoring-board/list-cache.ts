@@ -35,10 +35,10 @@ export function parseTableRows(root: Document | Element): Map<string, EventInfo>
     const link = tr.querySelector<HTMLAnchorElement>('a[href*="mentoLec/view.do"]');
     if (!link) return;
 
-    const snMatch = link.href.match(/qustnrSn=(\d+)/);
-    if (!snMatch) return;
+    const somaLectureIdMatch = link.href.match(/qustnrSn=(\d+)/);
+    if (!somaLectureIdMatch) return;
 
-    const sn = snMatch[1];
+    const somaLectureId = somaLectureIdMatch[1];
 
     const allTds = tr.querySelectorAll('td');
     const pcTds = [...allTds].filter((td) => td.classList.contains('pc_only'));
@@ -58,7 +58,7 @@ export function parseTableRows(root: Document | Element): Map<string, EventInfo>
     const titleRaw = (link.textContent ?? '').trim();
     const title = titleRaw.replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, '');
 
-    map.set(sn, {
+    map.set(somaLectureId, {
       date: dateMatch ? dateMatch[1] : '',
       title,
       timeStart: fullTimeMatch ? fullTimeMatch[2] : '',
@@ -140,9 +140,9 @@ function mergeStableAndCounts(
   countMap: Map<string, CountInfo> | null
 ): Map<string, EventInfo> {
   const merged = new Map<string, EventInfo>();
-  stableMap.forEach((v, sn) => {
-    const counts = countMap?.get(sn);
-    merged.set(sn, {
+  stableMap.forEach((v, somaLectureId) => {
+    const counts = countMap?.get(somaLectureId);
+    merged.set(somaLectureId, {
       ...v,
       current: counts?.current ?? v.current ?? '',
       total: counts?.total ?? v.total ?? '',

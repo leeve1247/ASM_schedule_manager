@@ -34,7 +34,7 @@ export function DayEventPanel({
       ) : (
         <div className="asm-day-cards">
           {dayEvents.map((ev, i) => (
-            <EventCard key={ev.sn || `${ev.title}-${i}`} ev={ev} todayStr={todayStr} />
+            <EventCard key={ev.somaLectureId || `${ev.title}-${i}`} ev={ev} todayStr={todayStr} />
           ))}
         </div>
       )}

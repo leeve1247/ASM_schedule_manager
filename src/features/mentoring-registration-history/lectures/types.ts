@@ -1,11 +1,11 @@
-// Shared data shapes for history/ entry (userAnswer history + mentoLec/view).
+// Shared data shapes for the mentoring registration history entry (userAnswer history + mentoLec/view).
 
 export interface RawLectureRow {
   no: string;
   type: string;
   title: string;
   url: string;
-  qustnrSn: string;
+  somaLectureId: string;
   author: string;
   dateTimeText: string;
   dateStr: string;

@@ -56,7 +56,7 @@ export function parseLocationFromDoc(doc: Document): string | null {
 }
 
 export async function fetchLocations(
-  events: Array<{ sn: string | null; date: string }>,
+  events: Array<{ somaLectureId: string | null; date: string }>,
   onProgress?: (done: number, total: number) => void
 ): Promise<Map<string, string>> {
   const locCache = await loadLocCache();
@@ -65,7 +65,7 @@ export async function fetchLocations(
   // ascending sort: today comes first (past is filtered out), then future days in order.
   // 월 이동 시에도 자동으로 그 달의 1일부터 순서대로 fetch됨.
   const missing = events
-    .filter((ev) => ev.sn && !locCache.has(ev.sn) && ev.date >= todayStr)
+    .filter((ev) => ev.somaLectureId && !locCache.has(ev.somaLectureId) && ev.date >= todayStr)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (missing.length === 0) return locCache;
@@ -74,23 +74,23 @@ export async function fetchLocations(
   const total = missing.length;
   let done = 0;
 
-  await fetchInBatches<{ sn: string | null; loc: string | null }>(
+  await fetchInBatches<{ somaLectureId: string | null; loc: string | null }>(
     missing.map((ev) => async () => {
-      const url = `${origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${ev.sn}&menuNo=200046`;
+      const url = `${origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${ev.somaLectureId}&menuNo=200046`;
       const res = await fetch(url, { credentials: 'include' });
 
-      if (!res.ok) return { sn: ev.sn, loc: null };
+      if (!res.ok) return { somaLectureId: ev.somaLectureId, loc: null };
 
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
 
-      return { sn: ev.sn, loc: parseLocationFromDoc(doc) };
+      return { somaLectureId: ev.somaLectureId, loc: parseLocationFromDoc(doc) };
     }),
     3,
     (batchResults) => {
       batchResults.forEach((r) => {
-        if (r.status === 'fulfilled' && r.value.sn) {
-          locCache.set(r.value.sn, r.value.loc ?? '');
+        if (r.status === 'fulfilled' && r.value.somaLectureId) {
+          locCache.set(r.value.somaLectureId, r.value.loc ?? '');
         }
       });
       done += batchResults.length;

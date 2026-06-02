@@ -1,29 +1,29 @@
 /* Lecture-card-only variants: special / mentoring backgrounds, the
-   not-in-gcal warning, type-badge colors, and the disabled cancel-btn. */
+   not-in-google-calendar warning, type-badge colors, and the disabled cancel-btn. */
 
 /* Dot Colors and pastel backgrounds depending on types */
-#history-calendar .calendar-lecture.special {
+#registration-history-calendar .calendar-lecture.special {
   background: #e0faf4;
 }
-#history-calendar .calendar-lecture.special .text-title::before {
+#registration-history-calendar .calendar-lecture.special .text-title::before {
   background: #00D3A9;
 }
 
-#history-calendar .calendar-lecture.mentoring {
+#registration-history-calendar .calendar-lecture.mentoring {
   background: #e6eef8;
 }
-#history-calendar .calendar-lecture.mentoring .text-title::before {
+#registration-history-calendar .calendar-lecture.mentoring .text-title::before {
   background: #086DB7;
 }
 
 /* Highlights lectures that are NOT yet in the user's Google Calendar. */
-#history-calendar .calendar-lecture.not-in-gcal {
+#registration-history-calendar .calendar-lecture.not-in-google-calendar {
   border-color: #f59e0b;
   box-shadow: 0 0 0 1px #f59e0b inset;
   position: relative;
 }
 
-#history-calendar .calendar-lecture.not-in-gcal::after {
+#registration-history-calendar .calendar-lecture.not-in-google-calendar::after {
   content: '미등록';
   position: absolute;
   top: -8px;
@@ -41,14 +41,14 @@
   letter-spacing: 0.02em;
 }
 
-#history-calendar .calendar-lecture.gcal-just-registered {
+#registration-history-calendar .calendar-lecture.google-calendar-just-registered {
   border-color: #16a34a;
   box-shadow: 0 0 0 1px #16a34a inset;
   position: relative;
-  animation: asm-gcal-registered-card 3.2s ease-out forwards;
+  animation: asm-google-calendar-registered-card 3.2s ease-out forwards;
 }
 
-#history-calendar .calendar-lecture.gcal-just-registered::after {
+#registration-history-calendar .calendar-lecture.google-calendar-just-registered::after {
   content: '등록완료!';
   position: absolute;
   top: -8px;
@@ -60,10 +60,10 @@
   padding: 1px 7px;
   border-radius: 8px;
   letter-spacing: 0.02em;
-  animation: asm-gcal-registered-badge 3.2s ease-out forwards;
+  animation: asm-google-calendar-registered-badge 3.2s ease-out forwards;
 }
 
-@keyframes asm-gcal-registered-card {
+@keyframes asm-google-calendar-registered-card {
   0%,
   70% {
     border-color: #16a34a;
@@ -75,7 +75,7 @@
   }
 }
 
-@keyframes asm-gcal-registered-badge {
+@keyframes asm-google-calendar-registered-badge {
   0%,
   62% {
     opacity: 1;
@@ -88,18 +88,18 @@
 }
 
 
-#history-calendar .special .text-type-badge {
+#registration-history-calendar .special .text-type-badge {
   background: #b8f5e8;
   color: #007a5e;
 }
 
-#history-calendar .mentoring .text-type-badge {
+#registration-history-calendar .mentoring .text-type-badge {
   background: #ccd8f0;
   color: #086DB7;
 }
 
 
-#history-calendar .button-group .cancel-btn.unavailable {
+#registration-history-calendar .button-group .cancel-btn.unavailable {
   opacity: 0.5;
   background: #f8fafc;
   color: #94a3b8;

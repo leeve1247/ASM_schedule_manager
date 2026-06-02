@@ -3,7 +3,7 @@
 This project is a React + TypeScript + Vite Chrome extension.
 
 - `entrypoints/`: manifest-facing Vite inputs. Keep these files thin; they should route page/runtime events into feature modules.
-- `features/`: product behavior grouped by domain, such as the mentoring board, history dashboard, conflict checks, calendar export, alarm sync, and schedules.
+- `features/`: product behavior grouped by domain, such as the mentoring board, mentoring registration history, conflict checks, calendar export, alarm sync, and schedules.
 - `shared/`: cross-feature building blocks for UI, Shadow DOM mounting, storage, date parsing, and SOMA URL/location helpers.
 
 Import rules:

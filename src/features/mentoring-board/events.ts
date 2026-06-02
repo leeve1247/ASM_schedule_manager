@@ -4,7 +4,7 @@ import type { EventInfo } from './list-cache';
 import { timeToMinutes } from '@shared/date/date-time';
 
 export interface EventRecord extends EventInfo {
-  sn: string | null;
+  somaLectureId: string | null;
   category: string;
   categoryNm: string;
   url: string;
@@ -36,17 +36,17 @@ export function collectEvents(eventMap: Map<string, EventInfo>): EventRecord[] {
       const title = anchor.getAttribute('title') || '';
       const category = [...anchor.classList].find((c) => c.startsWith('MRC')) || '';
       const popLink = li.querySelector<HTMLAnchorElement>('.calendarPop a.link');
-      const snMatch = popLink ? popLink.href.match(/qustnrSn=(\d+)/) : null;
-      const sn = snMatch ? snMatch[1] : null;
+      const somaLectureIdMatch = popLink ? popLink.href.match(/qustnrSn=(\d+)/) : null;
+      const somaLectureId = somaLectureIdMatch ? somaLectureIdMatch[1] : null;
       const url = popLink ? popLink.href : '#';
 
-      if (sn && seen.has(sn)) return;
-      if (sn) seen.add(sn);
+      if (somaLectureId && seen.has(somaLectureId)) return;
+      if (somaLectureId) seen.add(somaLectureId);
 
-      const info: Partial<EventInfo> = (sn && eventMap.get(sn)) || {};
+      const info: Partial<EventInfo> = (somaLectureId && eventMap.get(somaLectureId)) || {};
 
       events.push({
-        sn,
+        somaLectureId,
         date: info.date || date,
         title,
         category,
@@ -61,25 +61,25 @@ export function collectEvents(eventMap: Map<string, EventInfo>): EventRecord[] {
       });
     });
 
-  eventMap.forEach((info, sn) => {
-    if (seen.has(sn) || !info.date) return;
+  eventMap.forEach((info, somaLectureId) => {
+    if (seen.has(somaLectureId) || !info.date) return;
 
     const link = document.querySelector<HTMLAnchorElement>(
-      `a[href*="qustnrSn=${sn}"][href*="mentoLec/view"]`
+      `a[href*="qustnrSn=${somaLectureId}"][href*="mentoLec/view"]`
     );
     const titleFromDom = link
       ? (link.textContent ?? '').trim().replace(/^\[(자유 멘토링|멘토 특강)\]\s*/, '')
       : '';
 
-    const title = info.title || titleFromDom || `(번호 ${sn})`;
+    const title = info.title || titleFromDom || `(번호 ${somaLectureId})`;
     const titleRaw = link ? (link.textContent ?? '').trim() : info.title || '';
     const category = titleRaw.startsWith('[자유 멘토링]') ? 'MRC010' : 'MRC020';
     const url = link
       ? link.href
-      : `${location.origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${sn}&menuNo=200046`;
+      : `${location.origin}/busan/sw/mypage/mentoLec/view.do?qustnrSn=${somaLectureId}&menuNo=200046`;
 
     events.push({
-      sn,
+      somaLectureId,
       date: info.date,
       title,
       category,
@@ -162,5 +162,5 @@ export function sortEventsByStatusTimeAuthor(a: EventRecord, b: EventRecord, tod
   const titleCompare = compareKoreanText(titleA, titleB);
   if (titleCompare !== 0) return titleCompare;
 
-  return String(a.sn || '').localeCompare(String(b.sn || ''), 'ko-KR', { numeric: true });
+  return String(a.somaLectureId || '').localeCompare(String(b.somaLectureId || ''), 'ko-KR', { numeric: true });
 }

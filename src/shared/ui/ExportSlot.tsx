@@ -3,7 +3,7 @@
 // keep a live ref to the latest event payload so the callback closure stays
 // fresh across re-renders.
 //
-// Shared between history/ (calendar lecture + personal cards) and content/
+// Shared between mentoring registration history cards and content/
 // (mentoLec event cards). Callers pass the className so each consumer keeps
 // its own existing CSS hook.
 

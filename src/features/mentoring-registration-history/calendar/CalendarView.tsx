@@ -1,5 +1,5 @@
 // Two-week dashboard calendar — orchestrator. State (week offset, personal
-// schedules, alarm settings, gcal match, refreshing) lives here; rendering
+// schedules, alarm settings, Google Calendar match, refreshing) lives here; rendering
 // is split across CalendarHeader / CalendarCell / LectureCard /
 // PersonalScheduleCard. Keeps the existing global class names so
 // calendar-styles.css ports verbatim.
@@ -29,7 +29,7 @@ import {
   CalendarCell,
   calendarCellCss,
   type EventEntry,
-  type GcalMatchResponse,
+  type GoogleCalendarMatchResponse,
 } from './CalendarCell';
 import type { Lecture } from '../lectures/types';
 import baseCss from './CalendarView.css?inline';
@@ -39,44 +39,44 @@ export const calendarCss = [baseCss, calendarHeaderCss, calendarCellCss].join('\
 const CALENDAR_DAY_COUNT = 14;
 const CALENDAR_SHIFT_WEEKS = 2;
 const DAY_KOREAN = ['일', '월', '화', '수', '목', '금', '토'];
-const GCAL_OPENED_EVENT = 'asm:gcal-opened';
-const GCAL_RETURN_RETRY_DELAYS_MS = [0, 2000, 5000];
-const GCAL_REGISTERED_FEEDBACK_MS = 3200;
+const GOOGLE_CALENDAR_OPENED_EVENT = 'asm:google-calendar-opened';
+const GOOGLE_CALENDAR_RETURN_RETRY_DELAYS_MS = [0, 2000, 5000];
+const GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS = 3200;
 
 function getAlarmFeature() {
   return globalThis.ASMAlarmFeature || null;
 }
 
-async function requestGcalMatch(
+async function requestGoogleCalendarMatch(
   schedules: MentoringSchedule[],
-): Promise<GcalMatchResponse> {
+): Promise<GoogleCalendarMatchResponse> {
   const valid = schedules.filter(
-    (s) => s.qustnrSn && s.dateStr && s.startTime && s.endTime,
+    (s) => s.somaLectureId && s.dateStr && s.startTime && s.endTime,
   );
   try {
     const response = await chrome.runtime.sendMessage({
-      type: 'asm-gcal-match',
+      type: 'asm-google-calendar-match',
       lectures: valid,
     });
     if (response && typeof response === 'object' && 'connected' in response) {
-      return response as GcalMatchResponse;
+      return response as GoogleCalendarMatchResponse;
     }
-    console.warn('[ASM gcal] match response had unexpected shape', response);
+    console.warn('[ASM Google Calendar] match response had unexpected shape', response);
   } catch (err) {
-    console.warn('[ASM gcal] match failed:', err);
+    console.warn('[ASM Google Calendar] match failed:', err);
   }
   return { connected: false, matched: {} };
 }
 
-async function requestFreshGcalMatch(
+async function requestFreshGoogleCalendarMatch(
   schedules: MentoringSchedule[],
-): Promise<GcalMatchResponse> {
+): Promise<GoogleCalendarMatchResponse> {
   try {
-    await chrome.runtime.sendMessage({ type: 'asm-gcal-clear-cache' });
+    await chrome.runtime.sendMessage({ type: 'asm-google-calendar-clear-cache' });
   } catch {
     // Best-effort: a normal match still works if cache clearing fails.
   }
-  return requestGcalMatch(schedules);
+  return requestGoogleCalendarMatch(schedules);
 }
 
 function buildMentoringSchedules(lectures: Lecture[]): MentoringSchedule[] {
@@ -85,7 +85,7 @@ function buildMentoringSchedules(lectures: Lecture[]): MentoringSchedule[] {
       const parsed = parseLectureDateTimeText(l.dateTimeText);
       if (!parsed || !l.dateStr) return null;
       return {
-        qustnrSn: l.qustnrSn || '',
+        somaLectureId: l.somaLectureId || '',
         title: l.title || '',
         dateStr: l.dateStr,
         startTime: `${parsed.sh}:${parsed.sm}`,
@@ -113,7 +113,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   const [startOffsetWeeks, setStartOffsetWeeks] = useState(0);
   const [personalSchedules, setPersonalSchedules] = useState<PersonalSchedule[]>([]);
   const [alarmSettings, setAlarmSettings] = useState<AlarmSettings>(EMPTY_ALARM_SETTINGS);
-  const [gcalMatch, setGcalMatch] = useState<GcalMatchResponse>({
+  const [googleCalendarMatch, setGoogleCalendarMatch] = useState<GoogleCalendarMatchResponse>({
     connected: false,
     matched: {},
   });
@@ -122,7 +122,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [registeredFeedbackIds, setRegisteredFeedbackIds] = useState<Set<string>>(new Set());
   const mentoringSchedulesRef = useRef<MentoringSchedule[]>([]);
-  const gcalMatchRef = useRef<GcalMatchResponse>({
+  const googleCalendarMatchRef = useRef<GoogleCalendarMatchResponse>({
     connected: false,
     matched: {},
   });
@@ -149,17 +149,17 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
     mentoringSchedulesRef.current = mentoringSchedules;
   }, [mentoringSchedules]);
 
-  const applyGcalMatch = useCallback((next: GcalMatchResponse) => {
-    const previous = gcalMatchRef.current;
+  const applyGoogleCalendarMatch = useCallback((next: GoogleCalendarMatchResponse) => {
+    const previous = googleCalendarMatchRef.current;
     const completedIds = mentoringSchedulesRef.current
-      .map((schedule) => schedule.qustnrSn)
+      .map((schedule) => schedule.somaLectureId)
       .filter(
         (id) =>
           id && previous.connected && !previous.matched[id] && next.connected && next.matched[id],
       );
 
-    gcalMatchRef.current = next;
-    setGcalMatch(next);
+    googleCalendarMatchRef.current = next;
+    setGoogleCalendarMatch(next);
 
     if (completedIds.length === 0) return;
 
@@ -175,15 +175,15 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
         completedIds.forEach((id) => nextIds.delete(id));
         return nextIds;
       });
-    }, GCAL_REGISTERED_FEEDBACK_MS);
+    }, GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS);
     feedbackTimersRef.current.push(timer);
   }, []);
 
   useEffect(() => {
     if (loading) return;
     void saveMentoringSchedules(mentoringSchedules);
-    void requestGcalMatch(mentoringSchedules).then(applyGcalMatch);
-  }, [applyGcalMatch, loading, mentoringSchedules]);
+    void requestGoogleCalendarMatch(mentoringSchedules).then(applyGoogleCalendarMatch);
+  }, [applyGoogleCalendarMatch, loading, mentoringSchedules]);
 
   useEffect(() => {
     if (loading) return;
@@ -207,13 +207,13 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
       let latestAppliedAttempt = -1;
       clearTimers();
 
-      GCAL_RETURN_RETRY_DELAYS_MS.forEach((delay, attemptIndex) => {
+      GOOGLE_CALENDAR_RETURN_RETRY_DELAYS_MS.forEach((delay, attemptIndex) => {
         const timer = window.setTimeout(() => {
           if (currentSync !== syncVersion) return;
-          void requestFreshGcalMatch(mentoringSchedulesRef.current).then((next) => {
+          void requestFreshGoogleCalendarMatch(mentoringSchedulesRef.current).then((next) => {
             if (currentSync !== syncVersion || attemptIndex < latestAppliedAttempt) return;
             latestAppliedAttempt = attemptIndex;
-            applyGcalMatch(next);
+            applyGoogleCalendarMatch(next);
           });
         }, delay);
         timers.push(timer);
@@ -224,18 +224,18 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
       pending = true;
     };
 
-    window.addEventListener(GCAL_OPENED_EVENT, handleGoogleCalendarOpened);
+    window.addEventListener(GOOGLE_CALENDAR_OPENED_EVENT, handleGoogleCalendarOpened);
     window.addEventListener('focus', runPendingSync);
     document.addEventListener('visibilitychange', runPendingSync);
 
     return () => {
       syncVersion += 1;
       clearTimers();
-      window.removeEventListener(GCAL_OPENED_EVENT, handleGoogleCalendarOpened);
+      window.removeEventListener(GOOGLE_CALENDAR_OPENED_EVENT, handleGoogleCalendarOpened);
       window.removeEventListener('focus', runPendingSync);
       document.removeEventListener('visibilitychange', runPendingSync);
     };
-  }, [applyGcalMatch, loading]);
+  }, [applyGoogleCalendarMatch, loading]);
 
   useEffect(() => {
     return () => {
@@ -337,8 +337,8 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
 
   return (
     <div
-      id="history-calendar"
-      className={cx({ 'history-calendar-loading': loading })}
+      id="registration-history-calendar"
+      className={cx({ 'registration-history-calendar-loading': loading })}
     >
       <CalendarHeader
         disabled={loading}
@@ -410,7 +410,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
                 isPast={day.isPast}
                 formattedDateText={day.formattedDateText}
                 events={events}
-                gcalMatch={gcalMatch}
+                googleCalendarMatch={googleCalendarMatch}
                 registeredFeedbackIds={registeredFeedbackIds}
                 onAddPersonal={openModalWithDate}
                 onEditPersonal={openModalForEditing}

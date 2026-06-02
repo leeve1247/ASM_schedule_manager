@@ -56,7 +56,7 @@ export function setOnPersonalScheduleSaved(cb: () => Promise<void> | void): void
 }
 
 // Pre-mount the React tree so the first open is instant. Kept exported for
-// backward compat with the history entrypoint.
+// backward compat with the mentoring registration history entrypoint.
 export function injectModalDOM(): void {
   if (handle) return;
   render();

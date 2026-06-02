@@ -28,7 +28,7 @@ export interface ASMCalendarExportAPI {
   ): void;
 }
 
-const GCAL_OPENED_EVENT = 'asm:gcal-opened';
+const GOOGLE_CALENDAR_OPENED_EVENT = 'asm:google-calendar-opened';
 
 function kstToIso(dateStr: string, timeStr: string): string {
   if (!dateStr || !timeStr) return '';
@@ -134,7 +134,7 @@ function openGoogleCalendar(event: ExportEvent): void {
     alert('일정 시간을 변환할 수 없어 Google 캘린더에 추가할 수 없습니다.');
     return;
   }
-  window.dispatchEvent(new CustomEvent(GCAL_OPENED_EVENT));
+  window.dispatchEvent(new CustomEvent(GOOGLE_CALENDAR_OPENED_EVENT));
   window.open(url, '_blank', 'noopener');
 }
 
@@ -188,10 +188,10 @@ function appendExportButtons(
   getEvent: () => ExportEvent | null,
   filenameBase: string
 ): void {
-  const btnGcal = createExportButton({
+  const googleCalendarButton = createExportButton({
     label: `${iconHtml('calendar')}<span>캘린더</span>`,
     title: 'Google 캘린더에 추가',
-    className: 'asm-export-btn gcal-btn',
+    className: 'asm-export-btn google-calendar-btn',
     onClick: () => {
       const event = getEvent();
       if (event) openGoogleCalendar(event);
@@ -206,7 +206,7 @@ function appendExportButtons(
       if (event) downloadIcs(filenameBase, event);
     },
   });
-  container.appendChild(btnGcal);
+  container.appendChild(googleCalendarButton);
   container.appendChild(btnIcs);
 }
 

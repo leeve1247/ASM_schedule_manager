@@ -1,4 +1,4 @@
-// chrome.storage.local helpers shared by mentoLec/history entries.
+// chrome.storage.local helpers shared by mentoLec and mentoring registration history entries.
 
 export function hasChromeLocalStorage(): boolean {
   return typeof chrome !== 'undefined' && !!chrome.storage && !!chrome.storage.local;

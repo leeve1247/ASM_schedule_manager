@@ -13,11 +13,11 @@ export function isLectureCancelable(
   return new Date() < deadlineTime;
 }
 
-export function triggerCancellation(qustnrSn: string): void {
+export function triggerCancellation(somaLectureId: string): void {
   const rows = document.querySelectorAll('.boardlist table tbody tr');
   for (const row of rows) {
     const a = row.querySelector<HTMLAnchorElement>('.tit.popuser a');
-    if (a && (a.getAttribute('href') || '').includes(`qustnrSn=${qustnrSn}`)) {
+    if (a && (a.getAttribute('href') || '').includes(`qustnrSn=${somaLectureId}`)) {
       const delBtn = row.querySelector<HTMLElement>('[onclick*="delDate"]');
       if (delBtn) {
         delBtn.click();

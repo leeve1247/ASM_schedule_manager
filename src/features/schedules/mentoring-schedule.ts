@@ -2,7 +2,7 @@ import { readChromeStorage, writeChromeStorage } from '@shared/storage/storage';
 import { parseLectureDateTimeText } from '@shared/date/date-time';
 
 export interface MentoringSchedule {
-  qustnrSn: string;
+  somaLectureId: string;
   title: string;
   dateStr: string;
   startTime: string;
@@ -31,7 +31,7 @@ export async function saveMentoringSchedules(schedules: MentoringSchedule[]): Pr
   });
 }
 
-function getHistoryUrls(): string[] {
+function getRegistrationHistoryUrls(): string[] {
   const origin = location.origin;
   const baseMatch = location.pathname.match(/^(.*?\/sw)\//);
   const bases = new Set<string>();
@@ -77,7 +77,7 @@ function collectPageIndexes(doc: Document): Set<number> {
   return indexes;
 }
 
-function extractSchedulesFromHistoryDoc(doc: Document): MentoringSchedule[] {
+function extractSchedulesFromRegistrationHistoryDoc(doc: Document): MentoringSchedule[] {
   const schedules: MentoringSchedule[] = [];
   const rows = doc.querySelectorAll('.boardlist table tbody tr');
 
@@ -93,14 +93,14 @@ function extractSchedulesFromHistoryDoc(doc: Document): MentoringSchedule[] {
 
     const titleLink = cells[2].querySelector<HTMLAnchorElement>('a');
     const href = titleLink ? titleLink.getAttribute('href') ?? '' : '';
-    const qustnrSn = href.match(/[?&]qustnrSn=(\d+)/)?.[1] ?? '';
-    if (!qustnrSn) return;
+    const somaLectureId = href.match(/[?&]qustnrSn=(\d+)/)?.[1] ?? '';
+    if (!somaLectureId) return;
 
     const parsed = parseLectureDateTimeText(normalizeCellHtml(cells[4]));
     if (!parsed) return;
 
     schedules.push({
-      qustnrSn,
+      somaLectureId,
       title: titleLink ? (titleLink.textContent ?? '').trim() : '',
       dateStr: `${parsed.y}-${parsed.m}-${parsed.d}`,
       startTime: `${parsed.sh}:${parsed.sm}`,
@@ -111,14 +111,14 @@ function extractSchedulesFromHistoryDoc(doc: Document): MentoringSchedule[] {
   return schedules;
 }
 
-async function fetchHistoryDoc(url: string): Promise<Document | null> {
+async function fetchRegistrationHistoryDoc(url: string): Promise<Document | null> {
   try {
     const resp = await fetch(url, { credentials: 'include' });
     if (!resp.ok) return null;
     const html = await resp.text();
     return new DOMParser().parseFromString(html, 'text/html');
   } catch (error) {
-    console.warn('SOMA Schedule Manager: Failed to fetch history schedules:', error);
+    console.warn('SOMA Schedule Manager: Failed to fetch registration history schedules:', error);
     return null;
   }
 }
@@ -126,18 +126,18 @@ async function fetchHistoryDoc(url: string): Promise<Document | null> {
 function dedupeSchedules(schedules: MentoringSchedule[]): MentoringSchedule[] {
   const seen = new Set<string>();
   return schedules.filter((schedule) => {
-    const key = schedule.qustnrSn || `${schedule.title}:${schedule.dateStr}:${schedule.startTime}`;
+    const key = schedule.somaLectureId || `${schedule.title}:${schedule.dateStr}:${schedule.startTime}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
-async function fetchMentoringSchedulesFromHistoryUrl(url: string): Promise<MentoringSchedule[] | null> {
-  const firstDoc = await fetchHistoryDoc(url);
+async function fetchMentoringSchedulesFromRegistrationHistoryUrl(url: string): Promise<MentoringSchedule[] | null> {
+  const firstDoc = await fetchRegistrationHistoryDoc(url);
   if (!firstDoc) return null;
 
-  const schedules = [...extractSchedulesFromHistoryDoc(firstDoc)];
+  const schedules = [...extractSchedulesFromRegistrationHistoryDoc(firstDoc)];
   const seenIndexes = new Set<number>([
     parseInt(new URL(url).searchParams.get('pageIndex') || '1', 10),
   ]);
@@ -149,10 +149,10 @@ async function fetchMentoringSchedulesFromHistoryUrl(url: string): Promise<Mento
 
     const pageUrl = new URL(url);
     pageUrl.searchParams.set('pageIndex', String(idx));
-    const pageDoc = await fetchHistoryDoc(pageUrl.toString());
+    const pageDoc = await fetchRegistrationHistoryDoc(pageUrl.toString());
     if (!pageDoc) continue;
 
-    schedules.push(...extractSchedulesFromHistoryDoc(pageDoc));
+    schedules.push(...extractSchedulesFromRegistrationHistoryDoc(pageDoc));
     for (const nextIdx of collectPageIndexes(pageDoc)) {
       if (!seenIndexes.has(nextIdx)) pendingIndexes.add(nextIdx);
     }
@@ -161,11 +161,11 @@ async function fetchMentoringSchedulesFromHistoryUrl(url: string): Promise<Mento
   return dedupeSchedules(schedules);
 }
 
-export async function fetchMentoringSchedulesFromHistory(): Promise<MentoringSchedule[]> {
-  const urls = getHistoryUrls();
+export async function fetchMentoringSchedulesFromRegistrationHistory(): Promise<MentoringSchedule[]> {
+  const urls = getRegistrationHistoryUrls();
 
   for (const url of urls) {
-    const schedules = await fetchMentoringSchedulesFromHistoryUrl(url);
+    const schedules = await fetchMentoringSchedulesFromRegistrationHistoryUrl(url);
     if (schedules === null) continue;
     await saveMentoringSchedules(schedules);
     return schedules;
@@ -187,5 +187,5 @@ export async function loadMentoringSchedules(): Promise<MentoringSchedule[]> {
     return cached;
   }
 
-  return fetchMentoringSchedulesFromHistory();
+  return fetchMentoringSchedulesFromRegistrationHistory();
 }

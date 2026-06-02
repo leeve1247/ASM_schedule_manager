@@ -72,11 +72,13 @@ function enrichEvent(
 ): EventRecord {
   const hasPersonalConflict = hasPersonalScheduleConflict(ev, personalSchedules);
   const hasMentoringConflict = hasMentoringScheduleConflict(ev, mentoringSchedules);
-  const isEnrolled = ev.sn ? mentoringSchedules.some((ms) => ms.qustnrSn === ev.sn) : false;
-  if (ev.sn && locCache.has(ev.sn)) {
+  const isEnrolled = ev.somaLectureId
+    ? mentoringSchedules.some((ms) => ms.somaLectureId === ev.somaLectureId)
+    : false;
+  if (ev.somaLectureId && locCache.has(ev.somaLectureId)) {
     return {
       ...ev,
-      location: locCache.get(ev.sn) || null,
+      location: locCache.get(ev.somaLectureId) || null,
       hasPersonalConflict,
       hasMentoringConflict,
       isEnrolled,
@@ -445,7 +447,7 @@ export function MentoLecPanel() {
                             const isGray = ev.date < todayStr || ev.isClosed;
                             return (
                               <span
-                                key={`${ev.sn || i}-dot`}
+                                key={`${ev.somaLectureId || i}-dot`}
                                 className={cx(
                                   'asm-dot',
                                   isGray ? 'asm-dot-gray' : `asm-dot-${ev.category}`,

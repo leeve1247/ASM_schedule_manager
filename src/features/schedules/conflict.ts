@@ -5,7 +5,7 @@ interface TimedEvent {
   date: string;
   timeStart: string;
   timeEnd: string;
-  sn?: string | null;
+  somaLectureId?: string | null;
 }
 
 export interface DateRange {
@@ -40,7 +40,13 @@ export function hasMentoringScheduleConflict(
 
   return mentoringSchedules.some((ms) => {
     if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) return false;
-    if (ev.sn && ms.qustnrSn && ev.sn === ms.qustnrSn) return false;
+    if (
+      ev.somaLectureId &&
+      ms.somaLectureId &&
+      ev.somaLectureId === ms.somaLectureId
+    ) {
+      return false;
+    }
 
     const msRange = toDateRange(ms.dateStr, ms.startTime, ms.endTime);
     return msRange ? overlaps(evRange, msRange) : false;
@@ -78,11 +84,11 @@ export function findConflictingPersonalSchedule(
 export function findConflictingMentoringSchedule(
   range: DateRange,
   mentoringSchedules: MentoringSchedule[],
-  excludeQustnrSn?: string
+  excludeSomaLectureId?: string
 ): MentoringSchedule | null {
   for (const ms of mentoringSchedules) {
     if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) continue;
-    if (excludeQustnrSn && ms.qustnrSn === excludeQustnrSn) continue;
+    if (excludeSomaLectureId && ms.somaLectureId === excludeSomaLectureId) continue;
     const msRange = toDateRange(ms.dateStr, ms.startTime, ms.endTime);
     if (msRange && overlaps(range, msRange)) return ms;
   }

@@ -108,7 +108,7 @@ export function formatApprovalStatus(rawApproval: string | undefined): string {
 }
 
 export async function fetchLectureDetails(
-  qustnrSn: string,
+  somaLectureId: string,
   url: string,
   dateTimeText: string
 ): Promise<LectureDetails> {
@@ -116,7 +116,7 @@ export async function fetchLectureDetails(
     return { ...PLACEHOLDER_DETAILS };
   }
 
-  const cacheKey = `${CACHE_KEY_PREFIX}${qustnrSn}`;
+  const cacheKey = `${CACHE_KEY_PREFIX}${somaLectureId}`;
   const stored = await readChromeStorage([cacheKey]);
   const cached = stored[cacheKey] as CachedLectureDetail | undefined;
 
@@ -279,7 +279,7 @@ export async function fetchLectureDetails(
 
     return finalDetails;
   } catch (e) {
-    console.error(`Failed to fetch details for lecture ${qustnrSn}:`, e);
+    console.error(`Failed to fetch details for lecture ${somaLectureId}:`, e);
     return { ...PLACEHOLDER_DETAILS };
   }
 }

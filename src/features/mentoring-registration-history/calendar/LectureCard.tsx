@@ -16,7 +16,7 @@ export const lectureCardCss = css;
 export interface LectureCardProps {
   lec: Lecture;
   ended: boolean;
-  missingFromGcal: boolean;
+  missingFromGoogleCalendar: boolean;
   justRegistered: boolean;
   onCancel(): void;
 }
@@ -24,7 +24,7 @@ export interface LectureCardProps {
 export function LectureCard({
   lec,
   ended,
-  missingFromGcal,
+  missingFromGoogleCalendar,
   justRegistered,
   onCancel,
 }: LectureCardProps) {
@@ -69,8 +69,8 @@ export function LectureCard({
         isSpecial ? 'special' : 'mentoring',
         {
           ended,
-          'not-in-gcal': missingFromGcal,
-          'gcal-just-registered': justRegistered,
+          'not-in-google-calendar': missingFromGoogleCalendar,
+          'google-calendar-just-registered': justRegistered,
         },
       )}
       title={lec.title}
@@ -127,7 +127,7 @@ export function LectureCard({
       {exporter && (
         <ExportSlot
           className="export-group"
-          uid={lec.qustnrSn ? `lecture-${lec.qustnrSn}@asm-schedule-manager` : undefined}
+          uid={lec.somaLectureId ? `lecture-${lec.somaLectureId}@asm-schedule-manager` : undefined}
           title={lec.title}
           description={description}
           location={lec.location || ''}

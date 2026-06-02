@@ -1,7 +1,7 @@
 // Google Calendar integration. Runs only in the background service worker
 // (uses chrome.identity which is unavailable to content scripts).
 
-export interface GcalEvent {
+export interface GoogleCalendarEvent {
   id: string;
   summary?: string;
   description?: string;
@@ -10,7 +10,7 @@ export interface GcalEvent {
 }
 
 export interface LectureMatchInput {
-  qustnrSn: string;
+  somaLectureId: string;
   dateStr: string;
   startTime: string;
   endTime: string;
@@ -24,12 +24,12 @@ function getAuthTokenPromise(interactive: boolean): Promise<string | null> {
     chrome.identity.getAuthToken({ interactive }, (token) => {
       const err = chrome.runtime.lastError;
       if (err) {
-        console.warn('[ASM gcal] getAuthToken error:', err.message, '(interactive:', interactive, ')');
+        console.warn('[ASM Google Calendar] getAuthToken error:', err.message, '(interactive:', interactive, ')');
         resolve(null);
         return;
       }
       if (!token) {
-        console.warn('[ASM gcal] getAuthToken returned no token (interactive:', interactive, ')');
+        console.warn('[ASM Google Calendar] getAuthToken returned no token (interactive:', interactive, ')');
         resolve(null);
         return;
       }
@@ -38,7 +38,7 @@ function getAuthTokenPromise(interactive: boolean): Promise<string | null> {
       else if (token && typeof (token as { token?: string }).token === 'string') {
         resolve((token as { token: string }).token);
       } else {
-        console.warn('[ASM gcal] getAuthToken unexpected shape:', token);
+        console.warn('[ASM Google Calendar] getAuthToken unexpected shape:', token);
         resolve(null);
       }
     });
@@ -85,7 +85,7 @@ async function fetchEventsFromGoogle(
   token: string,
   timeMin: string,
   timeMax: string
-): Promise<GcalEvent[]> {
+): Promise<GoogleCalendarEvent[]> {
   const params = new URLSearchParams({
     timeMin,
     timeMax,
@@ -100,24 +100,24 @@ async function fetchEventsFromGoogle(
 
   if (res.status === 401) {
     const body = await res.text();
-    console.warn('[ASM gcal] events.list 401:', body);
+    console.warn('[ASM Google Calendar] events.list 401:', body);
     await removeCachedAuthTokenPromise(token);
     throw new Error('인증이 만료되었습니다. 다시 연동해주세요.');
   }
 
   if (!res.ok) {
     const body = await res.text();
-    console.warn('[ASM gcal] events.list error', res.status, body);
+    console.warn('[ASM Google Calendar] events.list error', res.status, body);
     throw new Error(`Google Calendar API 응답 오류 (${res.status})`);
   }
 
-  const data = (await res.json()) as { items?: GcalEvent[] };
+  const data = (await res.json()) as { items?: GoogleCalendarEvent[] };
   return data.items ?? [];
 }
 
 interface CacheEntry {
   ts: number;
-  events: GcalEvent[];
+  events: GoogleCalendarEvent[];
 }
 
 async function readCache(key: string): Promise<CacheEntry | null> {
@@ -135,8 +135,8 @@ async function writeCache(key: string, entry: CacheEntry): Promise<void> {
   });
 }
 
-export async function listEventsCached(timeMin: string, timeMax: string): Promise<GcalEvent[]> {
-  const cacheKey = `gcal_events:${timeMin}:${timeMax}`;
+export async function listEventsCached(timeMin: string, timeMax: string): Promise<GoogleCalendarEvent[]> {
+  const cacheKey = `google_calendar_events:${timeMin}:${timeMax}`;
   const cached = await readCache(cacheKey);
   if (cached && Date.now() - cached.ts < EVENT_CACHE_TTL) {
     return cached.events;
@@ -154,20 +154,20 @@ export async function clearEventCache(): Promise<void> {
   const all = await new Promise<Record<string, unknown>>((resolve) => {
     chrome.storage.session.get(null, (res) => resolve(res || {}));
   });
-  const keys = Object.keys(all).filter((k) => k.startsWith('gcal_events:'));
+  const keys = Object.keys(all).filter((k) => k.startsWith('google_calendar_events:'));
   if (keys.length === 0) return;
   await new Promise<void>((resolve) => {
     chrome.storage.session.remove(keys, () => resolve());
   });
 }
 
-function isLectureMatched(lecture: LectureMatchInput, events: GcalEvent[]): boolean {
+function isLectureMatched(lecture: LectureMatchInput, events: GoogleCalendarEvent[]): boolean {
   // Strict match: this extension's exporter writes the lecture's SOMA URL
-  // (which contains `qustnrSn=<id>`) into the event description. Looser
+  // with its external lecture-id query parameter into the event description. Looser
   // heuristics (time-overlap + "swmaestro" substring) false-positive when
   // another SOMA event happens to overlap.
-  if (!lecture.qustnrSn) return false;
-  const needle = `qustnrSn=${lecture.qustnrSn}`;
+  if (!lecture.somaLectureId) return false;
+  const needle = `qustnrSn=${lecture.somaLectureId}`;
   return events.some((e) => (e.description ?? '').includes(needle));
 }
 
@@ -188,7 +188,7 @@ export async function matchLectures(
   const timeMin = `${minDate}T00:00:00+09:00`;
   const timeMax = `${maxDate}T23:59:59+09:00`;
 
-  let events: GcalEvent[];
+  let events: GoogleCalendarEvent[];
   try {
     events = await listEventsCached(timeMin, timeMax);
   } catch (err) {
@@ -199,7 +199,7 @@ export async function matchLectures(
 
   const matched: Record<string, boolean> = {};
   for (const lecture of lectures) {
-    matched[lecture.qustnrSn] = isLectureMatched(lecture, events);
+    matched[lecture.somaLectureId] = isLectureMatched(lecture, events);
   }
   return { connected: true, matched };
 }

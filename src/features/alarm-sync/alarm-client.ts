@@ -29,7 +29,7 @@ interface AlarmSyncMeta {
 }
 
 interface LectureLike {
-  qustnrSn?: string;
+  somaLectureId?: string;
   title?: string;
   type?: string;
   url?: string;
@@ -128,7 +128,7 @@ export interface ASMAlarmFeatureAPI {
   openSettings(opts: OpenSettingsOpts): Promise<void>;
   toggleNotifications(opts: ToggleOpts): Promise<ToggleResult>;
   syncAfterLocalChange(): Promise<SyncResult>;
-  syncOnHistoryPageLoadIfConfigured(lectures: LectureLike[]): Promise<SyncResult | null>;
+  syncOnRegistrationHistoryPageLoadIfConfigured(lectures: LectureLike[]): Promise<SyncResult | null>;
 }
 
 declare global {
@@ -343,7 +343,7 @@ declare global {
     if (!startAt || !endAt) return null;
 
     return {
-      sourceEventId: lecture.qustnrSn || `${lecture.dateStr}_${lecture.title}_${lecture.type}`,
+      sourceEventId: lecture.somaLectureId || `${lecture.dateStr}_${lecture.title}_${lecture.type}`,
       title: lecture.title || '',
       lectureType: lecture.type || '',
       mentorName: lecture.mentorName || lecture.author || '',
@@ -647,7 +647,7 @@ declare global {
     return { skipped: true, message: '개인 일정 변경은 알림 동기화 대상이 아닙니다.' };
   }
 
-  async function syncSchedulesOnHistoryPageLoadIfConfigured(lectures: LectureLike[]): Promise<SyncResult | null> {
+  async function syncSchedulesOnRegistrationHistoryPageLoadIfConfigured(lectures: LectureLike[]): Promise<SyncResult | null> {
     const settings = await loadAlarmSettings();
     if (!settings.autoSyncEnabled) return null;
     if (!settings.discordWebhookUrl || !deriveAlarmUserId(settings)) return null;
@@ -655,7 +655,7 @@ declare global {
     try {
       return await syncSchedulesToCloudflare(lectures, settings, { auto: true });
     } catch (error) {
-      console.error('Auto sync on history page load failed:', error);
+      console.error('Auto sync on registration history page load failed:', error);
       await saveAlarmSyncMeta({
         success: false,
         skipped: false,
@@ -670,6 +670,6 @@ declare global {
     openSettings: openAlarmSettingsModal,
     toggleNotifications: toggleAlarmNotifications,
     syncAfterLocalChange: syncSchedulesAfterLocalChange,
-    syncOnHistoryPageLoadIfConfigured: syncSchedulesOnHistoryPageLoadIfConfigured,
+    syncOnRegistrationHistoryPageLoadIfConfigured: syncSchedulesOnRegistrationHistoryPageLoadIfConfigured,
   };
 })();

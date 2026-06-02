@@ -1,4 +1,4 @@
-// Date/time parsing helpers shared by mentoLec/history entries.
+// Date/time parsing helpers shared by mentoLec and mentoring registration history entries.
 
 export interface ParsedLectureDateTime {
   y: string;

@@ -11,7 +11,7 @@ import css from './CalendarCell.css?inline';
 
 export const calendarCellCss = [css, lectureCardCss, personalScheduleCardCss].join('\n');
 
-export interface GcalMatchResponse {
+export interface GoogleCalendarMatchResponse {
   connected: boolean;
   matched: Record<string, boolean>;
   error?: string;
@@ -30,12 +30,12 @@ export interface CalendarCellProps {
   isPast: boolean;
   formattedDateText: string;
   events: EventEntry[];
-  gcalMatch: GcalMatchResponse;
+  googleCalendarMatch: GoogleCalendarMatchResponse;
   registeredFeedbackIds: Set<string>;
   onAddPersonal(dateStr: string): void;
   onEditPersonal(ps: PersonalSchedule): void;
   onDeletePersonal(ps: PersonalSchedule): void | Promise<void>;
-  onCancelLecture(qustnrSn: string): void;
+  onCancelLecture(somaLectureId: string): void;
 }
 
 export function CalendarCell({
@@ -44,7 +44,7 @@ export function CalendarCell({
   isPast,
   formattedDateText,
   events,
-  gcalMatch,
+  googleCalendarMatch,
   registeredFeedbackIds,
   onAddPersonal,
   onEditPersonal,
@@ -85,23 +85,23 @@ export function CalendarCell({
           );
         }
         const lec = evt.data as Lecture;
-        const missingFromGcal =
-          gcalMatch.connected &&
+        const missingFromGoogleCalendar =
+          googleCalendarMatch.connected &&
           !evt.ended &&
-          Boolean(lec.qustnrSn) &&
-          gcalMatch.matched[lec.qustnrSn] === false;
+          Boolean(lec.somaLectureId) &&
+          googleCalendarMatch.matched[lec.somaLectureId] === false;
         const justRegistered =
-          !missingFromGcal &&
-          Boolean(lec.qustnrSn) &&
-          registeredFeedbackIds.has(lec.qustnrSn);
+          !missingFromGoogleCalendar &&
+          Boolean(lec.somaLectureId) &&
+          registeredFeedbackIds.has(lec.somaLectureId);
         return (
           <LectureCard
-            key={`l-${lec.qustnrSn || idx}`}
+            key={`l-${lec.somaLectureId || idx}`}
             lec={lec}
             ended={evt.ended}
-            missingFromGcal={missingFromGcal}
+            missingFromGoogleCalendar={missingFromGoogleCalendar}
             justRegistered={justRegistered}
-            onCancel={() => onCancelLecture(lec.qustnrSn)}
+            onCancel={() => onCancelLecture(lec.somaLectureId)}
           />
         );
       })}

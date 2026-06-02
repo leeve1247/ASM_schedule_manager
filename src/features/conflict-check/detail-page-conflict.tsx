@@ -329,12 +329,12 @@ async function checkLectureConflict(): Promise<void> {
   }
 
   // 접수된 멘토링 일정과의 충돌 체크 → 신청 차단
-  const currentQustnrSn = new URL(window.location.href).searchParams.get('qustnrSn') || '';
+  const currentSomaLectureId = new URL(window.location.href).searchParams.get('qustnrSn') || '';
   const mentoringSchedules = await loadStoredMentoringSchedules();
   const conflictingMentoring = findConflictingMentoringSchedule(
     lectureRange,
     mentoringSchedules,
-    currentQustnrSn || undefined
+    currentSomaLectureId || undefined
   );
 
   if (conflictingMentoring) {

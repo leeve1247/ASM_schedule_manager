@@ -1,12 +1,12 @@
-#history-calendar .calendar-actions {
+#registration-history-calendar .calendar-actions {
   gap: 8px;
 }
 
-#history-calendar .alarm-toggle-btn {
+#registration-history-calendar .alarm-toggle-btn {
   white-space: nowrap;
 }
 
-#history-calendar .alarm-settings-btn {
+#registration-history-calendar .alarm-settings-btn {
   padding: 4px 8px;
   font-size: 13px;
   font-weight: 400;
@@ -17,7 +17,7 @@
   box-shadow: none;
 }
 
-#history-calendar .alarm-settings-btn:hover {
+#registration-history-calendar .alarm-settings-btn:hover {
   background: #065a96;
   border-color: #065a96;
   color: #ffffff;

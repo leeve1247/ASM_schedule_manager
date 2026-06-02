@@ -1,9 +1,9 @@
 import {
-  clearEventCache as gcalClearEventCache,
-  connect as gcalConnect,
-  disconnect as gcalDisconnect,
-  isConnected as gcalIsConnected,
-  matchLectures as gcalMatchLectures,
+  clearEventCache as clearGoogleCalendarEventCache,
+  connect as connectGoogleCalendar,
+  disconnect as disconnectGoogleCalendar,
+  isConnected as isGoogleCalendarConnected,
+  matchLectures as matchGoogleCalendarLectures,
   type LectureMatchInput,
 } from '@features/google-calendar/google-calendar';
 
@@ -32,30 +32,30 @@ interface WorkerFetchFailure {
 
 type WorkerFetchResponse = WorkerFetchSuccess | WorkerFetchFailure;
 
-interface GcalStatusMessage {
-  type: 'asm-gcal-status';
+interface GoogleCalendarStatusMessage {
+  type: 'asm-google-calendar-status';
 }
-interface GcalConnectMessage {
-  type: 'asm-gcal-connect';
+interface GoogleCalendarConnectMessage {
+  type: 'asm-google-calendar-connect';
 }
-interface GcalDisconnectMessage {
-  type: 'asm-gcal-disconnect';
+interface GoogleCalendarDisconnectMessage {
+  type: 'asm-google-calendar-disconnect';
 }
-interface GcalMatchMessage {
-  type: 'asm-gcal-match';
+interface GoogleCalendarMatchMessage {
+  type: 'asm-google-calendar-match';
   lectures: LectureMatchInput[];
 }
-interface GcalClearCacheMessage {
-  type: 'asm-gcal-clear-cache';
+interface GoogleCalendarClearCacheMessage {
+  type: 'asm-google-calendar-clear-cache';
 }
 
 type IncomingMessage =
   | WorkerFetchMessage
-  | GcalStatusMessage
-  | GcalConnectMessage
-  | GcalDisconnectMessage
-  | GcalMatchMessage
-  | GcalClearCacheMessage;
+  | GoogleCalendarStatusMessage
+  | GoogleCalendarConnectMessage
+  | GoogleCalendarDisconnectMessage
+  | GoogleCalendarMatchMessage
+  | GoogleCalendarClearCacheMessage;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -67,13 +67,13 @@ function classifyMessage(value: unknown): IncomingMessage | null {
   if (type === 'asm-worker-fetch' && typeof value.url === 'string') {
     return value as unknown as WorkerFetchMessage;
   }
-  if (type === 'asm-gcal-status') return { type };
-  if (type === 'asm-gcal-connect') return { type };
-  if (type === 'asm-gcal-disconnect') return { type };
-  if (type === 'asm-gcal-match' && Array.isArray(value.lectures)) {
+  if (type === 'asm-google-calendar-status') return { type };
+  if (type === 'asm-google-calendar-connect') return { type };
+  if (type === 'asm-google-calendar-disconnect') return { type };
+  if (type === 'asm-google-calendar-match' && Array.isArray(value.lectures)) {
     return { type, lectures: value.lectures as LectureMatchInput[] };
   }
-  if (type === 'asm-gcal-clear-cache') return { type };
+  if (type === 'asm-google-calendar-clear-cache') return { type };
   return null;
 }
 
@@ -107,32 +107,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return;
     }
 
-    if (msg.type === 'asm-gcal-status') {
-      const connected = await gcalIsConnected();
+    if (msg.type === 'asm-google-calendar-status') {
+      const connected = await isGoogleCalendarConnected();
       sendResponse({ connected });
       return;
     }
 
-    if (msg.type === 'asm-gcal-connect') {
-      const res = await gcalConnect();
+    if (msg.type === 'asm-google-calendar-connect') {
+      const res = await connectGoogleCalendar();
       sendResponse(res);
       return;
     }
 
-    if (msg.type === 'asm-gcal-disconnect') {
-      await gcalDisconnect();
+    if (msg.type === 'asm-google-calendar-disconnect') {
+      await disconnectGoogleCalendar();
       sendResponse({ connected: false });
       return;
     }
 
-    if (msg.type === 'asm-gcal-match') {
-      const res = await gcalMatchLectures(msg.lectures);
+    if (msg.type === 'asm-google-calendar-match') {
+      const res = await matchGoogleCalendarLectures(msg.lectures);
       sendResponse(res);
       return;
     }
 
-    if (msg.type === 'asm-gcal-clear-cache') {
-      await gcalClearEventCache();
+    if (msg.type === 'asm-google-calendar-clear-cache') {
+      await clearGoogleCalendarEventCache();
       sendResponse({ ok: true });
       return;
     }
