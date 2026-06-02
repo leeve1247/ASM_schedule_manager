@@ -143,6 +143,20 @@ function findConflictBannerAnchor(): Element | null {
   );
 }
 
+function findApplyButtonWrapper(): Element | null {
+  const wrappers = Array.from(document.querySelectorAll('.btn_w-st1.mt50'));
+  if (wrappers.length === 0) return null;
+
+  const applyTargets = findApplicationTargets();
+  const wrapperWithApplyTarget = wrappers.find((wrapper) =>
+    applyTargets.some((target) => wrapper.contains(target))
+  );
+  if (wrapperWithApplyTarget) return wrapperWithApplyTarget;
+
+  const wrapperWithApplyText = wrappers.find((wrapper) => /(신청|접수)/.test(wrapper.textContent || ''));
+  return wrapperWithApplyText || wrappers[wrappers.length - 1] || null;
+}
+
 function getPersonalScheduleManageUrl(): string {
   const path = window.location.pathname;
   const basePath = path.includes('/busan/sw/') ? '/busan/sw' : '/sw';
@@ -217,7 +231,8 @@ function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, de
   mentoringBannerHandle?.unmount();
   mentoringBannerHandle = null;
 
-  const anchor = findConflictBannerAnchor();
+  const applyButtonWrapper = findApplyButtonWrapper();
+  const anchor = applyButtonWrapper?.parentElement || findConflictBannerAnchor();
   if (!anchor) return;
 
   const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
@@ -236,7 +251,8 @@ function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, de
     {
       styles: [conflictBannerCss],
       hostClass: 'asm-conflict-banner-host',
-      insertAt: 'start',
+      insertAfter: applyButtonWrapper || undefined,
+      insertAt: applyButtonWrapper ? 'end' : 'start',
     },
   );
 }

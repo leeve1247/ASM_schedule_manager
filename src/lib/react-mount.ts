@@ -17,6 +17,8 @@ export interface MountOptions {
   hostTag?: string;
   // Class name applied to the host element. Useful for the imperative side to find it.
   hostClass?: string;
+  // Place the host immediately after this element when it belongs to `parent`.
+  insertAfter?: Element;
   // Where to place the host inside `parent`. Defaults to 'end' (appendChild).
   insertAt?: 'start' | 'end';
 }
@@ -28,7 +30,9 @@ export function mountReact(
 ): MountHandle {
   const host = document.createElement(options.hostTag ?? 'div');
   if (options.hostClass) host.className = options.hostClass;
-  if (options.insertAt === 'start' && parent.firstChild) {
+  if (options.insertAfter?.parentElement === parent) {
+    parent.insertBefore(host, options.insertAfter.nextSibling);
+  } else if (options.insertAt === 'start' && parent.firstChild) {
     parent.insertBefore(host, parent.firstChild);
   } else {
     parent.appendChild(host);
