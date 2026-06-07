@@ -38,7 +38,7 @@ export function LectureCard({
   }, [lec.dateTimeText]);
 
   const isSpecial = lec.type.includes('특강');
-  const safeUrl = getSafeSomaUrl(lec.url) || '#';
+  const safeUrl = getSafeSomaUrl(lec.url);
   const exporter = globalThis.ASMCalendarExport;
 
   const exportStarts = useMemo(() => {
@@ -73,11 +73,12 @@ export function LectureCard({
           [cellStyles.ended]: ended,
           [styles.notInGoogleCalendar]: missingFromGoogleCalendar,
           [styles.googleCalendarJustRegistered]: justRegistered,
+          [styles.mentorDeleted]: lec.mentorDeleted,
         },
       )}
       title={lec.title}
     >
-      <a className={cellStyles.infoGroup} href={safeUrl}>
+      <a className={cellStyles.infoGroup} href={safeUrl || undefined}>
         <div className={cellStyles.textTitle} data-role="title">
           {lec.title}
         </div>

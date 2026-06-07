@@ -99,6 +99,26 @@
 }
 
 
+/* Lectures the mentor deleted from the catalog: kept so the user's own
+   registration stays visible, marked so the missing detail link is explained. */
+:global(#registration-history-calendar) .mentor-deleted {
+  position: relative;
+}
+
+:global(#registration-history-calendar) .mentor-deleted::after {
+  content: '멘토 삭제됨';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background-color: #64748b;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
 :global(#registration-history-calendar) .cancel-btn.unavailable {
   opacity: 0.5;
   background: #f8fafc;

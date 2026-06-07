@@ -11,12 +11,15 @@ import {
 } from './lecture-detail';
 import type { Lecture, LectureDetails, RawLectureRow } from './types';
 
-const LOADING_DETAILS: LectureDetails = {
-  mentorName: '로딩 중...',
-  location: '로딩 중...',
-  people: '로딩 중...',
-  approvalStatus: '로딩 중...',
-  deadlineStatus: '로딩 중...',
+// Rows without a detail URL (e.g. lectures the mentor deleted from the catalog,
+// which lose their title link) can't be fetched — render placeholders instead of
+// a card stuck on "로딩 중...".
+const NO_DETAILS: LectureDetails = {
+  mentorName: '정보 없음',
+  location: '정보 없음',
+  people: '정보 없음',
+  approvalStatus: '정보 없음',
+  deadlineStatus: '정보 없음',
 };
 
 export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): RawLectureRow[] {
@@ -156,10 +159,10 @@ async function fetchAllRawRows(): Promise<RawLectureRow[]> {
 export async function parseLecturesTable(): Promise<Lecture[]> {
   const allRaw = await fetchAllRawRows();
 
-  // Filter out cancelled registrations ("취소불가" = still active, must keep)
-  // and lectures the mentor has deleted (no longer in catalog).
+  // Filter out cancelled registrations ("취소불가" = still active, must keep).
+  // Mentor-deleted lectures are kept (and marked in the UI) so the user's own
+  // registrations don't silently disappear.
   const rawList = allRaw.filter((raw) => {
-    if (raw.mentorDeleted) return false;
     const combined = `${raw.status} ${raw.approval}`;
     return !/취소/.test(combined) || /취소불가/.test(combined);
   });
@@ -167,9 +170,11 @@ export async function parseLecturesTable(): Promise<Lecture[]> {
   const lectures: Lecture[] = [];
 
   for (const raw of rawList) {
-    let details: LectureDetails = { ...LOADING_DETAILS };
+    let details: LectureDetails;
     if (raw.somaLectureId && raw.url) {
       details = await fetchLectureDetails(raw.somaLectureId, raw.url, raw.dateTimeText);
+    } else {
+      details = { ...NO_DETAILS };
     }
 
     // 상세 페이지의 강의날짜(시간 포함)를 우선 사용, 없으면 리스트 페이지 값 fallback
