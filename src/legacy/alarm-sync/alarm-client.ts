@@ -1,3 +1,6 @@
+// LEGACY / DISABLED — excluded from the manifest build, kept for reference only.
+// See src/legacy/README.md for status and the steps to re-enable.
+//
 // SOMA Schedule Manager - Alarm Client (Cloudflare D1 + Discord webhook bridge)
 // Disabled by default. Set ALARM_FEATURE_ENABLED to true to re-enable.
 

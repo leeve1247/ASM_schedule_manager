@@ -44,12 +44,10 @@
       ],
       "js": [
         "src/entrypoints/calendar-export.ts",
-        "src/entrypoints/alarm-client.ts",
         "src/entrypoints/mentoring-registration-history/index.ts"
       ],
       "css": [
-        "src/features/mentoring-registration-history/schedule-manager.css",
-        "src/features/alarm-sync/alarm-client.css"
+        "src/features/mentoring-registration-history/schedule-manager.css"
       ],
       "run_at": "document_idle"
     }
