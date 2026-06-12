@@ -1,4 +1,3 @@
-import type { PersonalSchedule } from '@features/schedules/personal-schedule';
 import type { MentoringSchedule } from '@features/schedules/mentoring-schedule';
 
 interface TimedEvent {
@@ -42,30 +41,6 @@ export function hasMentoringScheduleConflict(
     findConflictingMentoringSchedules(evRange, mentoringSchedules, ev.somaLectureId ?? undefined)
       .length > 0
   );
-}
-
-export function hasPersonalScheduleConflict(
-  ev: TimedEvent,
-  personalSchedules: PersonalSchedule[]
-): boolean {
-  const evRange = ev?.date && ev?.timeStart && ev?.timeEnd
-    ? toDateRange(ev.date, ev.timeStart, ev.timeEnd)
-    : null;
-  if (!evRange || !Array.isArray(personalSchedules)) return false;
-
-  return findConflictingPersonalSchedule(evRange, personalSchedules) != null;
-}
-
-export function findConflictingPersonalSchedule(
-  range: DateRange,
-  personalSchedules: PersonalSchedule[]
-): PersonalSchedule | null {
-  for (const ps of personalSchedules) {
-    if (!ps?.dateStr || !ps?.startTime || !ps?.endTime) continue;
-    const psRange = toDateRange(ps.dateStr, ps.startTime, ps.endTime);
-    if (psRange && overlaps(range, psRange)) return ps;
-  }
-  return null;
 }
 
 export function findConflictingMentoringSchedules(

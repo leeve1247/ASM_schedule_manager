@@ -1,5 +1,4 @@
-// Top toolbar of the dashboard calendar: title, week navigation, refresh,
-// and "+ 개인 일정" button.
+// Top toolbar of the dashboard calendar: title, week navigation, and refresh.
 
 import { cx } from '@shared/ui/cx';
 import styles from './CalendarHeader.module.css';
@@ -13,7 +12,6 @@ export interface CalendarHeaderProps {
   onPrevWeeks(): void;
   onToday(): void;
   onNextWeeks(): void;
-  onAddPersonal(): void;
   onRefresh(): void | Promise<void>;
 }
 
@@ -23,7 +21,6 @@ export function CalendarHeader({
   onPrevWeeks,
   onToday,
   onNextWeeks,
-  onAddPersonal,
   onRefresh,
 }: CalendarHeaderProps) {
   return (
@@ -31,7 +28,7 @@ export function CalendarHeader({
       <div className={styles.calendarTitleGroup}>
         <h3>통합 일정 대시보드</h3>
         <span className={styles.calendarSubtitle}>
-          접수한 일정과 내 개인 일정을 함께 모아 관리합니다.
+          접수한 멘토링 일정을 한눈에 모아 관리합니다.
         </span>
       </div>
       <div className={styles.calendarNavGroup}>
@@ -65,13 +62,6 @@ export function CalendarHeader({
           onClick={() => void onRefresh()}
         >
           {refreshing ? '↻ 새로고침 중…' : '↻ 새로고침'}
-        </button>
-        <button
-          className={cx(styles.controlBtn, styles.accent)}
-          disabled={disabled}
-          onClick={onAddPersonal}
-        >
-          + 개인 일정 추가
         </button>
       </div>
     </div>

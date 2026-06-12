@@ -1,16 +1,9 @@
-// Two-week dashboard calendar — orchestrator. State (week offset, personal
-// schedules, Google Calendar match, refreshing) lives here; rendering
-// is split across CalendarHeader / CalendarCell / LectureCard /
-// PersonalScheduleCard.
+// Two-week dashboard calendar — orchestrator. State (week offset, Google
+// Calendar match, refreshing) lives here; rendering is split across
+// CalendarHeader / CalendarCell / LectureCard.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DAY_KO, isLectureEnded, parseLectureDateTimeText, toDateStr } from '@shared/date/date-time';
-import {
-  deletePersonalSchedule,
-  FIXED_SHARED_SCHEDULES,
-  loadPersonalSchedules,
-  type PersonalSchedule,
-} from '@features/schedules/personal-schedule';
 import {
   saveMentoringSchedules,
   type MentoringSchedule,
@@ -23,7 +16,6 @@ import {
   loadDismissedDeletedLectureKeys,
   removeDismissedDeletedLectureKeys,
 } from '../lectures/dismissed-lectures';
-import { openModalForEditing, openModalWithDate } from '../personal-schedules/modal';
 import { CalendarHeader, calendarHeaderCss } from './CalendarHeader';
 import { CalendarCell, calendarCellCss, type EventEntry } from './CalendarCell';
 import { useGoogleCalendarMatch } from './useGoogleCalendarMatch';
@@ -69,15 +61,10 @@ export interface CalendarProps {
 
 export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   const [startOffsetWeeks, setStartOffsetWeeks] = useState(0);
-  const [personalSchedules, setPersonalSchedules] = useState<PersonalSchedule[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [dismissedDeletedKeys, setDismissedDeletedKeys] = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
-
-  useEffect(() => {
-    void loadPersonalSchedules().then(setPersonalSchedules);
-  }, [lectures, refreshKey]);
 
   useEffect(() => {
     void loadDismissedDeletedLectureKeys().then(setDismissedDeletedKeys);
@@ -167,25 +154,7 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
     }
   }, [onRefresh, refreshing]);
 
-  const handleDeletePersonal = useCallback(async (ps: PersonalSchedule) => {
-    if (!confirm(`개인 일정 "${ps.title}"을(를) 삭제하시겠습니까?`)) return;
-    try {
-      await deletePersonalSchedule(ps.id);
-    } catch (error) {
-      console.error('SOMA Schedule Manager: Failed to delete personal schedule:', error);
-      alert(error instanceof Error ? error.message : '개인 일정 삭제에 실패했습니다.');
-      return;
-    }
-    setPersonalSchedules((prev) => prev.filter((item) => item.id !== ps.id));
-    await onRefresh();
-  }, [onRefresh]);
-
   // --- Render ---
-
-  const mergedPersonals = useMemo(
-    () => [...FIXED_SHARED_SCHEDULES, ...personalSchedules],
-    [personalSchedules],
-  );
 
   const today = useMemo(() => {
     const t = new Date();
@@ -234,7 +203,6 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
         const dismissed = l.mentorDeleted && Boolean(matchKey) && dismissedDeletedKeys.has(matchKey);
         if (dismissed && !showHidden) continue;
         events.push({
-          isPersonal: false,
           data: l,
           timeKey: parsed ? `${parsed.sh}:${parsed.sm}` : '00:00',
           ended: isLectureEnded(l.dateTimeText),
@@ -242,19 +210,10 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
           dismissed,
         });
       }
-      for (const ps of mergedPersonals) {
-        if (ps.dateStr !== day.dateStr) continue;
-        events.push({
-          isPersonal: true,
-          data: ps,
-          timeKey: ps.startTime,
-          ended: isLectureEnded(`${ps.dateStr}(요일) ${ps.startTime} ~ ${ps.endTime}`),
-        });
-      }
       events.sort((a, b) => a.timeKey.localeCompare(b.timeKey));
       return { day, events };
     });
-  }, [days, lectures, mergedPersonals, dismissedDeletedKeys, showHidden]);
+  }, [days, lectures, dismissedDeletedKeys, showHidden]);
 
   return (
     <div id="registration-history-calendar">
@@ -264,7 +223,6 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
         onPrevWeeks={() => setStartOffsetWeeks((w) => w - CALENDAR_SHIFT_WEEKS)}
         onToday={() => setStartOffsetWeeks(0)}
         onNextWeeks={() => setStartOffsetWeeks((w) => w + CALENDAR_SHIFT_WEEKS)}
-        onAddPersonal={() => openModalWithDate()}
         onRefresh={handleRefresh}
       />
 
@@ -313,9 +271,6 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
               googleCalendarMatch={googleCalendarMatch}
               registeredFeedbackIds={registeredFeedbackIds}
               deletedFromGoogleFeedbackIds={deletedFromGoogleFeedbackIds}
-              onAddPersonal={openModalWithDate}
-              onEditPersonal={openModalForEditing}
-              onDeletePersonal={handleDeletePersonal}
               onCancelLecture={triggerCancellation}
               onDismissLecture={handleManualDismiss}
               onRestoreLecture={handleRestore}

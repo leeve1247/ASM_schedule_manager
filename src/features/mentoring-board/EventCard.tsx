@@ -104,7 +104,6 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
         isGray ? styles.asmCardGray : cx(styles.asmCardOpen, eventCategoryClass),
         {
           [styles.asmCardConflict]: ev.hasMentoringConflict,
-          [styles.asmCardPersonalConflict]: ev.hasPersonalConflict,
           [styles.asmCardEnrolled]: ev.isEnrolled,
         },
       )}
@@ -131,10 +130,6 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
         <Badge className={statusCls}>{statusLabel}</Badge>
 
         {ev.isEnrolled && <IconBadge icon="check" text="수강중" className={styles.asmEnrolled} />}
-
-        {ev.hasPersonalConflict && (
-          <Badge className={styles.asmPersonalConflict}>개인일정주의</Badge>
-        )}
 
         {ev.hasMentoringConflict && (
           <Badge className={styles.asmConflict}>멘토링일정주의</Badge>

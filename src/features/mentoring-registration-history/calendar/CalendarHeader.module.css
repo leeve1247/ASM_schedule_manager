@@ -110,14 +110,3 @@
   background: #e2e8f0;
   color: #0f172a;
 }
-
-:global(#registration-history-calendar) .control-btn.accent {
-  background: #086DB7;
-  border: none;
-  color: #ffffff;
-}
-
-:global(#registration-history-calendar) .control-btn.accent:hover {
-  background: #075e9e;
-  color: #ffffff;
-}

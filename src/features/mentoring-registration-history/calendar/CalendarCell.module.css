@@ -1,7 +1,6 @@
 /* Cell grid + date layout, plus card primitives (.calendar-lecture base,
    .info-group, .text-title, .text-type-badge, .info-row, .button-group,
-   .export-group, .asm-export-btn) and the shared ended state used by both
-   LectureCard and PersonalScheduleCard. */
+   .export-group, .asm-export-btn) and the ended state used by LectureCard. */
 
 /* 2. Calendar Grid — cross/table style */
 :global(#registration-history-calendar) .calendar-grid {
@@ -131,7 +130,7 @@
 
 /* Dot Colors and pastel backgrounds depending on types */
 
-/* Past Events styled with ended state — shared by both card variants. */
+/* Past Events styled with ended state. */
 :global(#registration-history-calendar) .calendar-lecture.ended {
   opacity: 0.62;
   background: #f8fafc;
@@ -167,7 +166,7 @@
   opacity: 0.75;
 }
 
-/* Card primitives shared between LectureCard and PersonalScheduleCard. */
+/* Card primitives used by LectureCard. */
 :global(#registration-history-calendar) .info-group {
   text-decoration: none !important;
   color: inherit !important;
@@ -300,7 +299,7 @@
 }
 
 
-/* Quick Add Cell Button in Calendar Cell */
+/* Calendar Cell date header row */
 :global(#registration-history-calendar) .calendar-date-header-row {
   display: flex;
   justify-content: space-between;
@@ -308,22 +307,4 @@
   padding-bottom: 4px;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 4px;
-}
-
-:global(#registration-history-calendar) .quick-add-cell-btn {
-  background: none;
-  border: none;
-  color: #2a8020;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  transition: all 0.2s ease;
-  border-radius: 4px;
-}
-
-:global(#registration-history-calendar) .quick-add-cell-btn:hover {
-  background: rgba(144, 234, 132, 0.15);
-  transform: scale(1.2);
 }

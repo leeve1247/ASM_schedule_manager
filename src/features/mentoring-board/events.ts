@@ -9,7 +9,6 @@ export interface EventRecord extends EventInfo {
   categoryNm: string;
   url: string;
   location?: string | null;
-  hasPersonalConflict?: boolean;
   hasMentoringConflict?: boolean;
   isEnrolled?: boolean;
 }

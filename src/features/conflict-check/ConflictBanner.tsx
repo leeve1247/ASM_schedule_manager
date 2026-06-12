@@ -1,5 +1,5 @@
 // Conflict banner — replaces the innerHTML version in conflict-banner.ts.
-// One component, two variants ('personal' = warning, 'mentoring' = block).
+// One component, two variants ('mentoring' = block, 'reoffer' = re-offer notice).
 
 import { cx } from '@shared/ui/cx';
 import { Icon } from '@shared/ui/Icon';
@@ -8,7 +8,7 @@ import css from './ConflictBanner.module.css?inline';
 
 export const conflictBannerCss = css;
 
-export type ConflictBannerVariant = 'personal' | 'mentoring' | 'reoffer';
+export type ConflictBannerVariant = 'mentoring' | 'reoffer';
 
 export interface ConflictBannerProps {
   variant: ConflictBannerVariant;
@@ -16,16 +16,9 @@ export interface ConflictBannerProps {
   conflictTitle: string;
   conflictStart: string;
   conflictEnd: string;
-  // Only used for the personal variant.
-  manageUrl?: string;
 }
 
 const COPY = {
-  personal: {
-    title: '개인 일정과 중복되는 멘토링입니다',
-    desc: '현재 선택하신 멘토링 시간대에 겹치는 개인 일정이 등록되어 있습니다. 신청은 가능하지만 일정이 중복될 수 있으니 확인 후 신청해 주세요.',
-    conflictLabel: '개인 일정',
-  },
   mentoring: {
     title: '멘토링 일정과 중복되는 멘토링입니다',
     desc: '이미 접수한 멘토링 일정과 시간대가 겹쳐 신청이 제한됩니다. 기존 접수를 취소하거나 다른 멘토링을 선택해 주세요.',
@@ -44,14 +37,12 @@ export function ConflictBanner({
   conflictTitle,
   conflictStart,
   conflictEnd,
-  manageUrl,
 }: ConflictBannerProps) {
   const copy = COPY[variant];
 
   return (
     <div
       className={cx(styles.banner, {
-        [styles.bannerPersonal]: variant === 'personal',
         [styles.bannerMentoring]: variant === 'mentoring',
         [styles.bannerReoffer]: variant === 'reoffer',
       })}
@@ -83,13 +74,6 @@ export function ConflictBanner({
               </span>
             </div>
           </div>
-          {variant === 'personal' && manageUrl && (
-            <div className={styles.bannerAction}>
-              <a className={styles.bannerLink} href={manageUrl}>
-                개인 일정 수정하기
-              </a>
-            </div>
-          )}
         </div>
       </div>
     </div>

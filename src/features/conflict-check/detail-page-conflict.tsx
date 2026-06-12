@@ -1,20 +1,12 @@
-// Detail-page conflict checker: scans for date-time, compares against personal
-// and mentoring schedules, and injects warning banners / blocks apply buttons.
+// Detail-page conflict checker: scans for date-time, compares against the
+// mentoring schedules, and injects warning banners / blocks apply buttons.
 
 import { getLectureDateBounds } from '@shared/date/date-time';
-import {
-  FIXED_SHARED_SCHEDULES,
-  loadPersonalSchedules,
-  type PersonalSchedule,
-} from '@features/schedules/personal-schedule';
 import {
   loadStoredMentoringSchedules,
   type MentoringSchedule,
 } from '@features/schedules/mentoring-schedule';
-import {
-  findConflictingMentoringSchedules,
-  findConflictingPersonalSchedule,
-} from '@features/schedules/conflict';
+import { findConflictingMentoringSchedules } from '@features/schedules/conflict';
 import { mountReact, type MountHandle } from '@shared/dom/react-mount';
 import { ConflictBanner, conflictBannerCss, type ConflictBannerVariant } from './ConflictBanner';
 import {
@@ -23,17 +15,8 @@ import {
   normalizeLectureTitle,
 } from './detail-page-extract';
 
-let personalBannerHandle: MountHandle | null = null;
 let mentoringBannerHandle: MountHandle | null = null;
 let mentoringBannerVariant: ConflictBannerVariant | null = null;
-
-function removeConflictBanners(): void {
-  // 개인 일정 배너만 정리한다. 멘토링 배너(차단/재신청 안내)는
-  // checkLectureConflict 의 멘토링 섹션이 매 실행마다 단독으로 관리한다.
-  personalBannerHandle?.unmount();
-  personalBannerHandle = null;
-  document.getElementById('soma-conflict-debug-banner')?.remove();
-}
 
 function findConflictBannerAnchor(): Element | null {
   return (
@@ -57,12 +40,6 @@ function findApplyButtonWrapper(): Element | null {
 
   const wrapperWithApplyText = wrappers.find((wrapper) => /(신청|접수)/.test(wrapper.textContent || ''));
   return wrapperWithApplyText || wrappers[wrappers.length - 1] || null;
-}
-
-function getPersonalScheduleManageUrl(): string {
-  const path = window.location.pathname;
-  const basePath = path.includes('/busan/sw/') ? '/busan/sw' : '/sw';
-  return `${window.location.origin}${basePath}/mypage/userAnswer/history.do?menuNo=200047`;
 }
 
 function isApplicationTrigger(el: Element | null): boolean {
@@ -105,7 +82,6 @@ interface ConflictBannerMountProps {
   conflictTitle: string;
   conflictStart: string;
   conflictEnd: string;
-  manageUrl?: string;
 }
 
 // 신청하기 버튼 바로 위(버튼을 못 찾으면 페이지 상단)에 ConflictBanner 를 마운트한다.
@@ -125,7 +101,6 @@ function mountConflictBanner(props: ConflictBannerMountProps): MountHandle | nul
         conflictTitle={props.conflictTitle}
         conflictStart={props.conflictStart}
         conflictEnd={props.conflictEnd}
-        manageUrl={props.manageUrl}
       />
     ),
     {
@@ -135,18 +110,6 @@ function mountConflictBanner(props: ConflictBannerMountProps): MountHandle | nul
       insertAt: applyButtonWrapper ? 'end' : 'start',
     },
   );
-}
-
-function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void {
-  personalBannerHandle?.unmount();
-  personalBannerHandle = mountConflictBanner({
-    variant: 'personal',
-    detailText,
-    conflictTitle: schedule.title,
-    conflictStart: schedule.startTime,
-    conflictEnd: schedule.endTime,
-    manageUrl: getPersonalScheduleManageUrl(),
-  });
 }
 
 function injectMentoringConflictBanner(
@@ -226,20 +189,6 @@ async function checkLectureConflict(): Promise<void> {
   if (!lectureRange) return;
 
   const detailText = `멘토링 시간: ${dateTimeText}`;
-
-  const personalSchedules = await loadPersonalSchedules();
-  const mergedSchedules: PersonalSchedule[] = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
-
-  const conflictingSchedule = findConflictingPersonalSchedule(lectureRange, mergedSchedules);
-
-  if (conflictingSchedule) {
-    console.warn(
-      `SOMA Schedule Manager: Overlap detected with personal schedule "${conflictingSchedule.title}"`
-    );
-    injectWarningBanner(conflictingSchedule, detailText);
-  } else {
-    removeConflictBanners();
-  }
 
   // 접수된 멘토링 일정과의 충돌 체크 → 신청 차단
   // 단, 멘토특강 → 자유멘토링 전환처럼 "같은 이름의 강의가 새 qustnrSn 으로 재개설"된

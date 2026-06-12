@@ -27,7 +27,7 @@
 ### 내부 구조 변경
 - **Vite + TypeScript 빌드로 전환** — 기존 단일 `.js` 파일들을 모듈로 분할하고 산출물을 `dist/` 로 빌드합니다. 전체 소스(background · calendar-export · content · schedule-manager)를 TypeScript 로 마이그레이션했습니다.
 - **모듈 구조 재편** — manifest 가 직접 로드하는 코드는 `src/entrypoints/`, 기능 단위 구현은 `src/features/`, 공용 UI·DOM·스토리지·날짜 유틸은 `src/shared/` 로 분리했습니다.
-- **React + Shadow DOM 도입** — 충돌 배너 · 개인 일정 모달 · 접수 내역 캘린더 · 자유 멘토링 보드 · 확장 팝업을 명령형 `innerHTML` 에서 React 컴포넌트로 재작성했습니다. UI 를 Shadow DOM 안에 마운트하고 CSS 를 `?inline` 으로 주입해 SOMA 페이지 스타일과 양방향으로 격리하며, 이후 각 컴포넌트를 파일 단위로 나누고 CSS 를 컴포넌트 옆에 co-locate 했습니다.
+- **React + Shadow DOM 도입** — 충돌 배너 · 접수 내역 캘린더 · 자유 멘토링 보드 · 확장 팝업을 명령형 `innerHTML` 에서 React 컴포넌트로 재작성했습니다. UI 를 Shadow DOM 안에 마운트하고 CSS 를 `?inline` 으로 주입해 SOMA 페이지 스타일과 양방향으로 격리하며, 이후 각 컴포넌트를 파일 단위로 나누고 CSS 를 컴포넌트 옆에 co-locate 했습니다.
 - **UI 이모지 → Lucide 아이콘(SVG)** — 폰트·플랫폼별 이모지 렌더링 불일치를 제거했습니다.
 - **알림(Discord/Cloudflare) 기능 제거** — 원본의 알림 파이프라인을 삭제했습니다. 비활성 플래그로 남아 있던 `alarm-sync` 모듈과 관련 UI·`worker-fetch` 프록시·해당 host 권한을 모두 정리해, 이제 캘린더/익스포트 기능만 남았습니다.
 - **공유 모듈 통합 · 컴포넌트 분할** — 중복 로직(일정 충돌 검사 · KST 날짜 변환 · SOMA 상세 페이지 파싱)을 `src/shared/` 로 모으고, 대형 컴포넌트(자유 멘토링 보드 · 접수 내역 캘린더)를 하위 컴포넌트와 커스텀 훅으로 분리했습니다.
@@ -43,7 +43,7 @@ src/
 ├── entrypoints/   manifest 가 직접 로드하는 진입점 (content script · service worker · popup)
 ├── features/      기능 단위 구현
 │   ├── mentoring-board/                   자유 멘토링 / 멘토 특강 보드
-│   ├── mentoring-registration-history/    접수 내역 캘린더 · 개인 일정 · 강의 상세
+│   ├── mentoring-registration-history/    접수 내역 캘린더 · 강의 상세
 │   ├── conflict-check/                     상세 페이지 신청 중복 감지 배너
 │   ├── schedules/                          일정 데이터 · 충돌 판정 로직
 │   ├── calendar-export/                    Google Calendar 링크 · .ics 익스포트

@@ -18,12 +18,6 @@
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.banner--personal {
-  background: #FFFBF5;
-  border: 1px solid #FED7AA;
-  box-shadow: 0 10px 20px rgba(255, 165, 0, 0.05);
-}
-
 .banner--mentoring {
   background: #fffdfd;
   border: 1px solid #fecaca;
@@ -50,7 +44,6 @@
   line-height: 1.35;
 }
 
-.banner--personal .banner__title { color: #B45309; }
 .banner--mentoring .banner__title { color: #991b1b; }
 
 .banner__desc {
@@ -68,11 +61,6 @@
   padding: 16px 20px;
   margin: 12px 0;
   max-width: 650px;
-}
-
-.banner--personal .banner__timeline {
-  background: #FFF8EE;
-  border: 1px solid #FED7AA;
 }
 
 .banner--mentoring .banner__timeline {
@@ -98,12 +86,6 @@
   flex-direction: column;
   gap: 10px;
   flex: 1;
-}
-
-.banner__action {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
 }
 
 .banner__row {
@@ -155,26 +137,4 @@
 .banner__value-time {
   color: #64748b;
   margin-left: 4px;
-}
-
-.banner__link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 0 16px;
-  border-radius: 10px;
-  background: #F97316;
-  color: #fff !important;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 6px 14px rgba(255, 165, 0, 0.15);
-  transition: all 0.2s ease;
-}
-
-.banner__link:hover {
-  background: #EA580C;
-  box-shadow: 0 8px 18px rgba(255, 165, 0, 0.25);
-  transform: translateY(-1px);
 }

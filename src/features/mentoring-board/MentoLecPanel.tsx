@@ -39,17 +39,10 @@ import { getMonthRange, toDateStr } from '@shared/date/date-time';
 import { removeCacheEntries } from '@shared/storage/cache';
 import { removeChromeStorage } from '@shared/storage/storage';
 import {
-  loadPersonalSchedules,
-  type PersonalSchedule,
-} from '@features/schedules/personal-schedule';
-import {
   loadMentoringSchedules,
   type MentoringSchedule,
 } from '@features/schedules/mentoring-schedule';
-import {
-  hasMentoringScheduleConflict,
-  hasPersonalScheduleConflict,
-} from '@features/schedules/conflict';
+import { hasMentoringScheduleConflict } from '@features/schedules/conflict';
 import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
 import { SearchRow, searchRowCss, type SearchState } from './SearchRow';
@@ -75,16 +68,14 @@ function locMessage(done: number, total: number): string {
 }
 
 /**
- * EventRecord 에 개인/멘토링 충돌 플래그와 수강 여부를 채우고, 캐시에 있으면 location 도 붙인다.
+ * EventRecord 에 멘토링 충돌 플래그와 수강 여부를 채우고, 캐시에 있으면 location 도 붙인다.
  * location 은 캐시 히트일 때만 포함 — 누락은 "장소 없음"이 아니라 "아직 미조회"를 뜻한다.
  */
 function enrichEvent(
   ev: EventRecord,
   locCache: Map<string, string>,
-  personalSchedules: PersonalSchedule[],
   mentoringSchedules: MentoringSchedule[],
 ): EventRecord {
-  const hasPersonalConflict = hasPersonalScheduleConflict(ev, personalSchedules);
   const hasMentoringConflict = hasMentoringScheduleConflict(ev, mentoringSchedules);
   const isEnrolled = ev.somaLectureId
     ? mentoringSchedules.some((ms) => ms.somaLectureId === ev.somaLectureId)
@@ -93,18 +84,16 @@ function enrichEvent(
     return {
       ...ev,
       location: locCache.get(ev.somaLectureId) || null,
-      hasPersonalConflict,
       hasMentoringConflict,
       isEnrolled,
     };
   }
-  return { ...ev, hasPersonalConflict, hasMentoringConflict, isEnrolled };
+  return { ...ev, hasMentoringConflict, isEnrolled };
 }
 
 export function MentoLecPanel() {
   const [currentOffset, setCurrentOffset] = useState(0);
   const [allEvents, setAllEvents] = useState<EventRecord[]>([]);
-  const [personalSchedules, setPersonalSchedules] = useState<PersonalSchedule[]>([]);
   const [mentoringSchedules, setMentoringSchedules] = useState<MentoringSchedule[]>([]);
 
   const [searchDraft, setSearchDraft] = useState<SearchState>({ type: 'title', keyword: '' });
@@ -133,11 +122,7 @@ export function MentoLecPanel() {
         loadCountCache(),
       ]);
       setLoadingMessage(ENROLLMENT_LOADING_MESSAGE);
-      const [ps, ms] = await Promise.all([
-        loadPersonalSchedules(),
-        loadMentoringSchedules(),
-      ]);
-      setPersonalSchedules(ps);
+      const ms = await loadMentoringSchedules();
       setMentoringSchedules(ms);
       setLoadingMessage(null);
 
@@ -184,10 +169,10 @@ export function MentoLecPanel() {
   const enrichedFiltered = useMemo(() => {
     const cache = getLocCacheMemory();
     return filteredEvents.map((ev) =>
-      enrichEvent(ev, cache, personalSchedules, mentoringSchedules),
+      enrichEvent(ev, cache, mentoringSchedules),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredEvents, personalSchedules, mentoringSchedules, locVersion]);
+  }, [filteredEvents, mentoringSchedules, locVersion]);
 
   const byDate = useMemo(() => {
     const map = new Map<string, EventRecord[]>();
@@ -263,11 +248,7 @@ export function MentoLecPanel() {
       await removeChromeStorage(['soma_mentoring_schedules', 'soma_mentoring_schedules_ts']);
 
       setLoadingMessage(ENROLLMENT_LOADING_MESSAGE);
-      const [ps, ms] = await Promise.all([
-        loadPersonalSchedules(),
-        loadMentoringSchedules(),
-      ]);
-      setPersonalSchedules(ps);
+      const ms = await loadMentoringSchedules();
       setMentoringSchedules(ms);
 
       setLoadingMessage(null);
