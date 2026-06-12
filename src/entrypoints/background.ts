@@ -7,31 +7,6 @@ import {
   type LectureMatchInput,
 } from '@features/google-calendar/google-calendar';
 
-const ALLOWED_FETCH_ORIGINS = new Set<string>([
-  'https://asm-schedule-alarm.pa6764.workers.dev',
-]);
-
-interface WorkerFetchMessage {
-  type: 'asm-worker-fetch';
-  url: string;
-  options?: RequestInit;
-}
-
-interface WorkerFetchSuccess {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  text: string;
-}
-
-interface WorkerFetchFailure {
-  ok: false;
-  status?: number;
-  error: string;
-}
-
-type WorkerFetchResponse = WorkerFetchSuccess | WorkerFetchFailure;
-
 interface GoogleCalendarStatusMessage {
   type: 'asm-google-calendar-status';
 }
@@ -50,7 +25,6 @@ interface GoogleCalendarClearCacheMessage {
 }
 
 type IncomingMessage =
-  | WorkerFetchMessage
   | GoogleCalendarStatusMessage
   | GoogleCalendarConnectMessage
   | GoogleCalendarDisconnectMessage
@@ -64,9 +38,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function classifyMessage(value: unknown): IncomingMessage | null {
   if (!isObject(value)) return null;
   const type = value.type;
-  if (type === 'asm-worker-fetch' && typeof value.url === 'string') {
-    return value as unknown as WorkerFetchMessage;
-  }
   if (type === 'asm-google-calendar-status') return { type };
   if (type === 'asm-google-calendar-connect') return { type };
   if (type === 'asm-google-calendar-disconnect') return { type };
@@ -82,31 +53,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!msg) return undefined;
 
   (async () => {
-    if (msg.type === 'asm-worker-fetch') {
-      const respond = (payload: WorkerFetchResponse) => sendResponse(payload);
-      try {
-        const targetUrl = new URL(msg.url);
-        if (!ALLOWED_FETCH_ORIGINS.has(targetUrl.origin)) {
-          respond({ ok: false, status: 403, error: 'Blocked extension fetch target.' });
-          return;
-        }
-
-        const response = await fetch(targetUrl.toString(), msg.options ?? {});
-        const text = await response.text();
-
-        respond({
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
-          text,
-        });
-      } catch (error) {
-        const m = error instanceof Error ? error.message : 'Network request failed.';
-        respond({ ok: false, error: m });
-      }
-      return;
-    }
-
     if (msg.type === 'asm-google-calendar-status') {
       const connected = await isGoogleCalendarConnected();
       sendResponse({ connected });

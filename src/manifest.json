@@ -15,7 +15,6 @@
   "host_permissions": [
     "https://*.swmaestro.ai/*",
     "https://*.swmaestro.org/*",
-    "https://asm-schedule-alarm.pa6764.workers.dev/*",
     "https://www.googleapis.com/*",
     "https://oauth2.googleapis.com/*",
     "https://accounts.google.com/*"
