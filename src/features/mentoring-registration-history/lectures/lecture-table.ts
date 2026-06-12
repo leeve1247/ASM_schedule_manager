@@ -22,6 +22,11 @@ const NO_DETAILS: LectureDetails = {
   deadlineStatus: '정보 없음',
 };
 
+/**
+ * 신청내역 테이블에서 원본 행들을 추출한다.
+ * @param isCurrentPage 현재 화면 페이지면 취소 버튼(delDate) 존재 여부를 감지한다.
+ *   페치해 온 다른 페이지엔 라이브 취소 버튼이 없으므로 false 로 둔다.
+ */
 export function extractRawRowsFromDoc(doc: Document, isCurrentPage: boolean): RawLectureRow[] {
   const rows = doc.querySelectorAll('.boardlist table tbody tr');
   const rawList: RawLectureRow[] = [];
@@ -113,6 +118,11 @@ export function collectPageIndexes(doc: Document): Set<number> {
   return indexes;
 }
 
+/**
+ * 현재 페이지부터 시작해 페이지네이션을 따라가며 모든 신청내역 행을 모은다.
+ * 페치한 페이지에서 새 페이지 링크를 발견하면 큐에 추가하고(비순차 pager 대응),
+ * 마지막에 somaLectureId 로 중복 제거한다(같은 강의가 여러 페이지에 보일 수 있음).
+ */
 async function fetchAllRawRows(): Promise<RawLectureRow[]> {
   const rawList = extractRawRowsFromDoc(document, true);
 
@@ -156,6 +166,10 @@ async function fetchAllRawRows(): Promise<RawLectureRow[]> {
   });
 }
 
+/**
+ * 신청내역 전 페이지를 파싱하고 상세 페이지 정보를 병합해 Lecture 목록을 만든다.
+ * 일시·멘토·승인은 상세 우선·리스트 폴백이고, 취소 가능 여부는 버튼 존재 + 마감 정책으로 판정한다.
+ */
 export async function parseLecturesTable(): Promise<Lecture[]> {
   const allRaw = await fetchAllRawRows();
 

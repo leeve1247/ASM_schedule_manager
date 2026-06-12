@@ -13,6 +13,10 @@ export function isLectureCancelable(
   return new Date() < deadlineTime;
 }
 
+/**
+ * 강의 취소를 트리거한다. 전용 API 가 없어 SOMA 표에서 해당 행의 delDate 버튼을
+ * 찾아 프로그램적으로 클릭한다. 버튼을 못 찾으면 수동 취소를 안내하는 alert 를 띄운다.
+ */
 export function triggerCancellation(somaLectureId: string): void {
   const rows = document.querySelectorAll('.boardlist table tbody tr');
   for (const row of rows) {

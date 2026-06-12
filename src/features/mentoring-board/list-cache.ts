@@ -28,6 +28,11 @@ export const COUNT_CACHE_TTL = 5 * 60 * 1000;
 const LIST_FETCH_BATCH_SIZE = 3;
 const FULL_FETCH_JITTER_MAX_MS = 10 * 1000;
 
+/**
+ * 강의 목록 테이블(tbody tr)을 파싱해 somaLectureId → EventInfo 맵으로 변환한다.
+ * SOMA 의 td.pc_only 컬럼 순서(2 일시 / 3 정원 / 5 상태 / 6 작성자)에 의존 — 마크업이 바뀌면 깨진다.
+ * 정규식 부분 매칭이 실패한 필드는 빈 문자열로 채운다.
+ */
 export function parseTableRows(root: Document | Element): Map<string, EventInfo> {
   const map = new Map<string, EventInfo>();
 
@@ -82,6 +87,12 @@ async function waitBeforeFullFetch(): Promise<void> {
   if (jitter > 0) await delay(jitter);
 }
 
+/**
+ * 작업들을 batchSize 단위로 끊어 순차 실행한다(배치 내부는 병렬).
+ * Promise.allSettled 라서 한 작업이 실패해도 다음 배치를 막지 않는다.
+ * @param onBatch 각 배치 완료마다 호출 — 부분 결과를 즉시 UI 에 반영하는 용도
+ * @returns 모든 작업의 settled 결과(호출자가 fulfilled/rejected 를 직접 거른다)
+ */
 export async function fetchInBatches<T>(
   tasks: Array<() => Promise<T>>,
   batchSize: number,
@@ -189,6 +200,12 @@ export function getTotalPages(): number {
   return max;
 }
 
+/**
+ * 리스트 전체 강의 맵을 구성한다 — 캐시 우선, 없으면 전체 페이지를 페치.
+ * stable·count 캐시가 둘 다 살아있으면 페치 없이 병합만 해서 반환한다.
+ * 가변 정원(count, TTL 5분)과 거의 안 바뀌는 본문(stable, TTL 4시간)을 분리 캐시한다.
+ * @param onProgress 배치마다·완료 시 호출 — 강의가 점진적으로 렌더되도록
+ */
 export async function buildCompleteEventMap(
   onProgress?: (map: Map<string, EventInfo>) => void
 ): Promise<Map<string, EventInfo>> {

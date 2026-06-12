@@ -74,6 +74,10 @@ function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
 }
 
+/**
+ * EventRecord 에 개인/멘토링 충돌 플래그와 수강 여부를 채우고, 캐시에 있으면 location 도 붙인다.
+ * location 은 캐시 히트일 때만 포함 — 누락은 "장소 없음"이 아니라 "아직 미조회"를 뜻한다.
+ */
 function enrichEvent(
   ev: EventRecord,
   locCache: Map<string, string>,

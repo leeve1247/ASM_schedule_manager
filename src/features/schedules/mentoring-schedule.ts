@@ -77,6 +77,10 @@ function collectPageIndexes(doc: Document): Set<number> {
   return indexes;
 }
 
+/**
+ * 신청내역 페이지 문서에서 유효한 멘토링 일정만 뽑아낸다.
+ * 제외: 멘토 삭제 행, "취소" 상태(단 "취소불가"는 정상으로 유지), id·일시 파싱 실패 행.
+ */
 function extractSchedulesFromRegistrationHistoryDoc(doc: Document): MentoringSchedule[] {
   const schedules: MentoringSchedule[] = [];
   const rows = doc.querySelectorAll('.boardlist table tbody tr');

@@ -31,6 +31,11 @@ async function saveLocCache(map: Map<string, string>): Promise<void> {
   await writeCacheEntry<string>(LOC_CACHE_KEY, entry);
 }
 
+/**
+ * 강의 상세 문서에서 장소를 추출한다. 공유 detail 파서를 먼저 쓰고,
+ * 그게 못 잡는 list-page 변형 마크업만 .label/.tit/strong 폴백으로 처리한다.
+ * @returns 장소 문자열, 못 찾으면 null
+ */
 export function parseLocationFromDoc(doc: Document): string | null {
   const location = extractSomaDetailFields(doc).location;
   if (location) return location;
@@ -46,6 +51,11 @@ export function parseLocationFromDoc(doc: Document): string | null {
   return null;
 }
 
+/**
+ * 강의들의 상세 페이지에서 장소를 배치(3개씩) 조회해 캐시에 채운다.
+ * 캐시에 없고 오늘 이후인 강의만 대상 — 지난 강의·이미 캐시된 건 건너뛴다.
+ * @param onProgress (완료 수, 전체 수) 진행률 콜백
+ */
 export async function fetchLocations(
   events: Array<{ somaLectureId: string | null; date: string }>,
   onProgress?: (done: number, total: number) => void

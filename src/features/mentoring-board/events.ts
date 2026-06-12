@@ -18,6 +18,12 @@ export function normalizeText(text: string | undefined | null): string {
   return (text || '').toString().trim().normalize('NFC').toLowerCase();
 }
 
+/**
+ * 달력 DOM 의 강의 셀과 캐시된 eventMap 을 합쳐 EventRecord 목록을 만든다.
+ * 1차로 렌더된 DOM 셀에서 수집(중복 id 제거), 2차로 DOM 엔 없고 eventMap 에만 있는 강의를 보충한다.
+ * DOM 은 현재 보이는 달만 담고 있어 캐시로 빈칸을 메우는 구조.
+ * @param eventMap somaLectureId → 리스트 캐시 정보
+ */
 export function collectEvents(eventMap: Map<string, EventInfo>): EventRecord[] {
   const events: EventRecord[] = [];
   const seen = new Set<string>();

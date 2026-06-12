@@ -161,11 +161,12 @@ export async function clearEventCache(): Promise<void> {
   });
 }
 
+/**
+ * 강의가 이미 구글 캘린더에 export 되었는지 strict 매칭으로 판정한다.
+ * 이 확장의 export 가 이벤트 description 에 적어둔 SOMA URL 의 qustnrSn 파라미터로 대조한다 —
+ * 시간 겹침 + "swmaestro" 부분일치 같은 느슨한 휴리스틱은 다른 강의와 우연히 겹칠 때 오탐한다.
+ */
 function isLectureMatched(lecture: LectureMatchInput, events: GoogleCalendarEvent[]): boolean {
-  // Strict match: this extension's exporter writes the lecture's SOMA URL
-  // with its external lecture-id query parameter into the event description. Looser
-  // heuristics (time-overlap + "swmaestro" substring) false-positive when
-  // another SOMA event happens to overlap.
   if (!lecture.somaLectureId) return false;
   const needle = `qustnrSn=${lecture.somaLectureId}`;
   return events.some((e) => (e.description ?? '').includes(needle));

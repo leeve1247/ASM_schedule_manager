@@ -52,6 +52,11 @@ export function formatPeopleSummary(peopleText: string | undefined | null): stri
   return normalized;
 }
 
+/**
+ * 상세 페이지에서 신청자 수를 추출한다. 우선순위 폴백 3단계:
+ * .total-normal 텍스트 → script 의 appCnt 변수 → [신청완료] 활성 행 개수.
+ * @returns 신청자 수 문자열, 못 구하면 빈 문자열
+ */
 export function extractApplicantCount(doc: Document): string {
   const summaryText =
     doc.querySelector('.total-normal')?.textContent?.replace(/\s+/g, ' ').trim() || '';
@@ -108,6 +113,11 @@ export function formatApprovalStatus(rawApproval: string | undefined): string {
   return normalized;
 }
 
+/**
+ * 강의 상세를 페치(또는 캐시 반환)한다. 지난 강의는 무기한, 진행 중은 4시간 캐시.
+ * url 이 없으면 즉시 placeholder. 신청자 수와 정원을 합쳐 "n / m" 형태로 정리한다.
+ * @param dateTimeText 리스트 페이지 일시 — 지난 강의 판정(캐시 정책)과 폴백에 쓰인다
+ */
 export async function fetchLectureDetails(
   somaLectureId: string,
   url: string,

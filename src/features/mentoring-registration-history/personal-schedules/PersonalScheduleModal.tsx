@@ -34,6 +34,12 @@ function formatDate(offset = 0): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
+/**
+ * 시작 시각 +1시간을 종료 시각 기본값으로 제안한다.
+ * 자정을 넘기면 다음 날로 넘기지 않고 23:30 으로 고정한다.
+ * @param startTime "HH:MM"
+ * @returns "HH:MM"
+ */
 function addOneHour(startTime: string): string {
   const [h, m] = startTime.split(':').map(Number);
   let endH = h + 1;

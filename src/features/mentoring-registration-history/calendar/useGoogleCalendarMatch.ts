@@ -67,6 +67,10 @@ export function useGoogleCalendarMatch(
     mentoringSchedulesRef.current = mentoringSchedules;
   }, [mentoringSchedules]);
 
+  /**
+   * 매칭 결과를 상태에 반영하고, 직전엔 미매칭이었다가 이번에 매칭된 강의는
+   * "방금 등록됨" 피드백을 3.2초 띄웠다 지운다(전환 감지 기반 펄스).
+   */
   const applyGoogleCalendarMatch = useCallback((next: GoogleCalendarMatchResponse) => {
     const previous = googleCalendarMatchRef.current;
     const completedIds = mentoringSchedulesRef.current
