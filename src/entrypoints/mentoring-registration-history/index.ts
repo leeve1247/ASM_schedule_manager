@@ -28,10 +28,6 @@ async function init(): Promise<void> {
         await renderCalendar(fresh);
       });
       await renderCalendar(lectures);
-      const alarmFeature = globalThis.ASMAlarmFeature;
-      if (alarmFeature) {
-        await alarmFeature.syncOnRegistrationHistoryPageLoadIfConfigured(lectures);
-      }
     } catch (e) {
       console.error('Failed to initialize mentoring registration history dashboard:', e);
     }
