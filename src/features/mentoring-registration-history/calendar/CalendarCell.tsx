@@ -18,12 +18,9 @@ export interface GoogleCalendarMatchResponse {
   error?: string;
 }
 
-export interface EventEntry {
-  isPersonal: boolean;
-  data: Lecture | PersonalSchedule;
-  timeKey: string;
-  ended: boolean;
-}
+export type EventEntry =
+  | { isPersonal: true; data: PersonalSchedule; timeKey: string; ended: boolean }
+  | { isPersonal: false; data: Lecture; timeKey: string; ended: boolean };
 
 export interface CalendarCellProps {
   dateStr: string;
@@ -77,7 +74,7 @@ export function CalendarCell({
 
       {events.map((evt, idx) => {
         if (evt.isPersonal) {
-          const ps = evt.data as PersonalSchedule;
+          const ps = evt.data;
           return (
             <PersonalScheduleCard
               key={`p-${ps.id || idx}`}
@@ -88,7 +85,7 @@ export function CalendarCell({
             />
           );
         }
-        const lec = evt.data as Lecture;
+        const lec = evt.data;
         const missingFromGoogleCalendar =
           googleCalendarMatch.connected &&
           !evt.ended &&
