@@ -1,7 +1,7 @@
 // Detail-page conflict checker: scans for date-time, compares against personal
 // and mentoring schedules, and injects warning banners / blocks apply buttons.
 
-import { parseLectureDateTimeText } from '@shared/date/date-time';
+import { getLectureDateBounds, parseLectureDateTimeText } from '@shared/date/date-time';
 import {
   FIXED_SHARED_SCHEDULES,
   loadPersonalSchedules,
@@ -14,7 +14,6 @@ import {
 import {
   findConflictingMentoringSchedules,
   findConflictingPersonalSchedule,
-  type DateRange,
 } from '@features/schedules/conflict';
 import { mountReact, type MountHandle } from '@shared/dom/react-mount';
 import { ConflictBanner, conflictBannerCss, type ConflictBannerVariant } from './ConflictBanner';
@@ -241,29 +240,33 @@ function findApplicationTargets(): Element[] {
   return applyElements.filter(isApplicationTrigger);
 }
 
-function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void {
-  personalBannerHandle?.unmount();
-  personalBannerHandle = null;
+interface ConflictBannerMountProps {
+  variant: ConflictBannerVariant;
+  detailText: string;
+  conflictTitle: string;
+  conflictStart: string;
+  conflictEnd: string;
+  manageUrl?: string;
+}
 
-  // 멘토링 배너와 동일하게 신청하기 버튼 바로 위에 배치한다.
-  // (버튼을 못 찾으면 페이지 상단으로 폴백)
+// 신청하기 버튼 바로 위(버튼을 못 찾으면 페이지 상단)에 ConflictBanner 를 마운트한다.
+function mountConflictBanner(props: ConflictBannerMountProps): MountHandle | null {
   const applyButtonWrapper = findApplyButtonWrapper();
   const anchor = applyButtonWrapper?.parentElement || findConflictBannerAnchor();
-  if (!anchor) return;
+  if (!anchor) return null;
 
-  const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
-  const manageUrl = getPersonalScheduleManageUrl();
+  const mentoringTime = props.detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
 
-  personalBannerHandle = mountReact(
+  return mountReact(
     anchor,
     (
       <ConflictBanner
-        variant="personal"
+        variant={props.variant}
         mentoringTime={mentoringTime}
-        conflictTitle={schedule.title}
-        conflictStart={schedule.startTime}
-        conflictEnd={schedule.endTime}
-        manageUrl={manageUrl}
+        conflictTitle={props.conflictTitle}
+        conflictStart={props.conflictStart}
+        conflictEnd={props.conflictEnd}
+        manageUrl={props.manageUrl}
       />
     ),
     {
@@ -275,6 +278,18 @@ function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void 
   );
 }
 
+function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void {
+  personalBannerHandle?.unmount();
+  personalBannerHandle = mountConflictBanner({
+    variant: 'personal',
+    detailText,
+    conflictTitle: schedule.title,
+    conflictStart: schedule.startTime,
+    conflictEnd: schedule.endTime,
+    manageUrl: getPersonalScheduleManageUrl(),
+  });
+}
+
 function injectMentoringConflictBanner(
   conflictingLecture: MentoringSchedule,
   detailText = '',
@@ -284,34 +299,16 @@ function injectMentoringConflictBanner(
   if (mentoringBannerHandle && mentoringBannerVariant === variant) return;
 
   mentoringBannerHandle?.unmount();
-  mentoringBannerHandle = null;
   mentoringBannerVariant = null;
 
-  const applyButtonWrapper = findApplyButtonWrapper();
-  const anchor = applyButtonWrapper?.parentElement || findConflictBannerAnchor();
-  if (!anchor) return;
-
-  const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
-
-  mentoringBannerHandle = mountReact(
-    anchor,
-    (
-      <ConflictBanner
-        variant={variant}
-        mentoringTime={mentoringTime}
-        conflictTitle={conflictingLecture.title}
-        conflictStart={conflictingLecture.startTime}
-        conflictEnd={conflictingLecture.endTime}
-      />
-    ),
-    {
-      styles: [conflictBannerCss],
-      hostClass: 'asm-conflict-banner-host',
-      insertBefore: applyButtonWrapper || undefined,
-      insertAt: applyButtonWrapper ? 'end' : 'start',
-    },
-  );
-  mentoringBannerVariant = variant;
+  mentoringBannerHandle = mountConflictBanner({
+    variant,
+    detailText,
+    conflictTitle: conflictingLecture.title,
+    conflictStart: conflictingLecture.startTime,
+    conflictEnd: conflictingLecture.endTime,
+  });
+  if (mentoringBannerHandle) mentoringBannerVariant = variant;
 }
 
 // 차단된 버튼은 원본을 잃지 않도록 (clone, original) 쌍으로 보관한다.
@@ -363,29 +360,16 @@ function unblockApplicationButtons(): void {
 }
 
 async function checkLectureConflict(): Promise<void> {
-  console.log('SOMA Schedule Manager: Starting conflict check...');
   const dateTimeText = findLectureDateTimeOnDetailPage();
-  console.log('SOMA Schedule Manager: findLectureDateTimeOnDetailPage returned:', dateTimeText);
-  if (!dateTimeText) {
-    console.log('SOMA Schedule Manager: No lecture date-time string found on detail page.');
-    return;
-  }
+  if (!dateTimeText) return;
 
-  const parsed = parseLectureDateTimeText(dateTimeText);
-  console.log('SOMA Schedule Manager: Regex match result:', parsed);
-  if (!parsed) return;
+  const lectureRange = getLectureDateBounds(dateTimeText);
+  if (!lectureRange) return;
 
-  const { y, m, d, sh, sm, eh, em } = parsed;
-  const lectureRange: DateRange = {
-    start: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(sh, 10), parseInt(sm, 10), 0),
-    end: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(eh, 10), parseInt(em, 10), 0),
-  };
-  console.log('SOMA Schedule Manager: Parsed Lecture bounds:', lectureRange.start, 'to', lectureRange.end);
   const detailText = `멘토링 시간: ${dateTimeText}`;
 
   const personalSchedules = await loadPersonalSchedules();
   const mergedSchedules: PersonalSchedule[] = [...FIXED_SHARED_SCHEDULES, ...personalSchedules];
-  console.log('SOMA Schedule Manager: Loaded personal schedules:', mergedSchedules);
 
   const conflictingSchedule = findConflictingPersonalSchedule(lectureRange, mergedSchedules);
 
@@ -396,7 +380,6 @@ async function checkLectureConflict(): Promise<void> {
     injectWarningBanner(conflictingSchedule, detailText);
   } else {
     removeConflictBanners();
-    console.log('SOMA Schedule Manager: No scheduling conflict detected.');
   }
 
   // 접수된 멘토링 일정과의 충돌 체크 → 신청 차단
@@ -426,9 +409,6 @@ async function checkLectureConflict(): Promise<void> {
     );
     injectMentoringConflictBanner(blockingConflict, detailText, 'mentoring');
   } else if (reofferConflict) {
-    console.log(
-      `SOMA Schedule Manager: Same-name re-offer of "${reofferConflict.title}" detected; allowing apply.`
-    );
     unblockApplicationButtons();
     injectMentoringConflictBanner(reofferConflict, detailText, 'reoffer');
   } else {
@@ -442,19 +422,16 @@ async function checkLectureConflict(): Promise<void> {
 }
 
 export async function checkLectureConflictWithRetry(): Promise<void> {
-  console.log('SOMA Schedule Manager: Initializing conflict check with retry loop...');
   let retries = 10;
   while (retries > 0) {
     const dateTimeText = findLectureDateTimeOnDetailPage();
     const applyBtn = findApplicationTargets()[0];
 
     if (dateTimeText && applyBtn) {
-      console.log('SOMA Schedule Manager: Target DOM elements resolved.');
       await checkLectureConflict();
       return;
     }
 
-    console.log(`SOMA Schedule Manager: Waiting for page content (retries remaining: ${retries})...`);
     await new Promise((resolve) => setTimeout(resolve, 300));
     retries--;
   }
