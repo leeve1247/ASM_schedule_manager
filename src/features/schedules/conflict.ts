@@ -38,19 +38,10 @@ export function hasMentoringScheduleConflict(
     : null;
   if (!evRange || !Array.isArray(mentoringSchedules)) return false;
 
-  return mentoringSchedules.some((ms) => {
-    if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) return false;
-    if (
-      ev.somaLectureId &&
-      ms.somaLectureId &&
-      ev.somaLectureId === ms.somaLectureId
-    ) {
-      return false;
-    }
-
-    const msRange = toDateRange(ms.dateStr, ms.startTime, ms.endTime);
-    return msRange ? overlaps(evRange, msRange) : false;
-  });
+  return (
+    findConflictingMentoringSchedules(evRange, mentoringSchedules, ev.somaLectureId ?? undefined)
+      .length > 0
+  );
 }
 
 export function hasPersonalScheduleConflict(
@@ -62,11 +53,7 @@ export function hasPersonalScheduleConflict(
     : null;
   if (!evRange || !Array.isArray(personalSchedules)) return false;
 
-  return personalSchedules.some((ps) => {
-    if (!ps?.dateStr || !ps?.startTime || !ps?.endTime) return false;
-    const psRange = toDateRange(ps.dateStr, ps.startTime, ps.endTime);
-    return psRange ? overlaps(evRange, psRange) : false;
-  });
+  return findConflictingPersonalSchedule(evRange, personalSchedules) != null;
 }
 
 export function findConflictingPersonalSchedule(
