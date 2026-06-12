@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MentoringSchedule } from '@features/schedules/mentoring-schedule';
+import { lectureMatchKey } from '@features/google-calendar/match-key';
 import type { GoogleCalendarMatchResponse } from './CalendarCell';
 
 const GOOGLE_CALENDAR_OPENED_EVENT = 'asm:google-calendar-opened';
@@ -13,8 +14,10 @@ const GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS = 3200;
 async function requestGoogleCalendarMatch(
   schedules: MentoringSchedule[],
 ): Promise<GoogleCalendarMatchResponse> {
+  // Mentor-deleted lectures lost their id but still carry title/date/time, so
+  // they're matched by those instead — let them through without a somaLectureId.
   const valid = schedules.filter(
-    (s) => s.somaLectureId && s.dateStr && s.startTime && s.endTime,
+    (s) => s.dateStr && s.startTime && s.endTime && (s.somaLectureId || s.title),
   );
   try {
     const response = await chrome.runtime.sendMessage({
@@ -45,18 +48,26 @@ async function requestFreshGoogleCalendarMatch(
 export interface GoogleCalendarMatchState {
   googleCalendarMatch: GoogleCalendarMatchResponse;
   registeredFeedbackIds: Set<string>;
+  deletedFromGoogleFeedbackIds: Set<string>;
 }
 
 export function useGoogleCalendarMatch(
   mentoringSchedules: MentoringSchedule[],
   loading: boolean,
+  mentorDeletedKeys: Set<string>,
+  onDeletedFromGoogleSettled?: (keys: string[]) => void,
 ): GoogleCalendarMatchState {
   const [googleCalendarMatch, setGoogleCalendarMatch] = useState<GoogleCalendarMatchResponse>({
     connected: false,
     matched: {},
   });
   const [registeredFeedbackIds, setRegisteredFeedbackIds] = useState<Set<string>>(new Set());
+  const [deletedFromGoogleFeedbackIds, setDeletedFromGoogleFeedbackIds] = useState<Set<string>>(
+    new Set(),
+  );
   const mentoringSchedulesRef = useRef<MentoringSchedule[]>([]);
+  const mentorDeletedKeysRef = useRef<Set<string>>(new Set());
+  const onDeletedSettledRef = useRef<((keys: string[]) => void) | undefined>(undefined);
   const googleCalendarMatchRef = useRef<GoogleCalendarMatchResponse>({
     connected: false,
     matched: {},
@@ -67,38 +78,75 @@ export function useGoogleCalendarMatch(
     mentoringSchedulesRef.current = mentoringSchedules;
   }, [mentoringSchedules]);
 
+  useEffect(() => {
+    mentorDeletedKeysRef.current = mentorDeletedKeys;
+  }, [mentorDeletedKeys]);
+
+  useEffect(() => {
+    onDeletedSettledRef.current = onDeletedFromGoogleSettled;
+  }, [onDeletedFromGoogleSettled]);
+
   /**
-   * 매칭 결과를 상태에 반영하고, 직전엔 미매칭이었다가 이번에 매칭된 강의는
-   * "방금 등록됨" 피드백을 3.2초 띄웠다 지운다(전환 감지 기반 펄스).
+   * 매칭 결과를 상태에 반영하고 전환을 두 방향으로 감지해 3.2초 펄스를 띄운다:
+   * - 미매칭→매칭: "방금 등록됨"(등록완료!) 피드백.
+   * - 매칭→미매칭(단, 멘토 삭제된 강의 한정): "구글 캘린더에서 삭제됨!" 피드백.
+   *   펄스가 끝나면 onDeletedFromGoogleSettled 로 알려 카드를 영구 숨김 처리하게 한다.
    */
   const applyGoogleCalendarMatch = useCallback((next: GoogleCalendarMatchResponse) => {
     const previous = googleCalendarMatchRef.current;
-    const completedIds = mentoringSchedulesRef.current
-      .map((schedule) => schedule.somaLectureId)
-      .filter(
-        (id) =>
-          id && previous.connected && !previous.matched[id] && next.connected && next.matched[id],
-      );
+    const keys = mentoringSchedulesRef.current
+      .map((s) => lectureMatchKey(s.somaLectureId, s.title, s.dateStr, s.startTime))
+      .filter(Boolean);
+
+    const completedKeys = keys.filter(
+      (k) => previous.connected && !previous.matched[k] && next.connected && next.matched[k],
+    );
+    const deletedKeys = keys.filter(
+      (k) =>
+        previous.connected &&
+        previous.matched[k] &&
+        next.connected &&
+        !next.matched[k] &&
+        mentorDeletedKeysRef.current.has(k),
+    );
 
     googleCalendarMatchRef.current = next;
     setGoogleCalendarMatch(next);
 
-    if (completedIds.length === 0) return;
-
-    setRegisteredFeedbackIds((prev) => {
-      const merged = new Set(prev);
-      completedIds.forEach((id) => merged.add(id));
-      return merged;
-    });
-
-    const timer = window.setTimeout(() => {
+    if (completedKeys.length > 0) {
       setRegisteredFeedbackIds((prev) => {
-        const nextIds = new Set(prev);
-        completedIds.forEach((id) => nextIds.delete(id));
-        return nextIds;
+        const merged = new Set(prev);
+        completedKeys.forEach((k) => merged.add(k));
+        return merged;
       });
-    }, GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS);
-    feedbackTimersRef.current.push(timer);
+
+      const timer = window.setTimeout(() => {
+        setRegisteredFeedbackIds((prev) => {
+          const nextIds = new Set(prev);
+          completedKeys.forEach((k) => nextIds.delete(k));
+          return nextIds;
+        });
+      }, GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS);
+      feedbackTimersRef.current.push(timer);
+    }
+
+    if (deletedKeys.length > 0) {
+      setDeletedFromGoogleFeedbackIds((prev) => {
+        const merged = new Set(prev);
+        deletedKeys.forEach((k) => merged.add(k));
+        return merged;
+      });
+
+      const timer = window.setTimeout(() => {
+        setDeletedFromGoogleFeedbackIds((prev) => {
+          const nextIds = new Set(prev);
+          deletedKeys.forEach((k) => nextIds.delete(k));
+          return nextIds;
+        });
+        onDeletedSettledRef.current?.(deletedKeys);
+      }, GOOGLE_CALENDAR_REGISTERED_FEEDBACK_MS);
+      feedbackTimersRef.current.push(timer);
+    }
   }, []);
 
   useEffect(() => {
@@ -164,5 +212,5 @@ export function useGoogleCalendarMatch(
     };
   }, []);
 
-  return { googleCalendarMatch, registeredFeedbackIds };
+  return { googleCalendarMatch, registeredFeedbackIds, deletedFromGoogleFeedbackIds };
 }

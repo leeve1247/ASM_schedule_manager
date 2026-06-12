@@ -15,8 +15,14 @@ import {
   saveMentoringSchedules,
   type MentoringSchedule,
 } from '@features/schedules/mentoring-schedule';
+import { lectureMatchKey } from '@features/google-calendar/match-key';
 import { cx } from '@shared/ui/cx';
 import { triggerCancellation } from '../lectures/cancel';
+import {
+  addDismissedDeletedLectureKeys,
+  loadDismissedDeletedLectureKeys,
+  removeDismissedDeletedLectureKeys,
+} from '../lectures/dismissed-lectures';
 import { openModalForEditing, openModalWithDate } from '../personal-schedules/modal';
 import { CalendarHeader, calendarHeaderCss } from './CalendarHeader';
 import { CalendarCell, calendarCellCss, type EventEntry } from './CalendarCell';
@@ -47,6 +53,14 @@ function buildMentoringSchedules(lectures: Lecture[]): MentoringSchedule[] {
     .filter((ms): ms is MentoringSchedule => ms !== null);
 }
 
+// Google Calendar match key for a lecture (mirrors buildMentoringSchedules's
+// parsing so keys line up with the matcher). '' when the time can't be parsed.
+function lectureKeyOf(l: Lecture): string {
+  const parsed = parseLectureDateTimeText(l.dateTimeText);
+  if (!parsed || !l.dateStr) return '';
+  return lectureMatchKey(l.somaLectureId, l.title || '', l.dateStr, `${parsed.sh}:${parsed.sm}`);
+}
+
 export interface CalendarProps {
   loading: boolean;
   lectures: Lecture[];
@@ -58,15 +72,31 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
   const [personalSchedules, setPersonalSchedules] = useState<PersonalSchedule[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [dismissedDeletedKeys, setDismissedDeletedKeys] = useState<Set<string>>(new Set());
+  const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => {
     void loadPersonalSchedules().then(setPersonalSchedules);
   }, [lectures, refreshKey]);
 
+  useEffect(() => {
+    void loadDismissedDeletedLectureKeys().then(setDismissedDeletedKeys);
+  }, [refreshKey]);
+
   const mentoringSchedules = useMemo(
     () => buildMentoringSchedules(lectures),
     [lectures],
   );
+
+  const mentorDeletedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const l of lectures) {
+      if (!l.mentorDeleted) continue;
+      const key = lectureKeyOf(l);
+      if (key) keys.add(key);
+    }
+    return keys;
+  }, [lectures]);
 
   // Persist mentoring schedules so the detail-page conflict checker can read them.
   useEffect(() => {
@@ -74,10 +104,54 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
     void saveMentoringSchedules(mentoringSchedules);
   }, [loading, mentoringSchedules]);
 
-  const { googleCalendarMatch, registeredFeedbackIds } = useGoogleCalendarMatch(
-    mentoringSchedules,
-    loading,
+  // Permanently hide deleted-lecture cards (state first to avoid a flicker, then
+  // persist across reloads). Used by both the "삭제됨!" pulse settle and the manual ×.
+  const dismissDeletedKeys = useCallback((keys: string[]) => {
+    setDismissedDeletedKeys((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => next.add(k));
+      return next;
+    });
+    void addDismissedDeletedLectureKeys(keys);
+  }, []);
+
+  const handleManualDismiss = useCallback(
+    (key: string) => {
+      if (!key) return;
+      if (!confirm('이 "강의 삭제됨" 카드를 목록에서 숨길까요?')) return;
+      dismissDeletedKeys([key]);
+    },
+    [dismissDeletedKeys],
   );
+
+  const handleRestore = useCallback((key: string) => {
+    if (!key) return;
+    setDismissedDeletedKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    void removeDismissedDeletedLectureKeys([key]);
+  }, []);
+
+  // Count of hidden cards actually present in the current data (drives the toggle).
+  const hiddenCount = useMemo(() => {
+    let n = 0;
+    for (const l of lectures) {
+      if (!l.mentorDeleted) continue;
+      const key = lectureKeyOf(l);
+      if (key && dismissedDeletedKeys.has(key)) n += 1;
+    }
+    return n;
+  }, [lectures, dismissedDeletedKeys]);
+
+  // Leave "manage hidden" mode automatically once nothing is hidden anymore.
+  useEffect(() => {
+    if (hiddenCount === 0 && showHidden) setShowHidden(false);
+  }, [hiddenCount, showHidden]);
+
+  const { googleCalendarMatch, registeredFeedbackIds, deletedFromGoogleFeedbackIds } =
+    useGoogleCalendarMatch(mentoringSchedules, loading, mentorDeletedKeys, dismissDeletedKeys);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
@@ -143,6 +217,45 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
     return out;
   }, [startDate, today]);
 
+  // Build each day's ordered event list once. Independent of the Google Calendar
+  // match state, so frequent match/feedback updates re-render cells with new props
+  // instead of re-parsing every lecture's date-time text on each update.
+  const eventsByDay = useMemo(() => {
+    return days.map((day) => {
+      const events: EventEntry[] = [];
+      for (const l of lectures) {
+        if (l.dateStr !== day.dateStr) continue;
+        const parsed = parseLectureDateTimeText(l.dateTimeText);
+        const matchKey = parsed
+          ? lectureMatchKey(l.somaLectureId, l.title || '', l.dateStr, `${parsed.sh}:${parsed.sm}`)
+          : l.somaLectureId;
+        // Mentor-deleted leftovers the user hid are dropped — unless "manage hidden"
+        // mode is on, where they reappear faded with a 복원 button.
+        const dismissed = l.mentorDeleted && Boolean(matchKey) && dismissedDeletedKeys.has(matchKey);
+        if (dismissed && !showHidden) continue;
+        events.push({
+          isPersonal: false,
+          data: l,
+          timeKey: parsed ? `${parsed.sh}:${parsed.sm}` : '00:00',
+          ended: isLectureEnded(l.dateTimeText),
+          matchKey,
+          dismissed,
+        });
+      }
+      for (const ps of mergedPersonals) {
+        if (ps.dateStr !== day.dateStr) continue;
+        events.push({
+          isPersonal: true,
+          data: ps,
+          timeKey: ps.startTime,
+          ended: isLectureEnded(`${ps.dateStr}(요일) ${ps.startTime} ~ ${ps.endTime}`),
+        });
+      }
+      events.sort((a, b) => a.timeKey.localeCompare(b.timeKey));
+      return { day, events };
+    });
+  }, [days, lectures, mergedPersonals, dismissedDeletedKeys, showHidden]);
+
   return (
     <div id="registration-history-calendar">
       <CalendarHeader
@@ -166,7 +279,19 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
           </span>
         </div>
       ) : (
-        <div className={cellStyles.calendarGrid}>
+        <>
+          {hiddenCount > 0 && (
+            <div className={baseStyles.hiddenManageRow}>
+              <button
+                type="button"
+                className={baseStyles.hiddenToggleBtn}
+                onClick={() => setShowHidden((v) => !v)}
+              >
+                {showHidden ? '숨김 관리 닫기' : `숨긴 강의 ${hiddenCount}개 보기`}
+              </button>
+            </div>
+          )}
+          <div className={cellStyles.calendarGrid}>
           {DAY_KO.map((wd, idx) => (
             <div
               key={`wd-${wd}`}
@@ -177,48 +302,27 @@ export function Calendar({ loading, lectures, onRefresh }: CalendarProps) {
               {wd}
             </div>
           ))}
-          {days.map((day) => {
-            const dayLectures = lectures.filter((l) => l.dateStr === day.dateStr);
-            const dayPersonals = mergedPersonals.filter((ps) => ps.dateStr === day.dateStr);
-            const events: EventEntry[] = [];
-            for (const l of dayLectures) {
-              const lectureParsed = parseLectureDateTimeText(l.dateTimeText);
-              const timeKey = lectureParsed ? `${lectureParsed.sh}:${lectureParsed.sm}` : '00:00';
-              events.push({
-                isPersonal: false,
-                data: l,
-                timeKey,
-                ended: isLectureEnded(l.dateTimeText),
-              });
-            }
-            for (const ps of dayPersonals) {
-              events.push({
-                isPersonal: true,
-                data: ps,
-                timeKey: ps.startTime,
-                ended: isLectureEnded(`${ps.dateStr}(요일) ${ps.startTime} ~ ${ps.endTime}`),
-              });
-            }
-            events.sort((a, b) => a.timeKey.localeCompare(b.timeKey));
-
-            return (
-              <CalendarCell
-                key={day.dateStr}
-                dateStr={day.dateStr}
-                isToday={day.isToday}
-                isPast={day.isPast}
-                formattedDateText={day.formattedDateText}
-                events={events}
-                googleCalendarMatch={googleCalendarMatch}
-                registeredFeedbackIds={registeredFeedbackIds}
-                onAddPersonal={openModalWithDate}
-                onEditPersonal={openModalForEditing}
-                onDeletePersonal={handleDeletePersonal}
-                onCancelLecture={triggerCancellation}
-              />
-            );
-          })}
-        </div>
+          {eventsByDay.map(({ day, events }) => (
+            <CalendarCell
+              key={day.dateStr}
+              dateStr={day.dateStr}
+              isToday={day.isToday}
+              isPast={day.isPast}
+              formattedDateText={day.formattedDateText}
+              events={events}
+              googleCalendarMatch={googleCalendarMatch}
+              registeredFeedbackIds={registeredFeedbackIds}
+              deletedFromGoogleFeedbackIds={deletedFromGoogleFeedbackIds}
+              onAddPersonal={openModalWithDate}
+              onEditPersonal={openModalForEditing}
+              onDeletePersonal={handleDeletePersonal}
+              onCancelLecture={triggerCancellation}
+              onDismissLecture={handleManualDismiss}
+              onRestoreLecture={handleRestore}
+            />
+          ))}
+          </div>
+        </>
       )}
     </div>
   );

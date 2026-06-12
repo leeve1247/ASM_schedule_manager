@@ -18,17 +18,32 @@ export const lectureCardCss = css;
 export interface LectureCardProps {
   lec: Lecture;
   ended: boolean;
+  dismissed: boolean;
   missingFromGoogleCalendar: boolean;
   justRegistered: boolean;
+  deletedButInGoogle: boolean;
+  justDeletedFromGoogle: boolean;
   onCancel(): void;
+  onDismiss(): void;
+  onRestore(): void;
 }
+
+// Same signal the export button fires (calendar-export.ts) so the calendar's
+// return-resync re-checks the match when the user comes back. Here it arms the
+// resync before sending the user to Google Calendar to remove the leftover.
+const GOOGLE_CALENDAR_OPENED_EVENT = 'asm:google-calendar-opened';
 
 export function LectureCard({
   lec,
   ended,
+  dismissed,
   missingFromGoogleCalendar,
   justRegistered,
+  deletedButInGoogle,
+  justDeletedFromGoogle,
   onCancel,
+  onDismiss,
+  onRestore,
 }: LectureCardProps) {
   const parsed = useMemo(
     () => parseLectureDateTimeText(lec.dateTimeText),
@@ -47,6 +62,14 @@ export function LectureCard({
   const [expanded, setExpanded] = useState(false);
   const collapsible = lec.mentorDeleted;
   const detailsVisible = !collapsible || expanded;
+
+  const openGoogleCalendarForDeletion = () => {
+    window.dispatchEvent(new CustomEvent(GOOGLE_CALENDAR_OPENED_EVENT));
+    const dayUrl = parsed
+      ? `https://calendar.google.com/calendar/r/day/${parsed.y}/${Number(parsed.m)}/${Number(parsed.d)}`
+      : 'https://calendar.google.com/calendar/r';
+    window.open(dayUrl, '_blank', 'noopener');
+  };
 
   const exportDateStr = parsed ? `${parsed.y}-${parsed.m}-${parsed.d}` : '';
   const exportStarts = parsed ? kstToIso(exportDateStr, `${parsed.sh}:${parsed.sm}`) : null;
@@ -70,10 +93,42 @@ export function LectureCard({
           [styles.notInGoogleCalendar]: missingFromGoogleCalendar,
           [styles.googleCalendarJustRegistered]: justRegistered,
           [styles.mentorDeleted]: lec.mentorDeleted,
+          [styles.googleStillPresent]: deletedButInGoogle,
+          [styles.googleJustDeleted]: justDeletedFromGoogle,
+          [styles.dismissedPreview]: dismissed,
         },
       )}
       title={lec.title}
     >
+      {lec.mentorDeleted && dismissed && (
+        <button
+          type="button"
+          className={styles.restoreBtn}
+          title="숨김 해제 — 목록에 다시 표시"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRestore();
+          }}
+        >
+          복원
+        </button>
+      )}
+      {lec.mentorDeleted && !dismissed && !deletedButInGoogle && !justDeletedFromGoogle && (
+        <button
+          type="button"
+          className={styles.dismissBtn}
+          title="이 카드 숨기기"
+          aria-label="이 카드 숨기기"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDismiss();
+          }}
+        >
+          ×
+        </button>
+      )}
       <a className={cellStyles.infoGroup} href={safeUrl || undefined}>
         <div className={cellStyles.textTitle} data-role="title">
           {lec.title}
@@ -102,6 +157,22 @@ export function LectureCard({
           </>
         )}
       </a>
+
+      {deletedButInGoogle && (
+        <div className={cellStyles.buttonGroup}>
+          <button
+            type="button"
+            className={styles.gcalDeleteBtn}
+            title="구글 캘린더에서 이 일정을 삭제하세요. 삭제 후 이 탭으로 돌아오면 자동으로 정리됩니다."
+            onClick={(e) => {
+              e.preventDefault();
+              openGoogleCalendarForDeletion();
+            }}
+          >
+            구글 캘린더에서 삭제
+          </button>
+        </div>
+      )}
 
       {collapsible && (
         <button

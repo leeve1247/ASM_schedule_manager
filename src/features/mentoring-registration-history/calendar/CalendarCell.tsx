@@ -20,7 +20,7 @@ export interface GoogleCalendarMatchResponse {
 
 export type EventEntry =
   | { isPersonal: true; data: PersonalSchedule; timeKey: string; ended: boolean }
-  | { isPersonal: false; data: Lecture; timeKey: string; ended: boolean };
+  | { isPersonal: false; data: Lecture; timeKey: string; ended: boolean; matchKey: string; dismissed: boolean };
 
 export interface CalendarCellProps {
   dateStr: string;
@@ -30,10 +30,13 @@ export interface CalendarCellProps {
   events: EventEntry[];
   googleCalendarMatch: GoogleCalendarMatchResponse;
   registeredFeedbackIds: Set<string>;
+  deletedFromGoogleFeedbackIds: Set<string>;
   onAddPersonal(dateStr: string): void;
   onEditPersonal(ps: PersonalSchedule): void;
   onDeletePersonal(ps: PersonalSchedule): void | Promise<void>;
   onCancelLecture(somaLectureId: string): void;
+  onDismissLecture(matchKey: string): void;
+  onRestoreLecture(matchKey: string): void;
 }
 
 export function CalendarCell({
@@ -44,10 +47,13 @@ export function CalendarCell({
   events,
   googleCalendarMatch,
   registeredFeedbackIds,
+  deletedFromGoogleFeedbackIds,
   onAddPersonal,
   onEditPersonal,
   onDeletePersonal,
   onCancelLecture,
+  onDismissLecture,
+  onRestoreLecture,
 }: CalendarCellProps) {
   return (
     <div
@@ -86,23 +92,43 @@ export function CalendarCell({
           );
         }
         const lec = evt.data;
+        // matchKey precomputed in CalendarView (active → id; mentor-deleted → title+date+start).
+        const matchKey = evt.matchKey;
+        const hasKey = Boolean(matchKey);
+        const matchedVal = hasKey ? googleCalendarMatch.matched[matchKey] : undefined;
+        // Deleted lectures never prompt "미등록" — a removed lecture shouldn't ask
+        // to be added to the calendar; it only ever lingers and gets cleaned up.
         const missingFromGoogleCalendar =
           googleCalendarMatch.connected &&
           !evt.ended &&
-          Boolean(lec.somaLectureId) &&
-          googleCalendarMatch.matched[lec.somaLectureId] === false;
+          !lec.mentorDeleted &&
+          hasKey &&
+          matchedVal === false;
         const justRegistered =
           !missingFromGoogleCalendar &&
-          Boolean(lec.somaLectureId) &&
-          registeredFeedbackIds.has(lec.somaLectureId);
+          hasKey &&
+          registeredFeedbackIds.has(matchKey);
+        const justDeletedFromGoogle = hasKey && deletedFromGoogleFeedbackIds.has(matchKey);
+        const deletedButInGoogle =
+          !evt.dismissed &&
+          !justDeletedFromGoogle &&
+          googleCalendarMatch.connected &&
+          lec.mentorDeleted &&
+          hasKey &&
+          matchedVal === true;
         return (
           <LectureCard
             key={`l-${lec.somaLectureId || idx}`}
             lec={lec}
             ended={evt.ended}
+            dismissed={evt.dismissed}
             missingFromGoogleCalendar={missingFromGoogleCalendar}
             justRegistered={justRegistered}
+            deletedButInGoogle={deletedButInGoogle}
+            justDeletedFromGoogle={justDeletedFromGoogle}
             onCancel={() => onCancelLecture(lec.somaLectureId)}
+            onDismiss={() => onDismissLecture(matchKey)}
+            onRestore={() => onRestoreLecture(matchKey)}
           />
         );
       })}

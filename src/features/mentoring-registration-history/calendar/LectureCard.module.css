@@ -119,6 +119,133 @@
   letter-spacing: 0.02em;
 }
 
+/* Mentor-deleted lecture that still lingers in the user's Google Calendar:
+   pink border nudging cleanup. Defined after .mentor-deleted so this ::after
+   badge overrides the slate "강의 삭제됨" one (same element, same specificity). */
+:global(#registration-history-calendar) .google-still-present {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 1px #ec4899 inset;
+  position: relative;
+}
+
+:global(#registration-history-calendar) .google-still-present::after {
+  content: '구글 캘린더에 남음';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background-color: #ec4899;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Confirmation pulse after the user removes the leftover in Google Calendar —
+   mirror of the green "등록완료!" register pulse; the card is hidden right after. */
+:global(#registration-history-calendar) .google-just-deleted {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 1px #16a34a inset;
+  position: relative;
+  animation: asm-google-calendar-registered-card 3.2s ease-out forwards;
+}
+
+:global(#registration-history-calendar) .google-just-deleted::after {
+  content: '구글 캘린더에서 삭제됨!';
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background-color: #16a34a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  animation: asm-google-calendar-registered-badge 3.2s ease-out forwards;
+}
+
+:global(#registration-history-calendar) .gcal-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  margin-top: 3px;
+  padding: 3px 6px;
+  border: 1px solid #ec4899;
+  border-radius: 5px;
+  background: #fdf2f8;
+  color: #be185d;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:global(#registration-history-calendar) .gcal-delete-btn:hover {
+  background: #fce7f3;
+  border-color: #db2777;
+}
+
+/* Manual "hide this card" × for mentor-deleted lectures — sits at the top-left
+   corner, mirroring the status badge at top-right. */
+:global(#registration-history-calendar) .dismiss-btn {
+  position: absolute;
+  top: -8px;
+  left: 6px;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #cbd5e1;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:global(#registration-history-calendar) .dismiss-btn:hover {
+  background: #64748b;
+  color: #ffffff;
+}
+
+/* "관리 모드"에서 드러난 숨김 카드: 흐리게 + 복원 버튼. */
+:global(#registration-history-calendar) .dismissed-preview {
+  opacity: 0.5;
+}
+
+:global(#registration-history-calendar) .restore-btn {
+  position: absolute;
+  top: -8px;
+  left: 6px;
+  z-index: 1;
+  padding: 1px 8px;
+  border: none;
+  border-radius: 8px;
+  background: #475569;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+:global(#registration-history-calendar) .restore-btn:hover {
+  background: #1e293b;
+}
+
 /* Collapse/expand toggle for mentor-deleted lecture detail rows. */
 :global(#registration-history-calendar) .expand-toggle {
   display: inline-flex;

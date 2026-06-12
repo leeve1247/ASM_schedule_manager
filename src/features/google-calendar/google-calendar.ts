@@ -1,6 +1,8 @@
 // Google Calendar integration. Runs only in the background service worker
 // (uses chrome.identity which is unavailable to content scripts).
 
+import { lectureMatchKey } from './match-key';
+
 export interface GoogleCalendarEvent {
   id: string;
   summary?: string;
@@ -172,6 +174,47 @@ function isLectureMatched(lecture: LectureMatchInput, events: GoogleCalendarEven
   return events.some((e) => (e.description ?? '').includes(needle));
 }
 
+function normalizeTitle(s: string): string {
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+function eventStartMinute(e: GoogleCalendarEvent): number {
+  const iso = e.start?.dateTime ?? (e.start?.date ? `${e.start.date}T00:00:00+09:00` : '');
+  if (!iso) return NaN;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? Math.floor(ms / 60000) : NaN;
+}
+
+function extractEventQustnrSn(e: GoogleCalendarEvent): string | null {
+  const m = (e.description ?? '').match(/qustnrSn=(\d+)/);
+  return m ? m[1] : null;
+}
+
+/**
+ * 멘토가 지운 강의는 신청내역 DOM 에서 qustnrSn 을 잃어 strict 매칭이 불가하다.
+ * 제목 + 정확한 시작시각(분 단위)으로 대조하되, 그 이벤트의 qustnrSn 이 "활성 등록 id"
+ * 집합에 속하면 제외한다 — 같은 강의를 재신청한 경우 그 멀쩡한 이벤트를 잔존물로 오인하지 않기 위함.
+ */
+function isDeletedLectureMatched(
+  lecture: LectureMatchInput,
+  events: GoogleCalendarEvent[],
+  activeIds: Set<string>,
+): boolean {
+  const title = normalizeTitle(lecture.title ?? '');
+  if (!title || !lecture.dateStr || !lecture.startTime) return false;
+  const targetMinute = Math.floor(
+    new Date(`${lecture.dateStr}T${lecture.startTime}:00+09:00`).getTime() / 60000,
+  );
+  if (!Number.isFinite(targetMinute)) return false;
+
+  return events.some((e) => {
+    if (normalizeTitle(e.summary ?? '') !== title) return false;
+    if (eventStartMinute(e) !== targetMinute) return false;
+    const evId = extractEventQustnrSn(e);
+    return !(evId && activeIds.has(evId));
+  });
+}
+
 export async function matchLectures(
   lectures: LectureMatchInput[]
 ): Promise<{ connected: boolean; matched: Record<string, boolean>; error?: string }> {
@@ -198,9 +241,18 @@ export async function matchLectures(
     return { connected: false, matched: {}, error: msg };
   }
 
+  const activeIds = new Set(lectures.map((l) => l.somaLectureId).filter(Boolean));
   const matched: Record<string, boolean> = {};
   for (const lecture of lectures) {
-    matched[lecture.somaLectureId] = isLectureMatched(lecture, events);
+    const key = lectureMatchKey(
+      lecture.somaLectureId,
+      lecture.title ?? '',
+      lecture.dateStr,
+      lecture.startTime,
+    );
+    matched[key] = lecture.somaLectureId
+      ? isLectureMatched(lecture, events)
+      : isDeletedLectureMatched(lecture, events, activeIds);
   }
   return { connected: true, matched };
 }
