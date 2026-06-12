@@ -8,17 +8,17 @@
 
 ### 새 기능
 - **Google Calendar 연동** — `chrome.identity` OAuth 로 본인 Google 캘린더를 조회해, 아직 등록하지 않은 멘토링/특강 카드를 호박색 테두리와 `미등록` 리본으로 하이라이트합니다. (SOMA 강의 ID 정확 매칭)<br>
-<img width="420" alt="image" src="https://github.com/user-attachments/assets/c9c4fe05-f917-4513-b0ff-2c148211a360" /><br>
-<img width="420" alt="image" src="https://github.com/user-attachments/assets/cea20768-8fab-479f-ae5c-d075584bbbb2" /><br>
+<img width="160" alt="image" src="https://github.com/user-attachments/assets/c9c4fe05-f917-4513-b0ff-2c148211a360" /><br>
+<img width="160" alt="image" src="https://github.com/user-attachments/assets/cea20768-8fab-479f-ae5c-d075584bbbb2" /><br>
 - **로컬 캘린더 익스포트** — 각 일정을 Google Calendar 등록 링크 또는 RFC 5545 `.ics` 파일로 내려받아 다른 캘린더에 import 할 수 있습니다. (서버 없이 클라이언트에서만 동작)<br>
-<img width="360" alt="image" src="https://github.com/user-attachments/assets/b6eb0c72-62c7-4391-b663-0515c063b20d" /><br>
+<img width="150" alt="image" src="https://github.com/user-attachments/assets/b6eb0c72-62c7-4391-b663-0515c063b20d" /><br>
 - **접수 내역 새로고침 버튼** — 강의 상세·캘린더 캐시를 비우고 즉시 재파싱합니다. (방금 신청한 내역이 아직 반영되지 않았을 때 유용)<br>
-<img width="360" alt="image" src="https://github.com/user-attachments/assets/e598bb95-930b-4e79-8c92-fdc85833030d" /><br>
+<img width="150" alt="image" src="https://github.com/user-attachments/assets/e598bb95-930b-4e79-8c92-fdc85833030d" /><br>
 - **단계별 로딩 표시 + 오늘 우선 fetch** — 자유 멘토링 패널 헤더에 현재 단계(`강의 목록 동기화 중…`, `장소 정보 가져오는 중… (N/M)`)와 진행도를 표시합니다. 강의 상세 fetch 순서를 오늘 → 미래 일자 순으로 정렬해, 먼저 보는 정보가 먼저 캐시에 채워지도록 했습니다. 정원·마감 정보를 불러오는 동안에도 이미 받아온 강의는 배치마다 즉시 카드로 반영됩니다.<br>
-<img width="640" alt="스크린샷 2026-06-01 233953" src="https://github.com/user-attachments/assets/43e54eec-74dc-4e82-a2bb-5c4241d9b865" /><br>
-<img width="640" alt="스크린샷 2026-06-01 234306" src="https://github.com/user-attachments/assets/40e34311-1558-4506-ad39-5a532f7cf33f" /><br>
+<img width="400" alt="스크린샷 2026-06-01 233953" src="https://github.com/user-attachments/assets/43e54eec-74dc-4e82-a2bb-5c4241d9b865" /><br>
+<img width="400" alt="스크린샷 2026-06-01 234306" src="https://github.com/user-attachments/assets/40e34311-1558-4506-ad39-5a532f7cf33f" /><br>
 - **접수 내역 로딩 스켈레톤** — 콜드 캐시 첫 로딩 시 헤더+스피너 placeholder 를 즉시 렌더해 빈 화면 대기 시간을 없앴습니다.<br>
-<img width="760" alt="스크린샷 2026-06-01 223331" src="https://github.com/user-attachments/assets/f92cab58-7257-4b77-bab4-d34df0029ae9" /><br>
+<img width="420" alt="스크린샷 2026-06-01 223331" src="https://github.com/user-attachments/assets/f92cab58-7257-4b77-bab4-d34df0029ae9" /><br>
 - **확장 아이콘 추가**.
 ### 버그 수정
 - 멘토가 삭제한 강의(`삭제` 표시)가 접수 내역 캘린더에 `로딩 중…` 카드로 잔존하던 문제를 수정했습니다.
@@ -32,6 +32,26 @@
 - **알림(Discord/Cloudflare) 기능 제거** — 원본의 알림 파이프라인을 삭제했습니다. 비활성 플래그로 남아 있던 `alarm-sync` 모듈과 관련 UI·`worker-fetch` 프록시·해당 host 권한을 모두 정리해, 이제 캘린더/익스포트 기능만 남았습니다.
 - **공유 모듈 통합 · 컴포넌트 분할** — 중복 로직(일정 충돌 검사 · KST 날짜 변환 · SOMA 상세 페이지 파싱)을 `src/shared/` 로 모으고, 대형 컴포넌트(자유 멘토링 보드 · 접수 내역 캘린더)를 하위 컴포넌트와 커스텀 훅으로 분리했습니다.
 - **명시적 버전 관리** — `package.json` 의 version 을 `dist/manifest.json` 에 주입하되, `npm run build` 는 patch 버전을 자동으로 올리지 않습니다.
+
+---
+
+## 프로젝트 구조
+
+```
+src/
+├── manifest.json
+├── entrypoints/   manifest 가 직접 로드하는 진입점 (content script · service worker · popup)
+├── features/      기능 단위 구현
+│   ├── mentoring-board/                   자유 멘토링 / 멘토 특강 보드
+│   ├── mentoring-registration-history/    접수 내역 캘린더 · 개인 일정 · 강의 상세
+│   ├── conflict-check/                     상세 페이지 신청 중복 감지 배너
+│   ├── schedules/                          일정 데이터 · 충돌 판정 로직
+│   ├── calendar-export/                    Google Calendar 링크 · .ics 익스포트
+│   └── google-calendar/                    service worker 측 Google Calendar 매칭
+└── shared/        기능 간 공용 유틸 (date · soma · storage · dom · ui · html)
+```
+
+빌드는 Vite + `vite-plugin-web-extension` 으로 수행되며 산출물은 `dist/` 에 생성됩니다 (gitignore).
 
 ---
 
