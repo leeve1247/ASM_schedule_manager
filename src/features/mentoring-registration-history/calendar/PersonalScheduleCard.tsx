@@ -5,6 +5,7 @@
 import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
 import { ExportSlot } from '@shared/ui/ExportSlot';
+import { kstToIso } from '@shared/date/date-time';
 import type { PersonalSchedule } from '@features/schedules/personal-schedule';
 import cellStyles from './CalendarCell.module.css';
 import styles from './PersonalScheduleCard.module.css';
@@ -76,8 +77,8 @@ export function PersonalScheduleCard({
           title={ps.title}
           description={ps.description || ''}
           location={ps.location || ''}
-          startsAt={exporter.kstToIso(ps.dateStr, ps.startTime)}
-          endsAt={exporter.kstToIso(ps.dateStr, ps.endTime)}
+          startsAt={kstToIso(ps.dateStr, ps.startTime)}
+          endsAt={kstToIso(ps.dateStr, ps.endTime)}
           filenameBase={ps.title}
         />
       )}

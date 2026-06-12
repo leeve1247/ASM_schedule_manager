@@ -32,6 +32,16 @@ export function getMonthRange(offset = 0): MonthRange {
   return { start: base, end, today, year: base.getFullYear(), month: base.getMonth() };
 }
 
+// Builds an ISO-8601 string pinned to KST (+09:00) from a "YYYY-MM-DD" date and
+// "HH:MM" time. Returns '' when either part is missing or non-numeric.
+export function kstToIso(dateStr: string, timeStr: string): string {
+  if (!dateStr || !timeStr) return '';
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const [hh, mm] = String(timeStr).split(':').map(Number);
+  if ([y, m, d, hh, mm].some((n) => Number.isNaN(n))) return '';
+  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00+09:00`;
+}
+
 export function timeToMinutes(time: string): number {
   if (!time) return 24 * 60 + 999;
   const [h, m] = time.split(':').map(Number);

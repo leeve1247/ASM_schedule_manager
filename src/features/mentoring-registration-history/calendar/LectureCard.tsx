@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { Icon } from '@shared/ui/Icon';
 import { cx } from '@shared/ui/cx';
 import { ExportSlot } from '@shared/ui/ExportSlot';
-import { parseLectureDateTimeText } from '@shared/date/date-time';
+import { kstToIso, parseLectureDateTimeText } from '@shared/date/date-time';
 import { getSafeSomaUrl } from '@shared/soma/safe-url';
 import type { Lecture } from '../lectures/types';
 import cellStyles from './CalendarCell.module.css';
@@ -30,12 +30,13 @@ export function LectureCard({
   justRegistered,
   onCancel,
 }: LectureCardProps) {
-  const timeStr = useMemo(() => {
-    const m = lec.dateTimeText.match(
-      /(\d{2}):(\d{2})(?::\d{2})?\s*~\s*(\d{2}):(\d{2})(?::\d{2})?/,
-    );
-    return m ? `${m[1]}:${m[2]} ~ ${m[3]}:${m[4]}` : lec.dateTimeText;
-  }, [lec.dateTimeText]);
+  const parsed = useMemo(
+    () => parseLectureDateTimeText(lec.dateTimeText),
+    [lec.dateTimeText],
+  );
+  const timeStr = parsed
+    ? `${parsed.sh}:${parsed.sm} ~ ${parsed.eh}:${parsed.em}`
+    : lec.dateTimeText;
 
   const isSpecial = lec.type.includes('특강');
   const safeUrl = getSafeSomaUrl(lec.url);
@@ -47,20 +48,9 @@ export function LectureCard({
   const collapsible = lec.mentorDeleted;
   const detailsVisible = !collapsible || expanded;
 
-  const exportStarts = useMemo(() => {
-    if (!exporter) return null;
-    const parsed = parseLectureDateTimeText(lec.dateTimeText);
-    if (!parsed) return null;
-    const exportDateStr = `${parsed.y}-${parsed.m}-${parsed.d}`;
-    return exporter.kstToIso(exportDateStr, `${parsed.sh}:${parsed.sm}`);
-  }, [exporter, lec.dateTimeText]);
-  const exportEnds = useMemo(() => {
-    if (!exporter) return null;
-    const parsed = parseLectureDateTimeText(lec.dateTimeText);
-    if (!parsed) return null;
-    const exportDateStr = `${parsed.y}-${parsed.m}-${parsed.d}`;
-    return exporter.kstToIso(exportDateStr, `${parsed.eh}:${parsed.em}`);
-  }, [exporter, lec.dateTimeText]);
+  const exportDateStr = parsed ? `${parsed.y}-${parsed.m}-${parsed.d}` : '';
+  const exportStarts = parsed ? kstToIso(exportDateStr, `${parsed.sh}:${parsed.sm}`) : null;
+  const exportEnds = parsed ? kstToIso(exportDateStr, `${parsed.eh}:${parsed.em}`) : null;
 
   const description = [
     lec.type,

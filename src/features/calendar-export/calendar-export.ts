@@ -16,7 +16,6 @@ export interface ExportEvent {
 }
 
 export interface ASMCalendarExportAPI {
-  kstToIso(dateStr: string, timeStr: string): string;
   buildGoogleCalendarUrl(event: ExportEvent): string;
   buildIcsContent(event: ExportEvent): string;
   openGoogleCalendar(event: ExportEvent): void;
@@ -29,14 +28,6 @@ export interface ASMCalendarExportAPI {
 }
 
 const GOOGLE_CALENDAR_OPENED_EVENT = 'asm:google-calendar-opened';
-
-function kstToIso(dateStr: string, timeStr: string): string {
-  if (!dateStr || !timeStr) return '';
-  const [y, m, d] = String(dateStr).split('-').map(Number);
-  const [hh, mm] = String(timeStr).split(':').map(Number);
-  if ([y, m, d, hh, mm].some((n) => Number.isNaN(n))) return '';
-  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00+09:00`;
-}
 
 function toUtcCompact(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -211,7 +202,6 @@ function appendExportButtons(
 }
 
 const api: ASMCalendarExportAPI = {
-  kstToIso,
   buildGoogleCalendarUrl,
   buildIcsContent,
   openGoogleCalendar,

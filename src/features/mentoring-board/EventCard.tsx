@@ -5,6 +5,7 @@
 import { useCallback, useMemo, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { classifyLocation } from '@shared/soma/location';
 import { getSafeSomaUrl } from '@shared/soma/safe-url';
+import { kstToIso } from '@shared/date/date-time';
 import { cx } from '@shared/ui/cx';
 import { Icon } from '@shared/ui/Icon';
 import type { IconName } from '@shared/ui/icons';
@@ -173,8 +174,8 @@ export function EventCard({ ev, todayStr }: EventCardProps) {
             title={ev.title}
             description={exportDescription}
             location={ev.location || ''}
-            startsAt={exporter.kstToIso(ev.date, ev.timeStart)}
-            endsAt={exporter.kstToIso(ev.date, ev.timeEnd)}
+            startsAt={kstToIso(ev.date, ev.timeStart)}
+            endsAt={kstToIso(ev.date, ev.timeEnd)}
             filenameBase={ev.title}
           />
         )}
