@@ -81,16 +81,15 @@ export function findConflictingPersonalSchedule(
   return null;
 }
 
-export function findConflictingMentoringSchedule(
+export function findConflictingMentoringSchedules(
   range: DateRange,
   mentoringSchedules: MentoringSchedule[],
   excludeSomaLectureId?: string
-): MentoringSchedule | null {
-  for (const ms of mentoringSchedules) {
-    if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) continue;
-    if (excludeSomaLectureId && ms.somaLectureId === excludeSomaLectureId) continue;
+): MentoringSchedule[] {
+  return mentoringSchedules.filter((ms) => {
+    if (!ms?.dateStr || !ms?.startTime || !ms?.endTime) return false;
+    if (excludeSomaLectureId && ms.somaLectureId === excludeSomaLectureId) return false;
     const msRange = toDateRange(ms.dateStr, ms.startTime, ms.endTime);
-    if (msRange && overlaps(range, msRange)) return ms;
-  }
-  return null;
+    return msRange ? overlaps(range, msRange) : false;
+  });
 }

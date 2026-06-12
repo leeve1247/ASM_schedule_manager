@@ -12,15 +12,16 @@ import {
   type MentoringSchedule,
 } from '@features/schedules/mentoring-schedule';
 import {
-  findConflictingMentoringSchedule,
+  findConflictingMentoringSchedules,
   findConflictingPersonalSchedule,
   type DateRange,
 } from '@features/schedules/conflict';
 import { mountReact, type MountHandle } from '@shared/dom/react-mount';
-import { ConflictBanner, conflictBannerCss } from './ConflictBanner';
+import { ConflictBanner, conflictBannerCss, type ConflictBannerVariant } from './ConflictBanner';
 
 let personalBannerHandle: MountHandle | null = null;
 let mentoringBannerHandle: MountHandle | null = null;
+let mentoringBannerVariant: ConflictBannerVariant | null = null;
 
 export function findLectureDateTimeOnDetailPage(): string | null {
   const eventDateEl = document.querySelector('.eventDt');
@@ -125,11 +126,54 @@ export function findLectureDateTimeOnDetailPage(): string | null {
   return null;
 }
 
+const TITLE_LABEL_RE = /(모집명|과정명|강의명|강좌명|교육명|프로그램명|강의제목|제목)/;
+
+export function findLectureTitleOnDetailPage(): string | null {
+  const tryLabeled = (labelEl: Element | null, valueEl: Element | null): string | null => {
+    if (!labelEl || !valueEl) return null;
+    if (!TITLE_LABEL_RE.test((labelEl.textContent || '').replace(/\s+/g, ''))) return null;
+    const val = (valueEl.textContent || '').trim().replace(/\s+/g, ' ');
+    return val || null;
+  };
+
+  for (const group of document.querySelectorAll('div.group')) {
+    const val = tryLabeled(group.querySelector('strong.t'), group.querySelector('div.c'));
+    if (val) return val;
+  }
+  for (const th of document.querySelectorAll('th')) {
+    const val = tryLabeled(th, th.nextElementSibling);
+    if (val) return val;
+  }
+  for (const dt of document.querySelectorAll('dt')) {
+    const val = tryLabeled(dt, dt.nextElementSibling);
+    if (val) return val;
+  }
+
+  const headingEl = document.querySelector(
+    '.eventTit, .view_top .tit, .board_view .tit, .bbsView .tit, .view_tit, h3.tit, h2.tit'
+  );
+  const headingText = (headingEl?.textContent || '').trim().replace(/\s+/g, ' ');
+  return headingText || null;
+}
+
+// 두 출처(상세 페이지 제목 vs 신청내역 테이블 제목)의 표기 차이를 흡수한다.
+// 멘토특강/자유멘토링 같은 앞쪽 [태그]·(태그)·【태그】는 제거 후 공백을 정규화한다.
+export function normalizeLectureTitle(raw: string | null | undefined): string {
+  if (!raw) return '';
+  let s = raw.replace(/\s+/g, ' ').trim();
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/^[[(【（［][^\])】）］]*[\])】）］]\s*/, '').trim();
+  }
+  return s;
+}
+
 function removeConflictBanners(): void {
+  // 개인 일정 배너만 정리한다. 멘토링 배너(차단/재신청 안내)는
+  // checkLectureConflict 의 멘토링 섹션이 매 실행마다 단독으로 관리한다.
   personalBannerHandle?.unmount();
   personalBannerHandle = null;
-  mentoringBannerHandle?.unmount();
-  mentoringBannerHandle = null;
   document.getElementById('soma-conflict-debug-banner')?.remove();
 }
 
@@ -201,7 +245,10 @@ function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void 
   personalBannerHandle?.unmount();
   personalBannerHandle = null;
 
-  const anchor = findConflictBannerAnchor();
+  // 멘토링 배너와 동일하게 신청하기 버튼 바로 위에 배치한다.
+  // (버튼을 못 찾으면 페이지 상단으로 폴백)
+  const applyButtonWrapper = findApplyButtonWrapper();
+  const anchor = applyButtonWrapper?.parentElement || findConflictBannerAnchor();
   if (!anchor) return;
 
   const mentoringTime = detailText.replace(/^멘토링 시간:\s*/, '') || '확인 불가';
@@ -222,14 +269,23 @@ function injectWarningBanner(schedule: PersonalSchedule, detailText = ''): void 
     {
       styles: [conflictBannerCss],
       hostClass: 'asm-conflict-banner-host',
-      insertAt: 'start',
+      insertBefore: applyButtonWrapper || undefined,
+      insertAt: applyButtonWrapper ? 'end' : 'start',
     },
   );
 }
 
-function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, detailText = ''): void {
+function injectMentoringConflictBanner(
+  conflictingLecture: MentoringSchedule,
+  detailText = '',
+  variant: ConflictBannerVariant = 'mentoring'
+): void {
+  // 같은 배너가 이미 떠 있으면 MutationObserver 재실행마다 깜빡이지 않도록 건너뛴다.
+  if (mentoringBannerHandle && mentoringBannerVariant === variant) return;
+
   mentoringBannerHandle?.unmount();
   mentoringBannerHandle = null;
+  mentoringBannerVariant = null;
 
   const applyButtonWrapper = findApplyButtonWrapper();
   const anchor = applyButtonWrapper?.parentElement || findConflictBannerAnchor();
@@ -241,7 +297,7 @@ function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, de
     anchor,
     (
       <ConflictBanner
-        variant="mentoring"
+        variant={variant}
         mentoringTime={mentoringTime}
         conflictTitle={conflictingLecture.title}
         conflictStart={conflictingLecture.startTime}
@@ -255,7 +311,13 @@ function injectMentoringConflictBanner(conflictingLecture: MentoringSchedule, de
       insertAt: applyButtonWrapper ? 'end' : 'start',
     },
   );
+  mentoringBannerVariant = variant;
 }
+
+// 차단된 버튼은 원본을 잃지 않도록 (clone, original) 쌍으로 보관한다.
+// 제목 로딩 타이밍 등으로 한 번 차단된 뒤 "같은 강의 재신청"으로 판정이 바뀌면
+// unblockApplicationButtons 로 원래 버튼을 되돌려 신청이 막히지 않게 한다.
+let blockedButtons: { clone: HTMLElement; original: HTMLElement }[] = [];
 
 function blockApplicationButtons(alertMsg: string): void {
   const targetElements = findApplicationTargets();
@@ -288,7 +350,16 @@ function blockApplicationButtons(alertMsg: string): void {
     );
 
     el.parentNode.replaceChild(clone, el);
+    blockedButtons.push({ clone, original: htmlEl });
   });
+}
+
+function unblockApplicationButtons(): void {
+  if (blockedButtons.length === 0) return;
+  blockedButtons.forEach(({ clone, original }) => {
+    clone.parentNode?.replaceChild(original, clone);
+  });
+  blockedButtons = [];
 }
 
 async function checkLectureConflict(): Promise<void> {
@@ -329,25 +400,44 @@ async function checkLectureConflict(): Promise<void> {
   }
 
   // 접수된 멘토링 일정과의 충돌 체크 → 신청 차단
+  // 단, 멘토특강 → 자유멘토링 전환처럼 "같은 이름의 강의가 새 qustnrSn 으로 재개설"된
+  // 경우는 자기 자신의 재신청이므로 차단하지 않고 안내 배너만 표시한다.
   const currentSomaLectureId = new URL(window.location.href).searchParams.get('qustnrSn') || '';
   const mentoringSchedules = await loadStoredMentoringSchedules();
-  const conflictingMentoring = findConflictingMentoringSchedule(
+  const conflictingMentorings = findConflictingMentoringSchedules(
     lectureRange,
     mentoringSchedules,
     currentSomaLectureId || undefined
   );
 
-  if (conflictingMentoring) {
-    console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${conflictingMentoring.title}"`);
+  const currentTitle = normalizeLectureTitle(findLectureTitleOnDetailPage());
+  // 제목을 못 읽으면(빈 문자열) 안전하게 기존 동작(차단)을 유지한다.
+  const blockingConflict = conflictingMentorings.find(
+    (ms) => !currentTitle || normalizeLectureTitle(ms.title) !== currentTitle
+  );
+  const reofferConflict = currentTitle
+    ? conflictingMentorings.find((ms) => normalizeLectureTitle(ms.title) === currentTitle)
+    : undefined;
+
+  if (blockingConflict) {
+    console.warn(`SOMA Schedule Manager: Mentoring overlap detected with "${blockingConflict.title}"`);
     blockApplicationButtons(
-      `이미 접수한 멘토링 "${conflictingMentoring.title}"와 시간이 중복되어 신청할 수 없습니다.`
+      `이미 접수한 멘토링 "${blockingConflict.title}"와 시간이 중복되어 신청할 수 없습니다.`
     );
-    if (!mentoringBannerHandle) {
-      injectMentoringConflictBanner(conflictingMentoring, detailText);
+    injectMentoringConflictBanner(blockingConflict, detailText, 'mentoring');
+  } else if (reofferConflict) {
+    console.log(
+      `SOMA Schedule Manager: Same-name re-offer of "${reofferConflict.title}" detected; allowing apply.`
+    );
+    unblockApplicationButtons();
+    injectMentoringConflictBanner(reofferConflict, detailText, 'reoffer');
+  } else {
+    unblockApplicationButtons();
+    if (mentoringBannerHandle) {
+      mentoringBannerHandle.unmount();
+      mentoringBannerHandle = null;
+      mentoringBannerVariant = null;
     }
-  } else if (mentoringBannerHandle) {
-    mentoringBannerHandle.unmount();
-    mentoringBannerHandle = null;
   }
 }
 

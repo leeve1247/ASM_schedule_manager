@@ -80,6 +80,19 @@
   border: 1px solid #fee2e2;
 }
 
+.banner--reoffer {
+  background: #f5f9ff;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.05);
+}
+
+.banner--reoffer .banner__title { color: #1d4ed8; }
+
+.banner--reoffer .banner__timeline {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
 .banner__rows {
   display: flex;
   flex-direction: column;
