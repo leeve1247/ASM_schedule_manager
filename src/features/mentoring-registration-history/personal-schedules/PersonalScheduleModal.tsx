@@ -4,8 +4,7 @@
 
 import { useState, type FormEvent } from 'react';
 import {
-  loadPersonalSchedules,
-  savePersonalSchedules,
+  upsertPersonalSchedule,
   type PersonalSchedule,
 } from '@features/schedules/personal-schedule';
 import { Icon } from '@shared/ui/Icon';
@@ -88,35 +87,20 @@ export function PersonalScheduleModal({
 
     setSaving(true);
     try {
-      const list = await loadPersonalSchedules();
-      if (mode === 'edit' && initialSchedule) {
-        const idx = list.findIndex((item) => item.id === initialSchedule.id);
-        if (idx !== -1) {
-          list[idx] = {
-            ...list[idx],
-            title,
-            dateStr,
-            startTime,
-            endTime,
-            description,
-            locationType,
-            location,
-          };
-        }
-      } else {
-        const id = 'personal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        list.push({
-          id,
-          title,
-          dateStr,
-          startTime,
-          endTime,
-          description,
-          locationType,
-          location,
-        });
-      }
-      await savePersonalSchedules(list);
+      const id =
+        mode === 'edit' && initialSchedule
+          ? initialSchedule.id
+          : 'personal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      await upsertPersonalSchedule({
+        id,
+        title,
+        dateStr,
+        startTime,
+        endTime,
+        description,
+        locationType,
+        location,
+      });
       await onSaved();
       onClose();
     } catch (error) {
