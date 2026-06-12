@@ -209,18 +209,22 @@ export async function buildCompleteEventMap(
     const pageNums: number[] = [];
     for (let i = 2; i <= totalPages; i++) pageNums.push(i);
 
-    const results = await fetchInBatches<Map<string, EventInfo>>(
+    await fetchInBatches<Map<string, EventInfo>>(
       pageNums.map((n) => () => fetchPageMap(n, baseUrl)),
-      LIST_FETCH_BATCH_SIZE
-    );
-
-    results.forEach((r) => {
-      if (r.status === 'fulfilled') {
-        r.value.forEach((v, k) => {
-          if (!freshMap.has(k)) freshMap.set(k, v);
+      LIST_FETCH_BATCH_SIZE,
+      (batchResults) => {
+        batchResults.forEach((r) => {
+          if (r.status === 'fulfilled') {
+            r.value.forEach((v, k) => {
+              if (!freshMap.has(k)) freshMap.set(k, v);
+            });
+          }
         });
+        // Surface each finished batch so already-fetched lectures render
+        // incrementally instead of all appearing once the full fetch ends.
+        if (onProgress) onProgress(freshMap);
       }
-    });
+    );
   }
 
   await saveCountCache(freshMap);
