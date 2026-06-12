@@ -106,7 +106,7 @@
 }
 
 :global(#registration-history-calendar) .mentor-deleted::after {
-  content: '멘토 삭제됨';
+  content: '강의 삭제됨';
   position: absolute;
   top: -8px;
   right: 6px;
@@ -117,6 +117,40 @@
   padding: 1px 7px;
   border-radius: 8px;
   letter-spacing: 0.02em;
+}
+
+/* Collapse/expand toggle for mentor-deleted lecture detail rows. */
+:global(#registration-history-calendar) .expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  margin-top: 3px;
+  padding: 3px 0;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 5px;
+  background: transparent;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:global(#registration-history-calendar) .expand-toggle:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+:global(#registration-history-calendar) .expand-toggle .chevron {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+:global(#registration-history-calendar) .expand-toggle .chevron.expanded {
+  transform: rotate(180deg);
 }
 
 :global(#registration-history-calendar) .cancel-btn.unavailable {
