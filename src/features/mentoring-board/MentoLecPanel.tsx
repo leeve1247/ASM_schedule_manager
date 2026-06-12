@@ -55,11 +55,11 @@ import { cx } from '@shared/ui/cx';
 import { SearchRow, searchRowCss, type SearchState } from './SearchRow';
 import { InfoPopover, infoPopoverCss } from './InfoPopover';
 import { DayEventPanel, dayEventPanelCss } from './DayEventPanel';
+import { MentoLecCalendarGrid } from './MentoLecCalendarGrid';
 import { eventCardCss } from './EventCard';
 import styles from './MentoLecPanel.module.css';
 import css from './MentoLecPanel.module.css?inline';
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ENROLLMENT_LOADING_MESSAGE = '수강중·겹침 표시 확인 중…';
 const LIST_STATUS_LOADING_MESSAGE = '정원·마감 불러오는 중…';
 export const mentoLecPanelCss = [
@@ -69,10 +69,6 @@ export const mentoLecPanelCss = [
   dayEventPanelCss,
   eventCardCss,
 ].join('\n');
-const dotCategoryClasses: Record<string, string> = {
-  MRC010: styles.asmDotMrc010,
-  MRC020: styles.asmDotMrc020,
-};
 
 function locMessage(done: number, total: number): string {
   return `장소 정보 가져오는 중… (${done}/${total})`;
@@ -149,7 +145,9 @@ export function MentoLecPanel() {
       }
 
       try {
-        const completeMap = await buildCompleteEventMap();
+        const completeMap = await buildCompleteEventMap((partialMap) => {
+          setAllEvents(collectEvents(partialMap));
+        });
         setAllEvents(collectEvents(completeMap));
       } finally {
         if (needsListStatusFetch) setListLoadingMessage(null);
@@ -270,7 +268,9 @@ export function MentoLecPanel() {
 
       setLoadingMessage(null);
       setListLoadingMessage(LIST_STATUS_LOADING_MESSAGE);
-      const completeMap = await buildCompleteEventMap();
+      const completeMap = await buildCompleteEventMap((partialMap) => {
+        setAllEvents(collectEvents(partialMap));
+      });
       setListLoadingMessage(null);
       const fresh = collectEvents(completeMap);
       setAllEvents(fresh);
@@ -406,79 +406,15 @@ export function MentoLecPanel() {
             onReset={handleSearchReset}
           />
 
-          <div className={styles.asmCalSection}>
-            <div className={styles.asmCalWeekdays}>
-              {WEEKDAYS.map((wd, i) => (
-                <div
-                  key={wd}
-                  className={cx(styles.asmCalWd, {
-                    [styles.asmWdWeekend]: i === 0 || i === 6,
-                  })}
-                >
-                  {wd}
-                </div>
-              ))}
-            </div>
-
-            <div className={styles.asmCalGrid}>
-              {Array.from({ length: monthRange.start.getDay() }, (_, i) => (
-                <div key={`empty-${i}`} className={cx(styles.asmCalDay, styles.asmCalEmpty)} />
-              ))}
-              {[...byDate.entries()].map(([dateStr, dayEvents]) => {
-                const d = new Date(dateStr + 'T00:00:00');
-                const isToday = dateStr === todayStr;
-                const isPast = dateStr < todayStr;
-                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                const sortedDay = [...dayEvents].sort((a, b) =>
-                  sortEventsByStatusTimeAuthor(a, b, todayStr),
-                );
-                const hasEvents = sortedDay.length > 0;
-                const isSelected = selectedDate === dateStr;
-                const maxDots = Math.min(sortedDay.length, 5);
-
-                return (
-                  <div
-                    key={dateStr}
-                    data-date={dateStr}
-                    className={cx(styles.asmCalDay, {
-                      [styles.asmCalToday]: isToday,
-                      [styles.asmCalPast]: isPast,
-                      [styles.asmCalWeekend]: isWeekend,
-                      [styles.asmCalHasEvents]: hasEvents,
-                      [styles.asmCalSelected]: isSelected,
-                    })}
-                    onClick={() => {
-                      if (!hasEvents) return;
-                      setSelectedDate((cur) => (cur === dateStr ? null : dateStr));
-                    }}
-                  >
-                    <div className={styles.asmCalDaynum}>{d.getDate()}</div>
-                    {hasEvents && (
-                      <>
-                        <div className={styles.asmCalCnt}>{sortedDay.length}건</div>
-                        <div className={styles.asmCalDots}>
-                          {sortedDay.slice(0, maxDots).map((ev, i) => {
-                            const isGray = ev.date < todayStr || ev.isClosed;
-                            return (
-                              <span
-                                key={`${ev.somaLectureId || i}-dot`}
-                                className={cx(
-                                  styles.asmDot,
-                                  isGray
-                                    ? styles.asmDotGray
-                                    : dotCategoryClasses[ev.category],
-                                )}
-                              />
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <MentoLecCalendarGrid
+            byDate={byDate}
+            todayStr={todayStr}
+            selectedDate={selectedDate}
+            leadingEmptyCount={monthRange.start.getDay()}
+            onSelectDate={(dateStr) =>
+              setSelectedDate((cur) => (cur === dateStr ? null : dateStr))
+            }
+          />
 
           <div className={styles.asmCalendarNotice}>
             <div className={styles.asmCalendarNoticeTitle}>
