@@ -2,6 +2,7 @@
 
 import { CacheEntry, readCacheEntry, writeCacheEntry, cacheEntryToMap } from '@shared/storage/cache';
 import { toDateStr } from '@shared/date/date-time';
+import { extractSomaDetailFields } from '@shared/soma/detail-page';
 import { fetchInBatches } from './list-cache';
 
 export const LOC_CACHE_KEY = 'asm_location_v1';
@@ -31,20 +32,10 @@ async function saveLocCache(map: Map<string, string>): Promise<void> {
 }
 
 export function parseLocationFromDoc(doc: Document): string | null {
-  for (const th of doc.querySelectorAll('th')) {
-    if ((th.textContent ?? '').trim() === '장소') {
-      const td = th.nextElementSibling || th.closest('tr')?.nextElementSibling?.querySelector('td');
-      if (td) return (td.textContent ?? '').trim();
-    }
-  }
+  const location = extractSomaDetailFields(doc).location;
+  if (location) return location;
 
-  for (const dt of doc.querySelectorAll('dt')) {
-    if ((dt.textContent ?? '').trim() === '장소') {
-      const dd = dt.nextElementSibling;
-      if (dd) return (dd.textContent ?? '').trim();
-    }
-  }
-
+  // Selector family the shared detail reader doesn't cover (list-page variants).
   for (const el of doc.querySelectorAll('.label, .tit, strong')) {
     if ((el.textContent ?? '').trim() === '장소') {
       const next = el.nextElementSibling || el.parentElement?.nextElementSibling;

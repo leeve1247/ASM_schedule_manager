@@ -2,6 +2,7 @@
 
 import { readChromeStorage, removeChromeStorage, writeChromeStorage } from '@shared/storage/storage';
 import { isLectureEnded } from '@shared/date/date-time';
+import { extractSomaDetailFields } from '@shared/soma/detail-page';
 import type { LectureDetails } from './types';
 
 const CACHE_KEY_PREFIX = 'soma_lecture_detail_';
@@ -150,103 +151,8 @@ export async function fetchLectureDetails(
     const htmlText = await response.text();
     const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
-    let mentorName = '';
-    let location = '';
-    let people = '';
-    let approvalStatus = '';
-    let deadlineStatus = '';
-    let lectureDateTimeText = '';
-
-    const captureDetailField = (label: string, value: string) => {
-      const normalizedLabel = label.replace(/\s+/g, '');
-      const normalizedValue = value.replace(/\s+/g, ' ').trim();
-
-      if (!mentorName && /작성자|멘토명|멘토/.test(normalizedLabel) && !/멘토링/.test(normalizedLabel)) {
-        mentorName = normalizedValue;
-        return;
-      }
-
-      if (!location && /장소|위치/.test(normalizedLabel)) {
-        location = normalizedValue;
-        return;
-      }
-
-      if (
-        !people &&
-        /(?:모집|신청)?인원|정원/.test(normalizedLabel) &&
-        !/모집명|과정명|강의명|제목/.test(normalizedLabel)
-      ) {
-        people = normalizedValue;
-        return;
-      }
-
-      if (!approvalStatus && /개설승인여부|개설승인|승인여부|개설여부/.test(normalizedLabel)) {
-        approvalStatus = normalizedValue;
-        return;
-      }
-
-      if (
-        !deadlineStatus &&
-        /마감여부|접수상태|신청상태|모집상태|진행상태|상태/.test(normalizedLabel) &&
-        !/승인/.test(normalizedLabel)
-      ) {
-        deadlineStatus = normalizedValue;
-        return;
-      }
-
-      if (!lectureDateTimeText && /강의날짜|강의일시|진행날짜|진행일시|교육일시/.test(normalizedLabel)) {
-        lectureDateTimeText = normalizedValue;
-      }
-    };
-
-    // Attempt 1: div.group > strong.t + div.c (SOMA mentoring detail page structure)
-    doc.querySelectorAll('div.group').forEach((group) => {
-      const labelEl = group.querySelector('strong.t');
-      const valueEl = group.querySelector('div.c');
-      if (!labelEl || !valueEl) return;
-      const label = (labelEl.textContent || '').trim();
-      const val = (valueEl.textContent || '').trim().replace(/\s+/g, ' ');
-      captureDetailField(label, val);
-    });
-
-    // Attempt 2: th/td table structure
-    if (!mentorName || !location || !people || !approvalStatus || !deadlineStatus) {
-      doc.querySelectorAll('th').forEach((th) => {
-        const label = (th.textContent || '').trim();
-        const td = th.nextElementSibling;
-        if (!td) return;
-        const val = (td.textContent || '').trim().replace(/\s+/g, ' ');
-        captureDetailField(label, val);
-      });
-    }
-
-    // Attempt 3: dt/dd structure
-    if (!mentorName || !location || !people || !approvalStatus || !deadlineStatus) {
-      doc.querySelectorAll('dt').forEach((dt) => {
-        const label = (dt.textContent || '').trim();
-        const dd = dt.nextElementSibling;
-        if (!dd) return;
-        const val = (dd.textContent || '').trim().replace(/\s+/g, ' ');
-        captureDetailField(label, val);
-      });
-    }
-
-    // Attempt 4: keyword scan in td
-    if (!location) {
-      const tds = doc.querySelectorAll('td');
-      for (const td of tds) {
-        const text = td.textContent || '';
-        if (
-          text.includes('온라인(webex)') ||
-          text.includes('회의실') ||
-          text.includes('하이스퀘어') ||
-          text.includes('하이텐')
-        ) {
-          location = text.trim().replace(/\s+/g, ' ');
-          break;
-        }
-      }
-    }
+    const fields = extractSomaDetailFields(doc);
+    let people = fields.people;
 
     const applicantCount = extractApplicantCount(doc);
     if (people && applicantCount) {
@@ -257,12 +163,12 @@ export async function fetchLectureDetails(
     }
 
     const finalDetails: LectureDetails = {
-      mentorName: mentorName || UNKNOWN,
-      location: location || UNKNOWN,
+      mentorName: fields.mentorName || UNKNOWN,
+      location: fields.location || UNKNOWN,
       people: people || UNKNOWN,
-      approvalStatus: approvalStatus || UNKNOWN,
-      deadlineStatus: deadlineStatus || UNKNOWN,
-      lectureDateTimeText,
+      approvalStatus: fields.approvalStatus || UNKNOWN,
+      deadlineStatus: fields.deadlineStatus || UNKNOWN,
+      lectureDateTimeText: fields.lectureDateTimeText,
     };
 
     const detailsToCache: CachedLectureDetail = {
